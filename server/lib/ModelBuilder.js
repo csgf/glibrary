@@ -76,8 +76,11 @@ module.exports = function ModelBuilder(app) {
              *   creati in fase di boot, dalla lettura del DB associato con il modello repository
              *
              * */
+            console.log("data.subrepo",data.subrepo);
 
             if (data.subrepo) {
+              console.log("data.subrepo",data.subrepo);
+
               model.beforeRemote('*', function (context, user, next) {
 
                 if(context.method.http.verb == 'post') {
@@ -86,12 +89,13 @@ module.exports = function ModelBuilder(app) {
                   var data2 = req.body;
                   console.log("POST METHOD ->>> REQ:",data2);
                   process.nextTick(function(){
-                    md = new ModelBuilder(app);
-                    md.mapTableToModel(postgreSQL,data2,function(cb2){
+                     md = new ModelBuilder(app);
+                     md.mapTableToModel(repositoryDB,_data,function(cb2){
                       console.log("[ModelBuilder][recursive call mapTableToModel]",cb2);
                       next();
-                    })
+                     })
                   })
+                  
                 } else next();
 
 
@@ -169,7 +173,7 @@ module.exports = function ModelBuilder(app) {
 
         this.mapTableToModel(datasource, data[keys[i]], function (cb) {*/
          this.mapTableToModel(datasource,data,function(cb){
-          console.log("[boot_repository][createDynamicModel callback]", cb);
+          console.log("[ModelBuilder][createDynamicModel callback]", cb);
           if (cb) {
             callback(true);
           } else {

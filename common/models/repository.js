@@ -15,6 +15,9 @@ module.exports = function(Repository) {
    * prima del save dei dati, chiamo
    */
 
+
+
+
   Repository.observe('before save', function(ctx, next) {
     //creo dinamicamente il modello, passando i dati ricevuti in POST
     console.log("[Repository][Observe] Model name",JSON.stringify(ctx.instance.name, null,4));
@@ -27,12 +30,13 @@ module.exports = function(Repository) {
         md = new modelBuilder(app);
         var data = ctx.instance;
         data.startbeforeRemote = true;
-        console.log("DATA----->>>>>",data);
-        md.createDynamicModel(postgreSQL,data,function(cb) {
-          console.log("RITORNO:::::::",cb);
-        });
-      });
-
+        console.log("DATA----->>>>>", data);
+        /*
+         md.createDynamicModel(postgreSQL,data,function(cb) {
+         console.log("RITORNO:::::::",cb);
+         });
+         */
+      })
     } else {
       console.log('[Repository]Updated %s matching %j',
         ctx.Model.pluralModelName,
@@ -41,6 +45,148 @@ module.exports = function(Repository) {
     }
     next();
   });
+
+  Repository.observe('after save', function(context,next){
+    if (context.instance) {
+
+      console.log("CTX:",context.instance);
+
+      console.log('Saved %s#%s', context.Model.modelName, context.instance.id,context.isNewInstance);
+      Repository.getApp(function(err,app) {
+
+        var repoDB = app.dataSources.repoDB;
+        var table_name = context.instance.name;
+
+
+        var schema_collection = {
+          "name": table_name,
+          "base": "PersistedModel",
+          "options": {
+            "idInjection": false,
+            "postgresql": {
+              "schema": "public",
+              "table": table_name
+            }
+          },
+          "properties": {
+            "id": {
+              "type": "number",
+              "id": true,
+              "generated": true
+            },
+            "TypeName": {
+              "type": "String",
+              "lenght": 20
+            },
+            "Path": {
+              "type": "String",
+              "lenght": 20
+            },
+            "VisibleAttrs": {
+              "type": "String",
+              "lenght": 20
+            },
+            "FilterAttrs": {
+              "type": "String",
+              "lenght": 20
+            },
+            "ColumnWidth": {
+              "type": "String",
+              "lenght": 20
+            },
+            "ParentID": {
+              "type": "number"
+            },
+            "Type": {
+              "type": "number"
+            }
+          }
+        }
+        repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
+        repoDB.autoupdate(schema_collection.name,function (err,result) {
+          repoDB.discoverModelProperties(table_name, function (err, props) {
+            if (err) throw err;
+            md = new modelBuilder(app);
+
+            var data = {
+              path : context.instance.path,
+              name:  context.instance.name,
+              location : context.instance.location,
+              owner_id : context.instance.ownerId,
+              subrepo : context.instance.subrepo
+            }
+            md.mapTableToModel(repoDB,data,function(callback){
+              console.log("mapTableToModel callback",callback);
+            })
+            next();
+          })
+        });
+      })
+    } else {
+      console.log('Updated %s matching %j',
+        context.Model.pluralModelName,
+        context.where);
+    }
+
+  /*
+    Repository.getApp(function(err,app) {
+
+      var repoDB = app.dataSources.repoDB;
+      var schema_collection = {
+        "name": "deroberto",
+        "options": {
+          "idInjection": false,
+          "postgresql": {
+            "schema": "public",
+            "table": "deroberto"
+          }
+        },
+        "properties": {
+          "TypeName": {
+            "type": "String",
+            "lenght": 20
+          },
+          "Path": {
+            "type": "String",
+            "lenght": 20
+          },
+          "VisibleAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "FilterAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ColumnWidth": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ParentID": {
+            "type": "number"
+          },
+          "id": {
+            "type": "number"
+          },
+          "Type": {
+            "type": "number"
+          }
+        }
+      }
+      repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
+      repoDB.automigrate(function () {
+        repoDB.discoverModelProperties('deroberto', function (err, props) {
+          if(err) throw err;
+          console.log("---->");
+          next();
+        });
+      });
+    })
+
+  */
+
+  })
+
 
   /* ho creato un POST a /api/repositories per creare un nuovo endpoint */
 
@@ -131,33 +277,33 @@ module.exports = function(Repository) {
         ca:      fs.readFileSync(path.join(__dirname,'../../server/private/INFNCA.pem')).toString()
 
 
-  }
-  });
+      }
+    });
 
-/*
-    client.getFlavors(function(err,flavors){
-          if(err)  {
-            console.dir(err);
-            return;
-          }
-          console.log("FLAVORS");
-    })
-  */
+    /*
+     client.getFlavors(function(err,flavors){
+     if(err)  {
+     console.dir(err);
+     return;
+     }
+     console.log("FLAVORS");
+     })
+     */
 
     client.getContainers(function (err, containers) {
-        if(err) throw err;
-        console.log("****CONTAINERS****:");
+      if(err) throw err;
+      console.log("****CONTAINERS****:");
       containers.forEach(function(value){
         console.log("VALUE:",value.name);
       })
-   })
+    })
 
     client.getFiles('demo',function(err,files){
       if (err) throw err;
-     // console.log("FILES:",files);
+      // console.log("FILES:",files);
     })
     client.getFile('demo','ananas33.jpg',function(err,server){
-     // console.log("GETFILE:",server);
+      // console.log("GETFILE:",server);
     })
     client.download({
       container: 'demo',
@@ -169,12 +315,12 @@ module.exports = function(Repository) {
   Repository.testhttps = function(req,next) {
 
 
-   var testData ={"uri":"https://stack-server-01.ct.infn.it:35357/v2.0/tokens",
-     "method":"POST",
-     "headers":{"User-Agent":"nodejs-pkgcloud/1.2.0-alpha.0",
-       "Content-Type":"application/json","Accept":"application/json"},
-     "json":{"auth":{"passwordCredentials":{"username":"acaland","password":"demo2015"},"tenantName":"glibrary"}},
-     "ca":"-----BEGIN CERTIFICATE-----\nMIIDczCCAlugAwIBAgIBADANBgkqhkiG9w0BAQUFADAuMQswCQYDVQQGEwJJVDEN\nMAsGA1UEChMESU5GTjEQMA4GA1UEAxMHSU5GTiBDQTAeFw0wNjEwMDMxNDE2NDda\nFw0xNjEwMDMxNDE2NDdaMC4xCzAJBgNVBAYTAklUMQ0wCwYDVQQKEwRJTkZOMRAw\nDgYDVQQDEwdJTkZOIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nzpWODoOVnUKpyikjyrdj+QpJuoJeKkqF4fbd6LrqeQL0dqAiluVR8D4y/T2Mqvsd\nH/fg0s3EYZUDQZimcAmC3ammTX3rqXOz34GWLGpXoXAmUVKWPNFJo6rAEwhw3Sja\na8mEjMiZE/JigHN5RI8K6taKtjL/jE4XUTZOGbvlKsROxzJPM6bO4GJdYO+qhK9E\n5HsbV699DYyukBfUB6ChtD6GDbcdPKUKwheni5j0v6smFjiBEb3VQg4O+uBWTHMP\n116L9kPY+I7ojzXLuayMTd+6TXzunR33+v6h8AtLChcQRt4vj7oG/scTg3eSnFsq\noEO4D4IF9v481GJJwg58LwIDAQABo4GbMIGYMA8GA1UdEwEB/wQFMAMBAf8wDgYD\nVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBTRYvOzd3LILvvyeRpvN04nnxPVIDBWBgNV\nHSMETzBNgBTRYvOzd3LILvvyeRpvN04nnxPVIKEypDAwLjELMAkGA1UEBhMCSVQx\nDTALBgNVBAoTBElORk4xEDAOBgNVBAMTB0lORk4gQ0GCAQAwDQYJKoZIhvcNAQEF\nBQADggEBAHjX0z+3P3JyQGIBI5aAXOS3NuDEf0MdqCLFIGsXjtvIm2kDSMSGQOg5\nuZnJLTAhaT+gX5eNkDdzhuuJEgW1FPGDy2If6zgD4T4EsS50E+L5BTNOG78UzF4H\n9DGBlbrkD8VEug9RpxGusSweGGlnO6CT/U1Tb3XY5ZjIrMubh09UwmjK9nEIe3vC\nRPInAkbmamteezpKOqC5Knj0ZpqU+CnWkuyYnjslX1e9O5lbupLTp5NOqZRCFn1i\niTjpoNefgqLE3sHedgb2P1vS8lO+EIhRnWgfN9qAHSqkQ+ZObxIfPJFdcluu8d/K\ntXsFkKmmFuEHd0SrYpBh9ZCLDgq2x9Y=\n-----END CERTIFICATE-----\n"};
+    var testData ={"uri":"https://stack-server-01.ct.infn.it:35357/v2.0/tokens",
+      "method":"POST",
+      "headers":{"User-Agent":"nodejs-pkgcloud/1.2.0-alpha.0",
+        "Content-Type":"application/json","Accept":"application/json"},
+      "json":{"auth":{"passwordCredentials":{"username":"acaland","password":"demo2015"},"tenantName":"glibrary"}},
+      "ca":"-----BEGIN CERTIFICATE-----\nMIIDczCCAlugAwIBAgIBADANBgkqhkiG9w0BAQUFADAuMQswCQYDVQQGEwJJVDEN\nMAsGA1UEChMESU5GTjEQMA4GA1UEAxMHSU5GTiBDQTAeFw0wNjEwMDMxNDE2NDda\nFw0xNjEwMDMxNDE2NDdaMC4xCzAJBgNVBAYTAklUMQ0wCwYDVQQKEwRJTkZOMRAw\nDgYDVQQDEwdJTkZOIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nzpWODoOVnUKpyikjyrdj+QpJuoJeKkqF4fbd6LrqeQL0dqAiluVR8D4y/T2Mqvsd\nH/fg0s3EYZUDQZimcAmC3ammTX3rqXOz34GWLGpXoXAmUVKWPNFJo6rAEwhw3Sja\na8mEjMiZE/JigHN5RI8K6taKtjL/jE4XUTZOGbvlKsROxzJPM6bO4GJdYO+qhK9E\n5HsbV699DYyukBfUB6ChtD6GDbcdPKUKwheni5j0v6smFjiBEb3VQg4O+uBWTHMP\n116L9kPY+I7ojzXLuayMTd+6TXzunR33+v6h8AtLChcQRt4vj7oG/scTg3eSnFsq\noEO4D4IF9v481GJJwg58LwIDAQABo4GbMIGYMA8GA1UdEwEB/wQFMAMBAf8wDgYD\nVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBTRYvOzd3LILvvyeRpvN04nnxPVIDBWBgNV\nHSMETzBNgBTRYvOzd3LILvvyeRpvN04nnxPVIKEypDAwLjELMAkGA1UEBhMCSVQx\nDTALBgNVBAoTBElORk4xEDAOBgNVBAMTB0lORk4gQ0GCAQAwDQYJKoZIhvcNAQEF\nBQADggEBAHjX0z+3P3JyQGIBI5aAXOS3NuDEf0MdqCLFIGsXjtvIm2kDSMSGQOg5\nuZnJLTAhaT+gX5eNkDdzhuuJEgW1FPGDy2If6zgD4T4EsS50E+L5BTNOG78UzF4H\n9DGBlbrkD8VEug9RpxGusSweGGlnO6CT/U1Tb3XY5ZjIrMubh09UwmjK9nEIe3vC\nRPInAkbmamteezpKOqC5Knj0ZpqU+CnWkuyYnjslX1e9O5lbupLTp5NOqZRCFn1i\niTjpoNefgqLE3sHedgb2P1vS8lO+EIhRnWgfN9qAHSqkQ+ZObxIfPJFdcluu8d/K\ntXsFkKmmFuEHd0SrYpBh9ZCLDgq2x9Y=\n-----END CERTIFICATE-----\n"};
 
 
 
@@ -197,24 +343,24 @@ module.exports = function(Repository) {
       console.log("RES",response.statusCode);
       console.log("BODY",body);
     })
-/*
+    /*
 
-    request({
-      url: 'https://stack-server-01.ct.infn.it:35357/v2.0/tokens',
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+     request({
+     url: 'https://stack-server-01.ct.infn.it:35357/v2.0/tokens',
+     method: "POST",
+     headers: {
+     "content-type": "application/json",
+     },
 
-      ca: cert,
-      body: JSON.stringify(requestData)
-    },function(err,res,body) {
-      if(err) throw err;
-      console.log("RES:",res.statusCode);
-      console.log("BODY",body);
+     ca: cert,
+     body: JSON.stringify(requestData)
+     },function(err,res,body) {
+     if(err) throw err;
+     console.log("RES:",res.statusCode);
+     console.log("BODY",body);
 
-    });
-*/
+     });
+     */
   }
 
   Repository.remoteMethod('openstack_login', {
