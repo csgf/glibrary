@@ -1,8 +1,8 @@
 module.exports = function(app) {
   var User = app.models.user;
-  var Role = app.models.Role;
-  var RoleMapping = app.models.RoleMapping;
-  var Team = app.models.Team;
+    var Role = app.models.Role;
+    var RoleMapping = app.models.RoleMapping;
+    var Team = app.models.Team;
 
   User.create([
     {username: 'John', email: 'john@doe.com', password: 'opensesame'},
@@ -12,6 +12,16 @@ module.exports = function(app) {
     if (err) throw err;
 
     console.log('Created users:', users);
+/*
+    users[0].repositories.create({
+      name: 'test1',
+      location :'test1',
+      path: '/test1',
+      storage : 'cloud'
+    },function(err,repo){
+      if (err) throw err;
+      console.log("Created repo:", repo)});
+      */
 
     // create project 1 and make john the owner
     users[0].projects.create({
@@ -20,7 +30,9 @@ module.exports = function(app) {
     }, function(err, project) {
       if (err) throw err;
 
-      console.log('Created project:', project);
+    //  console.log('Created project:', project);
+
+
 
       // add team members
       Team.create([
@@ -29,7 +41,7 @@ module.exports = function(app) {
       ], function(err, team) {
         if (err) throw err;
 
-        console.log('Created team:', team);
+     //   console.log('Created team:', team);
       });
     });
 
@@ -40,7 +52,7 @@ module.exports = function(app) {
     }, function(err, project) {
       if (err) throw err;
 
-      console.log('Created project:', project);
+     // console.log('Created project:', project);
 
       //add team members
       Team.create({
@@ -49,9 +61,23 @@ module.exports = function(app) {
       }, function(err, team) {
         if (err) throw err;
 
-        console.log('Created team:', team);
+    //    console.log('Created team:', team);
       });
     });
+    /*
+    Role.create({
+      name:'repositoryOwner'
+    },function(err,role){
+      if(err) throw err;
+      //console.log("user",users[1].username,users[1].id);
+      role.principals.create({
+        principalType: RoleMapping.USER,
+        principalId: users[1].id
+      },function(err,principal){
+        if(err) throw err;
+      })
+    })
+    */
 
     //create the admin role
     Role.create({
@@ -59,17 +85,21 @@ module.exports = function(app) {
     }, function(err, role) {
       if (err) throw err;
 
-      console.log('Created role:', role);
+      for ( var i = 0;  i< users.length; i++) {
+        //make bob an admin
+        role.principals.create({
+          principalType: RoleMapping.USER,
+          principalId: users[i].id
+        }, function(err, principal) {
+          if (err) throw err;
 
-      //make bob an admin
-      role.principals.create({
-        principalType: RoleMapping.USER,
-        principalId: users[2].id
-      }, function(err, principal) {
-        if (err) throw err;
+             console.log('Created principal:', principal);
+        });
+      }
 
-        console.log('Created principal:', principal);
-      });
+
+
+
     });
   });
 };

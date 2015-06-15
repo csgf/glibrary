@@ -16,6 +16,13 @@
         <th>Roles</th>
         <th>Information</th>
       </tr>
+
+      <tr>
+        <td><a href="/api/repositories<% if (typeof accessToken !== 'undefined') {
+          %>?access_token=<%= accessToken %><% } %>">View all
+            repositories</a></td>
+      </tr>
+
       <tr>
         <td><a href="/api/projects/list-projects">List projects</a></td>
         <td>Anyone can list public project info (no balance property)</td>

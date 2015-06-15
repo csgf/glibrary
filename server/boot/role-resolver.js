@@ -1,7 +1,9 @@
 module.exports = function(app) {
   var Role = app.models.Role;
 
-  Role.registerResolver('teamMember', function(role, context, cb) {
+  Role.registerResolver('teamMember222', function(role, context, cb) {
+
+
     function reject() {
       process.nextTick(function() {
         cb(null, false);
@@ -13,6 +15,7 @@ module.exports = function(app) {
       return reject();
     }
 
+
     // do not allow anonymous users
     var userId = context.accessToken.userId;
     if (!userId) {
@@ -23,7 +26,7 @@ module.exports = function(app) {
     context.model.findById(context.modelId, function(err, project) {
       if (err || !project)
         return reject();
-
+      console.log("context.model.findById", context.modelName,context.modelId, role);
       var Team = app.models.Team;
       Team.count({
         ownerId: project.ownerId,
@@ -38,4 +41,22 @@ module.exports = function(app) {
       });
     });
   });
+
+  Role.registerResolver('repositoryMember',function(role,context,cv){
+    /*
+    context.model.find(context,function(err, repo){
+      if (err) console.log("ERRORE FIND");
+      console.log("repository FIND",context.modelName,role);
+    });
+
+    */
+
+    context.model.findById(context.modelId, function(err, repository) {
+      if (err || !repository)
+        console.log("ERRORE");
+      console.log("repositoryMember Context", context.modelName,context.modelId, role);
+
+    });
+  })
+
 }

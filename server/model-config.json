@@ -38,5 +38,13 @@
   "project": {
     "dataSource": "db",
     "public": true
+  },
+  "repository": {
+    "dataSource": "repoDB",
+    "public": true
+  },
+  "repositoryType": {
+    "dataSource": "repoDB",
+    "public": true
   }
 }

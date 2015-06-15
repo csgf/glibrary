@@ -18,6 +18,11 @@
       "type": "hasMany",
       "model": "team",
       "foreignKey": "ownerId"
+    },
+    "repositories": {
+      "type": "hasMany",
+      "model": "repository",
+      "foreignKey": "ownerId"
     }
   },
   "acls": [],

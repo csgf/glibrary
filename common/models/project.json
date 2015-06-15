@@ -28,13 +28,6 @@
     {
       "accessType": "READ",
       "principalType": "ROLE",
-      "principalId": "$everyone",
-      "permission": "ALLOW",
-      "property": "listProjects"
-    },
-    {
-      "accessType": "READ",
-      "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
       "property": "find"
@@ -42,7 +35,7 @@
     {
       "accessType": "READ",
       "principalType": "ROLE",
-      "principalId": "teamMember",
+      "principalId": "teamMember222",
       "permission": "ALLOW",
       "property": "findById"
     },

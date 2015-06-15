@@ -6,6 +6,27 @@ var path = require('path');
 var app = module.exports = loopback();
 
 
+
+var https = require('https');
+var fs = require('fs');
+
+var options = {
+  cert: fs.readFileSync(path.join(__dirname, './private/certificate.pem'))
+};
+
+var ds = loopback.createDataSource({
+  connector: require('loopback-component-storage'),
+  provider: 'openstack',
+  username: 'acaland',
+  password: 'demo2015',
+  authUrl: 'https://stack-server-01.ct.infn.it:35357'
+});
+var container = ds.createModel('container');
+app.model(container);
+
+
+
+
 app.middleware('initial', bodyParser.urlencoded({ extended: true }));
 
 // Bootstrap the application, configure models, datasources and middleware.
@@ -22,7 +43,7 @@ app.set('views', path.resolve(__dirname, 'views'));
 app.start = function() {
   // start the web server
   return app.listen(function() {
-    app.emit('started');
+    app.emit('started',options);
     console.log('Web server listening at: %s', app.get('url'));
   });
 };
