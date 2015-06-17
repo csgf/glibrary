@@ -51,7 +51,6 @@ module.exports = function(Repository) {
 
       console.log("CTX:",context.instance);
 
-      console.log('Saved %s#%s', context.Model.modelName, context.instance.id,context.isNewInstance);
       Repository.getApp(function(err,app) {
 
         var repoDB = app.dataSources.repoDB;
@@ -70,9 +69,8 @@ module.exports = function(Repository) {
           },
           "properties": {
             "id": {
-              "type": "number",
-              "id": true,
-              "generated": true
+              "type": "String",
+              "id": true
             },
             "TypeName": {
               "type": "String",
@@ -102,7 +100,10 @@ module.exports = function(Repository) {
             }
           }
         }
-        repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
+        var collectionModel = app.model.collection;
+
+
+        repositoryModel = repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options)
         repoDB.autoupdate(schema_collection.name,function (err,result) {
           repoDB.discoverModelProperties(table_name, function (err, props) {
             if (err) throw err;
@@ -114,11 +115,20 @@ module.exports = function(Repository) {
               location : context.instance.location,
               owner_id : context.instance.ownerId,
               subrepo : context.instance.subrepo
+
             }
+
+            console.log('Saved %s#%s', context.Model.modelName, context.instance.id,context.isNewInstance);
+            collectionModel = Repository.app.models.Collection;
+
+            repositoryModel.hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
+
+            // mappo il nuovo modello ed espongo API
             md.mapTableToModel(repoDB,data,function(callback){
               console.log("mapTableToModel callback",callback);
+
+              next();
             })
-            next();
           })
         });
       })
@@ -389,6 +399,8 @@ module.exports = function(Repository) {
   /*
    **************************************************************************************
    */
+
+  
 
 
 

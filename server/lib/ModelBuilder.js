@@ -36,7 +36,7 @@ module.exports = function ModelBuilder(app) {
       var $model_name = data.name;
       var $table_name = data.location;
       var owner_id = data.ownerId;
-      console.log("DATA :",data);
+      console.log("[mapTableToModel][data] :",data);
       datasource.discoverAndBuildModels($table_name,
         {
           schema: 'public',
@@ -51,7 +51,7 @@ module.exports = function ModelBuilder(app) {
             var model = models[m];
             model.setup();
 
-            console.log("VALORE M:", m);
+            console.log("[mapTableToModel][m]", m);
             /*
              Role.findOne({
              where: {
@@ -71,31 +71,50 @@ module.exports = function ModelBuilder(app) {
              */
             /* Espongo il modello in REST*/
             app.model(model);
+
+            //Relazione con modello Collection
+            collectionModel = app.models.Collection;
+            app.model(model).hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
+
+
             /* *
              *   con il metodo beforeRemote, Controllo l'accesso ai vari endpoint del tipo /deroberto
              *   creati in fase di boot, dalla lettura del DB associato con il modello repository
              *
              * */
-            console.log("data.subrepo",data.subrepo);
-
             if (data.subrepo) {
-              console.log("data.subrepo",data.subrepo);
 
               model.beforeRemote('*', function (context, user, next) {
 
                 if(context.method.http.verb == 'post') {
+
+                  collectionModel = app.models.Collection;
+
+                  model.hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
+
+
+                  // creo voce nel repository. Esempio /pirandello/opere
                   var req = context.req
-                  /* creo voce nel repository. Esempio /pirandello/opere */
                   var data2 = req.body;
-                  console.log("POST METHOD ->>> REQ:",data2);
+                  console.log("[mapTableToModel][POST data]");
+                  next();
+
+                 /*
                   process.nextTick(function(){
-                     md = new ModelBuilder(app);
-                     md.mapTableToModel(repositoryDB,_data,function(cb2){
-                      console.log("[ModelBuilder][recursive call mapTableToModel]",cb2);
-                      next();
+                    md = new ModelBuilder(app);
+                    md.persistModel(datasource,data2,model,function(callback){
+                       console.log('[persistModel callback][Collection Model]',callback);
+                       next();
                      })
-                  })
-                  
+                 */
+
+                     //md = new ModelBuilder(app);
+                     //md.mapTableToModel(repositoryDB,_data,function(cb2){
+                     // console.log("[mapTableToModel][recursive call mapTableToModel]",cb2);
+                     // next();
+                    // })
+                 // })
+
                 } else next();
 
 
@@ -175,12 +194,94 @@ module.exports = function ModelBuilder(app) {
          this.mapTableToModel(datasource,data,function(cb){
           console.log("[ModelBuilder][createDynamicModel callback]", cb);
           if (cb) {
-            callback(true);
+            callback(cb);
           } else {
             callback(false);
           }
         });
       //}
-    }
+    },
+
+    persistModel : function(datasource,data,p_model,callback){
+
+      console.log("[persistModel]",data);
+      console.log("**[persistModel]**",p_model);
+
+      var repoDB = datasource;
+      var table_name = data.name;
+
+
+      var schema_collection = {
+        "name": table_name,
+        "base": "PersistedModel",
+        "options": {
+          "idInjection": false,
+          "postgresql": {
+            "schema": "public",
+            "table": table_name
+          }
+        },
+        "properties": {
+          "id": {
+            "type": "number",
+            "id": true,
+            "generated": true
+          },
+          "TypeName": {
+            "type": "String",
+            "lenght": 20
+          },
+          "Path": {
+            "type": "String",
+            "lenght": 20
+          },
+          "VisibleAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "FilterAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ColumnWidth": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ParentID": {
+            "type": "number"
+          },
+          "Type": {
+            "type": "number"
+          }
+        }
+      }
+      Collection = repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
+      repoDB.autoupdate(schema_collection.name,function (err,result) {
+        repoDB.discoverModelProperties(table_name, function (err, props) {
+          if (err) throw err;
+
+          var data_to_map = {
+            path: data.path,
+            name: data.name,
+            location: data.location,
+            owner_id: data.ownerId,
+            subrepo: data.subrepo
+          }
+
+          md = new ModelBuilder(app);
+          md.mapTableToModel(repoDB, data_to_map, function(cb) {
+            console.log("[persistModel][mapTableToModel callback]", cb);
+
+            Collection.belongsTo(p_model,{foreignKey: 'authorId', as: 'author'});
+            p_model.hasMany(Collection,{foreignKey: 'authorId', as: 'collections'});
+            callback('ok');
+          })
+        })
+       })
+      }
+
+
+
+
   }
 }

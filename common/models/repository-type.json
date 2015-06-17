@@ -27,7 +27,7 @@
       "required": true
     },
     "subrepo": {
-      "type" :"boolean",
+      "type": "boolean",
       "required": true
     }
   },

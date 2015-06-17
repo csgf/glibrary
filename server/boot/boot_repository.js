@@ -76,9 +76,13 @@ module.exports = function(app) {
       var keys = Object.keys( data );
       for( var i = 0,length = keys.length; i < length; i++ ) {
         data[keys[i]].startbeforeRemote = true;
-        console.log("REPOSITORY",data[keys[i]]);
+       // console.log("REPOSITORY",data[keys[i]]);
         md.createDynamicModel(repoDB,data[keys[i]],function(cb) {
-          console.log("[boot_repository][createDynamicModel callback]",cb,i);
+          //console.log("[boot_repository][createDynamicModel callback]",cb,i);
+          //  collectionModel = app.models.Collection;
+
+        //  cb.hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
+
         });
       }
   })

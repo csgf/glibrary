@@ -12,9 +12,7 @@
   "parse": {
   },
   "routes": {
-    "loopback#status": {
-      "paths": "/"
-    }
+
   },
   "files": {
   },

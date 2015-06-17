@@ -1,0 +1,27 @@
+{
+  "name": "collection",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "table": {
+      "type": "string"
+    },
+    "repoId": {
+      "type": "string"
+
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [],
+  "methods": []
+}

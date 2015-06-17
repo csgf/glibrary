@@ -8,9 +8,9 @@
   },
   "properties": {
     "id": {
-      "type": "number",
-      "id": true,
-      "generated": true
+      "type":"number",
+      "id":true,
+      "required":true
     },
     "ownerId": {
       "type": "number",
@@ -34,10 +34,9 @@
       "required": true
     },
     "subrepo": {
-      "type" :"boolean",
+      "type": "boolean",
       "required": true
     }
-
   },
   "validations": [],
   "relations": {
@@ -47,8 +46,6 @@
       "foreignKey": "ownerId"
     }
   },
-  "acls": [
-
-  ],
+  "acls": [],
   "methods": []
 }

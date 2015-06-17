@@ -9,15 +9,25 @@
     "body-parser": "^1.10.1",
     "compression": "^1.0.3",
     "errorhandler": "^1.1.1",
+    "fs": "0.0.2",
+    "https": "^1.0.0",
     "loopback": "^2.8.0",
     "loopback-boot": "^2.4.0",
+    "loopback-connector-postgresql": "^2.1.0",
     "loopback-datasource-juggler": "^2.7.0",
+    "mocha": "^2.2.5",
+    "node-libcurl": "^0.4.1",
+    "path": "^0.11.14",
+    "pkgcloud": "^1.2.0-alpha.0",
+    "querystring": "^0.2.0",
+    "request": "^2.57.0",
     "serve-favicon": "^2.0.1"
   },
   "optionalDependencies": {
     "loopback-explorer": "^1.1.0"
   },
   "devDependencies": {
-    "jshint": "^2.5.6"
+    "jshint": "^2.5.6",
+    "loopback-testing": "^1.1.0"
   }
 }
