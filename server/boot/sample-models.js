@@ -1,18 +1,19 @@
 module.exports = function(app) {
+/*
   var User = app.models.user;
     var Role = app.models.Role;
     var RoleMapping = app.models.RoleMapping;
     var Team = app.models.Team;
 
   User.create([
-    {username: 'John', email: 'john@doe.com', password: 'opensesame'},
-    {username: 'Jane', email: 'jane@doe.com', password: 'opensesame'},
-    {username: 'Bob', email: 'bob@projects.com', password: 'opensesame'}
+    {id:1,username: 'John', email: 'john@doe.com', password: 'opensesame'},
+    {id:2,username: 'Jane', email: 'jane@doe.com', password: 'opensesame'},
+    {id:3,username: 'Bob', email: 'bob@projects.com', password: 'opensesame'}
   ], function(err, users) {
     if (err) throw err;
 
     console.log('Created users:', users);
-/*
+
     users[0].repositories.create({
       name: 'test1',
       location :'test1',
@@ -21,7 +22,7 @@ module.exports = function(app) {
     },function(err,repo){
       if (err) throw err;
       console.log("Created repo:", repo)});
-      */
+
 
     // create project 1 and make john the owner
     users[0].projects.create({
@@ -64,7 +65,7 @@ module.exports = function(app) {
     //    console.log('Created team:', team);
       });
     });
-    /*
+
     Role.create({
       name:'repositoryOwner'
     },function(err,role){
@@ -77,7 +78,7 @@ module.exports = function(app) {
         if(err) throw err;
       })
     })
-    */
+
 
     //create the admin role
     Role.create({
@@ -102,4 +103,5 @@ module.exports = function(app) {
 
     });
   });
+  */
 };

@@ -14,10 +14,6 @@
     },
     "table": {
       "type": "string"
-    },
-    "repoId": {
-      "type": "string"
-
     }
   },
   "validations": [],

@@ -1,6 +1,8 @@
 module.exports = function(app) {
   var router = app.loopback.Router();
 
+
+
   router.get('/', function(req, res) {
     res.render('repo_index', {
       loginFailed: false
@@ -14,7 +16,7 @@ module.exports = function(app) {
   router.post('/projects', function(req, res) {
     var email = req.body.email;
     var password = req.body.password;
-
+    console.log("PROJECT:",req.body);
     app.models.User.login({
       email: email,
       password: password
@@ -35,9 +37,6 @@ module.exports = function(app) {
       });
     });
   });
-
-
-
 
   router.post('/login', function(req, res) {
     var email = req.body.email;
@@ -65,10 +64,6 @@ module.exports = function(app) {
       });
     });
   });
-
-
-
-
   router.get('/logout', function(req, res) {
     var AccessToken = app.models.AccessToken;
     var token = new AccessToken({id: req.query.access_token});

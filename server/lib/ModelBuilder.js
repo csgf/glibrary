@@ -5,9 +5,7 @@
 
 module.exports = function ModelBuilder(app) {
 
-  var postgreSQL = app.dataSources.postgreSQL;
   var repositoryDB = app.dataSources.repoDB;
-  var typeDB = app.dataSources.typeDB;
   var RoleTools = require('./RoleTools')(app);
   var Role = app.models.Role;
 
@@ -72,9 +70,10 @@ module.exports = function ModelBuilder(app) {
             /* Espongo il modello in REST*/
             app.model(model);
 
-            //Relazione con modello Collection
-            collectionModel = app.models.Collection;
-            app.model(model).hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
+            //Relazione con modello Collection Al momento non necessaria dopo aver disabilitato
+            // le route in rest-api.js
+            //   collectionModel = app.models.Collection;
+            //   app.model(model).hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
 
 
             /* *
@@ -99,21 +98,21 @@ module.exports = function ModelBuilder(app) {
                   console.log("[mapTableToModel][POST data]");
                   next();
 
-                 /*
-                  process.nextTick(function(){
-                    md = new ModelBuilder(app);
-                    md.persistModel(datasource,data2,model,function(callback){
-                       console.log('[persistModel callback][Collection Model]',callback);
-                       next();
-                     })
-                 */
+                  /*
+                   process.nextTick(function(){
+                   md = new ModelBuilder(app);
+                   md.persistModel(datasource,data2,model,function(callback){
+                   console.log('[persistModel callback][Collection Model]',callback);
+                   next();
+                   })
+                   */
 
-                     //md = new ModelBuilder(app);
-                     //md.mapTableToModel(repositoryDB,_data,function(cb2){
-                     // console.log("[mapTableToModel][recursive call mapTableToModel]",cb2);
-                     // next();
-                    // })
-                 // })
+                  //md = new ModelBuilder(app);
+                  //md.mapTableToModel(repositoryDB,_data,function(cb2){
+                  // console.log("[mapTableToModel][recursive call mapTableToModel]",cb2);
+                  // next();
+                  // })
+                  // })
 
                 } else next();
 
@@ -181,27 +180,6 @@ module.exports = function ModelBuilder(app) {
         callback(true);
       })
     },
-    createDynamicModel: function (datasource, data, callback) {
-     /*
-      var keys = Object.keys(data);
-      console.log("KEYS::::",data);
-
-      for (var i = 0, length = keys.length; i < length; i++) {
-        console.log("DATA::::",data[keys[i]]);
-        data[keys[i]].startbeforeRemote = true; // enable second layer of models discovery method
-
-        this.mapTableToModel(datasource, data[keys[i]], function (cb) {*/
-         this.mapTableToModel(datasource,data,function(cb){
-          console.log("[ModelBuilder][createDynamicModel callback]", cb);
-          if (cb) {
-            callback(cb);
-          } else {
-            callback(false);
-          }
-        });
-      //}
-    },
-
     persistModel : function(datasource,data,p_model,callback){
 
       console.log("[persistModel]",data);
@@ -277,11 +255,13 @@ module.exports = function ModelBuilder(app) {
             callback('ok');
           })
         })
-       })
-      }
-
-
-
-
+      })
+    },
+    getModelInstanceByName: function(modelName,callback) {
+      var modelName = modelName.charAt(0).toUpperCase() + modelName.substring(1);
+      console.log("[ModelBuilder][getModelInstance]",modelName)
+      var modelb = app.models[modelName];
+      return callback(modelb);
+    }
   }
 }

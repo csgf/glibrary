@@ -50,5 +50,9 @@
   "collection": {
     "dataSource": "db",
     "public": true
+  },
+  "entry": {
+    "dataSource": "db",
+    "public": true
   }
 }

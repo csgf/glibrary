@@ -16,8 +16,6 @@ module.exports = function(Repository) {
    */
 
 
-
-
   Repository.observe('before save', function(ctx, next) {
     //creo dinamicamente il modello, passando i dati ricevuti in POST
     console.log("[Repository][Observe] Model name",JSON.stringify(ctx.instance.name, null,4));
@@ -290,15 +288,6 @@ module.exports = function(Repository) {
       }
     });
 
-    /*
-     client.getFlavors(function(err,flavors){
-     if(err)  {
-     console.dir(err);
-     return;
-     }
-     console.log("FLAVORS");
-     })
-     */
 
     client.getContainers(function (err, containers) {
       if(err) throw err;
@@ -331,11 +320,6 @@ module.exports = function(Repository) {
         "Content-Type":"application/json","Accept":"application/json"},
       "json":{"auth":{"passwordCredentials":{"username":"acaland","password":"demo2015"},"tenantName":"glibrary"}},
       "ca":"-----BEGIN CERTIFICATE-----\nMIIDczCCAlugAwIBAgIBADANBgkqhkiG9w0BAQUFADAuMQswCQYDVQQGEwJJVDEN\nMAsGA1UEChMESU5GTjEQMA4GA1UEAxMHSU5GTiBDQTAeFw0wNjEwMDMxNDE2NDda\nFw0xNjEwMDMxNDE2NDdaMC4xCzAJBgNVBAYTAklUMQ0wCwYDVQQKEwRJTkZOMRAw\nDgYDVQQDEwdJTkZOIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nzpWODoOVnUKpyikjyrdj+QpJuoJeKkqF4fbd6LrqeQL0dqAiluVR8D4y/T2Mqvsd\nH/fg0s3EYZUDQZimcAmC3ammTX3rqXOz34GWLGpXoXAmUVKWPNFJo6rAEwhw3Sja\na8mEjMiZE/JigHN5RI8K6taKtjL/jE4XUTZOGbvlKsROxzJPM6bO4GJdYO+qhK9E\n5HsbV699DYyukBfUB6ChtD6GDbcdPKUKwheni5j0v6smFjiBEb3VQg4O+uBWTHMP\n116L9kPY+I7ojzXLuayMTd+6TXzunR33+v6h8AtLChcQRt4vj7oG/scTg3eSnFsq\noEO4D4IF9v481GJJwg58LwIDAQABo4GbMIGYMA8GA1UdEwEB/wQFMAMBAf8wDgYD\nVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBTRYvOzd3LILvvyeRpvN04nnxPVIDBWBgNV\nHSMETzBNgBTRYvOzd3LILvvyeRpvN04nnxPVIKEypDAwLjELMAkGA1UEBhMCSVQx\nDTALBgNVBAoTBElORk4xEDAOBgNVBAMTB0lORk4gQ0GCAQAwDQYJKoZIhvcNAQEF\nBQADggEBAHjX0z+3P3JyQGIBI5aAXOS3NuDEf0MdqCLFIGsXjtvIm2kDSMSGQOg5\nuZnJLTAhaT+gX5eNkDdzhuuJEgW1FPGDy2If6zgD4T4EsS50E+L5BTNOG78UzF4H\n9DGBlbrkD8VEug9RpxGusSweGGlnO6CT/U1Tb3XY5ZjIrMubh09UwmjK9nEIe3vC\nRPInAkbmamteezpKOqC5Knj0ZpqU+CnWkuyYnjslX1e9O5lbupLTp5NOqZRCFn1i\niTjpoNefgqLE3sHedgb2P1vS8lO+EIhRnWgfN9qAHSqkQ+ZObxIfPJFdcluu8d/K\ntXsFkKmmFuEHd0SrYpBh9ZCLDgq2x9Y=\n-----END CERTIFICATE-----\n"};
-
-
-
-
-
     var cert = fs.readFileSync(path.join(__dirname,'../../server/private/INFNCA.pem')).toString();
 
     var requestData = {
@@ -400,8 +384,31 @@ module.exports = function(Repository) {
    **************************************************************************************
    */
 
-  
 
+/*
+  intercetto la query e cambio parametri
+
+  Repository.observe('access',function setId(ctx,next){
+    if(ctx.query.where) {
+      Repository.getApp(function(err,app) {
+
+        Verga = app.models.Verga;
+        console.log('ID:',ctx.query.where.id);
+        Verga.findOne({
+          where: {"typename": ctx.query.where.id}
+        },function(err,result){
+          if(err) throw err;
+          console.log("RESULT",result);
+          ctx.query.where.id = result.id;
+          return next();
+        })
+      })
+    }else {
+      next();
+    }
+
+  })
+*/
 
 
   /*

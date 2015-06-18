@@ -7,15 +7,9 @@
     "validateUpsert": true
   },
   "properties": {
-    "id": {
-      "type":"number",
-      "id":true,
-      "required":true
-    },
+
     "ownerId": {
-      "type": "number",
-      "id": true,
-      "generated": true
+      "type": "number"
     },
     "name": {
       "type": "string",
