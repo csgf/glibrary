@@ -37,7 +37,6 @@ module.exports = function mountRestApi(server) {
   })
 
 
-
   //Collections
 
   /**
@@ -74,7 +73,6 @@ module.exports = function mountRestApi(server) {
   })
 
 
-  //Items
 
   /**
    * Elenco di tutti gli item contenuti nella collection <collection_name>
@@ -92,12 +90,11 @@ module.exports = function mountRestApi(server) {
       } else return res.sendStatus(404);
   })
 
-
   /**
    * Modifica i metadati della <collection_name_id>
    */
 
-  app.put('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
+  server.put('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
     var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
     var model = app.models[modelName];
     if (model) {
@@ -112,7 +109,7 @@ module.exports = function mountRestApi(server) {
   /**
    * Cancella la collection <collection_name_id>
    */
-  app.del('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
+  server.delete('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
     console.log("REQ:",req.params,req.body);
     var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
     var model = app.models[modelName];
@@ -125,14 +122,52 @@ module.exports = function mountRestApi(server) {
 
   })
 
+  //Items
 
   /**
    * POST /v1/repos/<repo_name>/<collection_name>/
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
-  app.post('/v1/repos/:repo_name/:collection_name',function(req,res,next){
+  server.post('/v1/repos/:repo_name/:collection_name',function(req,res,next){
     console.log("POST ITEM");
-    next();
+    md = new modelBuilder(app);
+    var repositoryDB = app.dataSources.repoDB;
+
+    md.persistData(repositoryDB,req.body,function(callback){
+      console.log("PERSIST DTA");
+      res.sendStatus(200,"Item created");
+    })
   })
+
+  /**
+   * Restituisce i metadati di <item_name>
+   */
+  server.get('/v1/repos/:repo_name/:collection_name/:item_name',function(req,res,next){
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_name");
+    var modelName = req.params.item_name.charAt(0).toUpperCase() + req.params.item_name.substring(1);
+    var model = app.models[modelName];
+    if(model) {
+      model.find(req.query.filter,function(err,value){
+        if(err) return res.sendStatus(500);
+        return res.send(value);
+      })
+    } else return res.sendStatus(404);
+
+  })
+
+  /**
+   * Cancella l'item indicato
+   */
+  server.delete('/v1/repos/:repo_name/:collection_name/:item_name_id',function(req,res,next){
+    var modelName = req.params.collection_name.charAt(0).toUpperCase() + req.params.collection_name.substring(1);
+    var model = app.models[modelName];
+    if(model) {
+      model.deleteById(req.params.item_name_id,function(err,value){
+        if(err) res.sendStatus(500);
+        return res.sendStatus(200);
+      })
+    } else return res.sendStatus(404);
+  })
+
 
 };

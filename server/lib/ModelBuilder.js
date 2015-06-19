@@ -9,6 +9,7 @@ module.exports = function ModelBuilder(app) {
   var RoleTools = require('./RoleTools')(app);
   var Role = app.models.Role;
 
+
   /*
    Todo: move in a deditaced lib
    */
@@ -180,7 +181,7 @@ module.exports = function ModelBuilder(app) {
         callback(true);
       })
     },
-    persistModel : function(datasource,data,p_model,callback){
+    persistModelAndCreateHasManyRealationWithCollectio : function(datasource,data,p_model,callback){
 
       console.log("[persistModel]",data);
       console.log("**[persistModel]**",p_model);
@@ -233,6 +234,7 @@ module.exports = function ModelBuilder(app) {
           }
         }
       }
+
       Collection = repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
       repoDB.autoupdate(schema_collection.name,function (err,result) {
         repoDB.discoverModelProperties(table_name, function (err, props) {
@@ -245,17 +247,73 @@ module.exports = function ModelBuilder(app) {
             owner_id: data.ownerId,
             subrepo: data.subrepo
           }
-
-          md = new ModelBuilder(app);
-          md.mapTableToModel(repoDB, data_to_map, function(cb) {
+           ModelBuilder(app).mapTableToModel(repoDB, data_to_map, function(cb) {
             console.log("[persistModel][mapTableToModel callback]", cb);
-
             Collection.belongsTo(p_model,{foreignKey: 'authorId', as: 'author'});
             p_model.hasMany(Collection,{foreignKey: 'authorId', as: 'collections'});
             callback('ok');
           })
         })
       })
-    }
+    },
+
+    persistData : function(datasource,data,callback) {
+      console.log("[persistData]",data);
+      var repoDB = datasource;
+      var table_name = data.name;
+      var schema_collection = {
+        "name": table_name,
+        "base": "PersistedModel",
+        "options": {
+          "idInjection": false,
+          "postgresql": {
+            "schema": "public",
+            "table": table_name
+          }
+        },
+        "properties": {
+          "id": {
+            "type": "number",
+            "id": true,
+            "generated": true
+          },
+          "TypeName": {
+            "type": "String",
+            "lenght": 20
+          },
+          "Path": {
+            "type": "String",
+            "lenght": 20
+          },
+          "VisibleAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "FilterAttrs": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ColumnWidth": {
+            "type": "String",
+            "lenght": 20
+          },
+          "ParentID": {
+            "type": "number"
+          },
+          "Type": {
+            "type": "number"
+          }
+        }
+      }
+
+      repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
+      repoDB.autoupdate(schema_collection.name,function (err,result) {
+        if(err) throw err;
+        ModelBuilder(app).mapTableToModel(datasource,data,function(next){
+          console.log("[persistData]",next);
+          callback('OK');
+        })
+      })
+     }
   }
 }

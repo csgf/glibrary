@@ -8,11 +8,8 @@ module.exports = function(Repository) {
   var path = require('path');
   var request = require('request');
 
-
-  /*
-   **************************************************************************************
-   * POST /api/repositories
-   * prima del save dei dati, chiamo
+  /**
+   * Event Observe
    */
 
 
@@ -48,13 +45,9 @@ module.exports = function(Repository) {
     if (context.instance) {
 
       console.log("CTX:",context.instance);
-
       Repository.getApp(function(err,app) {
-
         var repoDB = app.dataSources.repoDB;
         var table_name = context.instance.name;
-
-
         var schema_collection = {
           "name": table_name,
           "base": "PersistedModel",
@@ -99,14 +92,11 @@ module.exports = function(Repository) {
           }
         }
         var collectionModel = app.model.collection;
-
-
         repositoryModel = repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options)
         repoDB.autoupdate(schema_collection.name,function (err,result) {
           repoDB.discoverModelProperties(table_name, function (err, props) {
             if (err) throw err;
             md = new modelBuilder(app);
-
             var data = {
               path : context.instance.path,
               name:  context.instance.name,
@@ -115,16 +105,12 @@ module.exports = function(Repository) {
               subrepo : context.instance.subrepo
 
             }
-
             console.log('Saved %s#%s', context.Model.modelName, context.instance.id,context.isNewInstance);
             collectionModel = Repository.app.models.Collection;
-
             repositoryModel.hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
-
             // mappo il nuovo modello ed espongo API
             md.mapTableToModel(repoDB,data,function(callback){
               console.log("mapTableToModel callback",callback);
-
               next();
             })
           })
@@ -193,6 +179,30 @@ module.exports = function(Repository) {
 
   */
 
+  })
+
+
+  Repository.remoteMethod('openstack_login', {
+    returns :{ arg : 'client', type: 'object'},
+    http: {path:'/openstackLogin', verb:'get'}
+  })
+
+  Repository.remoteMethod('testhttps',{
+    returns :{ arg : 'client', type: 'object'},
+    http: {path:'/testRequest', verb:'get'}
+  })
+
+  Repository.remoteMethod('login_repository', {
+    accepts: {arg: 'req', type: 'object',http:{source : 'body'}},
+    returns: {arg: 'repositories', type: 'array'},
+    http: {path:'/login_repository', verb: 'post'}
+  });
+
+  Repository.beforeRemote('list_repositories',function(context,user,next){
+    var req = context.req;
+    req.body.publisherId = req.accessToken.userId;
+    userId = req.accessToken.userId;
+    next();
   })
 
 
@@ -357,29 +367,10 @@ module.exports = function(Repository) {
      */
   }
 
-  Repository.remoteMethod('openstack_login', {
-    returns :{ arg : 'client', type: 'object'},
-    http: {path:'/openstackLogin', verb:'get'}
-  })
-
-  Repository.remoteMethod('testhttps',{
-    returns :{ arg : 'client', type: 'object'},
-    http: {path:'/testRequest', verb:'get'}
-  })
-
-  Repository.remoteMethod('login_repository', {
-    accepts: {arg: 'req', type: 'object',http:{source : 'body'}},
-    returns: {arg: 'repositories', type: 'array'},
-    http: {path:'/login_repository', verb: 'post'}
-  });
 
 
-  Repository.beforeRemote('list_repositories',function(context,user,next){
-    var req = context.req;
-    req.body.publisherId = req.accessToken.userId;
-    userId = req.accessToken.userId;
-    next();
-  })
+
+
   /*
    **************************************************************************************
    */
