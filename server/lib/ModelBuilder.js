@@ -256,12 +256,6 @@ module.exports = function ModelBuilder(app) {
           })
         })
       })
-    },
-    getModelInstanceByName: function(modelName,callback) {
-      var modelName = modelName.charAt(0).toUpperCase() + modelName.substring(1);
-      console.log("[ModelBuilder][getModelInstance]",modelName)
-      var modelb = app.models[modelName];
-      return callback(modelb);
     }
   }
 }
