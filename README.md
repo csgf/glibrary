@@ -6,7 +6,7 @@ Run the beta
 
 Work in progress note
 
-In order to run this beta of gLibrary you need to add/modify some portion of some libraries.
+In order to run this beta version of gLibrary you need to add/modify some portion of some libraries.
 
 Step1 :  enable plural and http.path for dynamic modules
 
@@ -24,12 +24,10 @@ Step1 :  enable plural and http.path for dynamic modules
 
 
      add the following
-
                  if (options.http) {
                    schema.options = schema.options || {};
                    schema.options.http = options.http;
                  }
-
                  if (options.base) {
                    schema.options = schema.options || {};
                    schema.options.base = options.base;
@@ -38,16 +36,15 @@ Step1 :  enable plural and http.path for dynamic modules
 
 
 Step2: FIX [Error Unable to identify endpoint url error]  issue
-              *  IF the endpoint.region field is not undefined AND url field is undefined at the same time,
-              *  we will not receive a valid value inside the url field.
+*  IF the endpoint.region field is not undefined AND url field is undefined at the same time,
+*  we will not receive a valid value inside the url field.
 
 a) edit node_modules/pkgcloud/lib/pkgcloud/openstack/context/service.js
 b) go to Service.prototype.getEndpointUrl = function (options) {..}
 c) modify with the code belove
 
 else {
-    _.each(self.endpoints, function(endpoint) {
-
+_.each(self.endpoints, function(endpoint) {
       if (url) {
         return;
       }
@@ -61,7 +58,6 @@ else {
       {
         url = getUrl(endpoint);
       }
-
       // return the first region-less endpoint
       if (!endpoint.region) {
         console.log("!endpoint.region");
@@ -112,6 +108,3 @@ Identity.prototype._buildAuthenticationPayload = function () {
     };
   }
 };
-
-
-
