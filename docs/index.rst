@@ -9,7 +9,7 @@ Welcome to gLibrary's documentations
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    glibrary
    glibrary2
