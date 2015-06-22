@@ -42,7 +42,7 @@ Download a file from a Storage Element to the local machine
 
 .. code-block:: http
 	
-	GET https://glibrary.ct.infn.it/dm/<vo>/<se>/<path:path>
+	GET https://glibrary.ct.infn.it/dm/<vo>/<se>/<path:path> HTTP/1.1
 
 
 **Parameters**
@@ -62,7 +62,7 @@ path		absolute path of the file to be downloaded
 Short lived URL to download the file over http.
 Example::
 
-	curl -L -O https://glibrary.ct.infn.it/dm/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.dch-rp.eu/test/IMG_0027.PNG
+	$ curl -L -O https://glibrary.ct.infn.it/dm/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.dch-rp.eu/test/IMG_0027.PNG
 
 
 File Upload
@@ -73,9 +73,11 @@ Upload a local file to a given Storage Element of a Virtual Organization. The up
 
 .. code-block:: http
 
-	GET https://glibrary.ct.infn.it/dm/put/<vo>/<filename>/<se>/<path:path>
-	
-	PUT http://<storage_host>/<storage_path>
+	GET https://glibrary.ct.infn.it/dm/put/<vo>/<filename>/<se>/<path:path> HTTP/1.1
+
+.. code-block:: http
+
+	PUT http://<storage_host>/<storage_path> HTTP/1.1
 
 
 **Parameters**
@@ -98,7 +100,7 @@ Example:
 
 step-1::	
 
-	curl http://glibrary.ct.infn.it/dm/put/vo.aginfra.eu/file-test.txt/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.dch-rp.eu/test/
+	$ curl http://glibrary.ct.infn.it/dm/put/vo.aginfra.eu/file-test.txt/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.dch-rp.eu/test/
 
 
 Output:
@@ -115,7 +117,7 @@ Example
 
 step-2::	
 
-	curl -T file-test.txt -X PUT "http://prod-se-03.ct.infn.it/storage/vo.aginfra.eu/2014-04-30/file-test.txt.53441.0?sfn=%2Fdpm%2Fct.infn.it%2Fhome%2Fvo.aginfra.eu%2Ftest%2F%2Frfile-test.txt&dpmtoken=48042a60-005c-4bf1-9eea-58b6a971eb52&token=GgxCE%2FmbfYJv09H0QRFrSInghK0%3D%401398870909%401"
+	$ curl -T file-test.txt -X PUT "http://prod-se-03.ct.infn.it/storage/vo.aginfra.eu/2014-04-30/file-test.txt.53441.0?sfn=%2Fdpm%2Fct.infn.it%2Fhome%2Fvo.aginfra.eu%2Ftest%2F%2Frfile-test.txt&dpmtoken=48042a60-005c-4bf1-9eea-58b6a971eb52&token=GgxCE%2FmbfYJv09H0QRFrSInghK0%3D%401398870909%401"
 
 
 .. code-block:: html	
@@ -134,9 +136,9 @@ step-2::
 File Download (Swift Object Storage)
 ____________________________________
 
-::
+.. code-block:: http
 
-	GET https://glibrary.ct.infn.it/api/dm/cloud/<host>/<path>
+	GET https://glibrary.ct.infn.it/api/dm/cloud/<host>/<path> HTTP/1.1
 
 **Parameters**
 
@@ -149,12 +151,14 @@ Parameter 		Description
 
 Example::
 
-	curl  https://glibrary.ct.infn.it/api/dm/cloud/stack-server-01.ct.infn.it/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg
+	$ curl  https://glibrary.ct.infn.it/api/dm/cloud/stack-server-01.ct.infn.it/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg
 
-Returns::
+Returns:
+
+.. code-block:: json
 
 	{
-		url: "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg?temp_url_sig=c127c8c2bda34e4ca45afabe42ed606200daab6b&temp_url_expires=1426760853”
+		"url": "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg?temp_url_sig=c127c	c2bda34e4ca45afabe42ed606200daab6b&temp_url_expires=1426760853"
 	}
 	
 The returned URL, that allows the direct download of the requested file from the containing server, has an expiration of 10 seconds.
@@ -163,9 +167,9 @@ The returned URL, that allows the direct download of the requested file from the
 File Upload (Swift Object Storage)
 ____________________________________
 
-::
+.. code-block:: http
 
-	PUT https://glibrary.ct.infn.it/api/dm/cloud/<host>/<path>
+	PUT https://glibrary.ct.infn.it/api/dm/cloud/<host>/<path> HTTP/1.1
 
 **Parameters**
 
@@ -178,17 +182,19 @@ Parameter 		Description
 
 Example::
 
-	curl -X PUT https://glibrary.ct.infn.it/api/dm/cloud/stack-server-01.ct.infn.it/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml
+	$ curl -X PUT https://glibrary.ct.infn.it/api/dm/cloud/stack-server-01.ct.infn.it/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml
 
-Returns::
+Returns:
+
+.. code-block:: json
 
 	{
-		url: "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml?temp_url_sig=8083f489945585db345b7c0ad015290f8a86b4a0&temp_url_expires=1426761014"
+		"url": "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml?temp_url_sig=8083f489945585db345b7c0ad015290f8a86b4a0&temp_url_expires=1426761014"
 	}
 
 Again it returns a temporary URL valid 10 seconds to complete the upload directly to the storage with::
 
-	curl -X PUT -T prova.xml  "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml?temp_url_sig=8083f489945585db345b7c0ad015290f8a86b4a0&temp_url_expires=1426761014
+	$ curl -X PUT -T prova.xml  "http://stack-server-01.ct.infn.it:8080/v1/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/tracciati/prova.xml?temp_url_sig=8083f489945585db345b7c0ad015290f8a86b4a0&temp_url_expires=1426761014
 
 
 
@@ -220,7 +226,7 @@ __________________
 
 Example::
 
-	curl -X MKCOL http://glibrary.ct.infn.it/dm/dav/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test2/
+	$ curl -X MKCOL http://glibrary.ct.infn.it/dm/dav/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test2/
 
 Output:
 
@@ -242,7 +248,7 @@ _______________________
 
 Example::	
 
-	curl -X PROPFIND -H "Depth:1" http://glibrary.ct.infn.it/dm/dav/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test2/
+	$ curl -X PROPFIND -H "Depth:1" http://glibrary.ct.infn.it/dm/dav/vo.aginfra.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test2/
 
 Output	
 
@@ -267,7 +273,7 @@ _____________
 
 ::
 
-	curl -X DELETE http://glibrary.ct.infn.it/dm/dav/vo.dch-rp.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test/file-test.txt
+	$ curl -X DELETE http://glibrary.ct.infn.it/dm/dav/vo.dch-rp.eu/prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test/file-test.txt
 
  
 Repository Management
@@ -281,11 +287,11 @@ Returns the list of the available repositories
 
 .. code-block:: http
 
-	GET https://glibrary.ct.infn.it:3000/repositories
+	GET https://glibrary.ct.infn.it:3000/repositories HTTP/1.1
 
-Example:
+Example ::
 
-	https://glibrary.ct.infn.it:3000/repositories
+	$ curl https://glibrary.ct.infn.it:3000/repositories
 
 Output:
 
@@ -307,8 +313,8 @@ Output:
  		  "/templaterepo",
  		  "/myTestRepo",
  		  "/ICCU",
- 		  "/aginfra",
- 		  …
+ 		  "/aginfra"
+ 		  "..."
  		]
 	}
 
@@ -321,14 +327,14 @@ Description	Create a new repository
 
 .. code-block:: http
 
-	POST https://glibrary.ct.infn.it:3000/repositories/<repo>
+	POST https://glibrary.ct.infn.it:3000/repositories/<repo> HTTP/1.1
 
 Returns:
 
 .. code-block:: json
 	
 	{
-		'success': "true"
+		"success": "true"
 	}
                
 
@@ -342,7 +348,7 @@ repo		Repository name
 
 Example::
 
-	curl –X POST http://glibrary.ct.infn.it:3000/repositories/agInfra
+	$ curl –X POST http://glibrary.ct.infn.it:3000/repositories/agInfra
 
 
  
@@ -354,7 +360,7 @@ Provides the list of types (model) of a given repository. A type describes the k
 
 .. code-block:: http
 
-	GET https://glibrary.ct.infn.it:3000/repositories/<repo>
+	GET https://glibrary.ct.infn.it:3000/repositories/<repo> HTTP/1.1
 
 Returns	an array of all the types available in the given repository. Each object rapresents a supported type, with some properties:
 
@@ -383,7 +389,7 @@ Property			Description
 
 Example::
 
-	curl http://glibrary.ct.infn.it:3000/repositories/agInfra
+	$ curl http://glibrary.ct.infn.it:3000/repositories/agInfra
 
 Output
 
@@ -410,9 +416,9 @@ __________________________
 
 Add a new Type to a given repository.
 
-::
+.. code-block:: http
 
-	POST https://glibrary.ct.infn.it:3000/<repo> 
+	POST https://glibrary.ct.infn.it:3000/<repo> HTTP/1.1
 
 **URI Parameters**
 
@@ -436,7 +442,7 @@ Parameter				Description
 
 Example::	
 
-	curl -X POST -d “__Type=Documents&__VisibleAttrs=”Topic,Meeting,FileFormat,Size,Creator,Version”&__FilterAttr=”Topic,FileFormat,Creator&Topic=varchar&Version=int&FileFormat=varchar(3)&Creator=string” http://glibrary.ct.infn.it:3000/aginfra 
+	$ curl -X POST -d "__Type=Documents&__VisibleAttrs='Topic,Meeting,FileFormat,Size,Creator,Version'&__FilterAttr='Topic,FileFormat,Creator&Topic=varchar&Version=int&FileFormat=varchar(3)'&Creator=string" http://glibrary.ct.infn.it:3000/aginfra 
 
  
 Retrieve Type information
@@ -444,16 +450,16 @@ _________________________
 
 Returns the information about a given type of a given repository.
 
-::
+.. code-block:: http
 
-	GET https://glibrary.ct.infn.it:3000/<repo>/<type>
+	GET https://glibrary.ct.infn.it:3000/<repo>/<type> HTTP/1.1
 
 Returns	A JSON object with the information of a given type with a list of all its attributes and given data type
 
  
 Example::
 
-	http://glibrary.ct.infn.it:3000/aginfra/SoilMaps
+	$ curl http://glibrary.ct.infn.it:3000/aginfra/SoilMaps
 
 Output::
 
@@ -499,9 +505,9 @@ _______________________________________
 
 List all the entries and its metadata of a given Type in a repository (default limit to 100)
 
-::
+.. code-block:: http
 
-	GET https://glibrary.ct.infn.it:3000/<repo>/<type>/entries
+	GET https://glibrary.ct.infn.it:3000/<repo>/<type>/entries HTTP/1.1
 
 **Parameters**
 
@@ -513,9 +519,9 @@ type		The name of type
 =========	===============================
  
 
-Example:
+Example::
 
-	curl http://glibrary.ct.infn.it:3000/aginfra/SoilMaps/entries
+	$ curl http://glibrary.ct.infn.it:3000/aginfra/SoilMaps/entries
 
 Output::
 
@@ -577,9 +583,9 @@ Output::
 				relation: "",
 				coverage: "Italy",
 				rights: "info@soilmaps.it"
-			},
-			…
-	]
+			}
+		]
+	}
 
 
 
@@ -589,9 +595,9 @@ ______________________________________
 
 Retrieve all the metadata (and replica info) the a given entry
 
-::
+.. code-block:: http
 
-	GET https://glibrary.ct.infn.it:3000/<repo>/<type>/id
+	GET https://glibrary.ct.infn.it:3000/<repo>/<type>/id HTTP/1.1
 
 Returns	The metadata of the given entry and the replicas of the associated digital objects
 
@@ -608,7 +614,7 @@ id			The id of the entry to inspect
  
 Example::
 
-	curl http://glibrary.ct.infn.it:3000/aginfra/SoilMaps/56
+	$ curl http://glibrary.ct.infn.it:3000/aginfra/SoilMaps/56
 
 Output::
 
@@ -664,9 +670,9 @@ _______________
 
 Add a new entry with its metadata of a given type
 
-::
+.. code-block:: http
 
-	POST https://glibrary.ct.infn.it:3000/<repo>/<type>/
+	POST https://glibrary.ct.infn.it:3000/<repo>/<type>/ HTTP/1.1
 
 **Parameters**
 
@@ -689,7 +695,7 @@ Parameter				Description
 
 Example::
 
-	curl -X POST -d “__Replicas=https://prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test/maptest.jpg&FileName=maptest.jpg&creator=Bruno&title=Italian%20maps%20example” http://glibrary.ct.infn.it:3000/aginfra/SoilMaps 
+	$ curl -X POST -d “__Replicas=https://prod-se-03.ct.infn.it/dpm/ct.infn.it/home/vo.aginfra.eu/test/maptest.jpg&FileName=maptest.jpg&creator=Bruno&title=Italian%20maps%20example” http://glibrary.ct.infn.it:3000/aginfra/SoilMaps 
 
 
 
@@ -698,9 +704,9 @@ ________________
 
 Delete an entry from a repository of the given type
 
-::
+.. code-block:: http
 
-	DELETE https://glibrary.ct.infn.it:3000/<repo>/<type>/id
+	DELETE https://glibrary.ct.infn.it:3000/<repo>/<type>/id HTTP/1.1
 
 **Parameters**
 
