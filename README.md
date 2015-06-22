@@ -42,7 +42,7 @@ In order to run this beta version of gLibrary you need to add/modify some portio
 
 * a) edit node_modules/pkgcloud/lib/pkgcloud/openstack/context/service.js
 * b) go to Service.prototype.getEndpointUrl = function (options) {..}
-* c) modify with the code belove
+* c) modify with the code below
 
 	      /**
 	       *  FIX [Error Unable to identify endpoint url error]  issue
