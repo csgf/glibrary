@@ -50,7 +50,7 @@ module.exports = function ModelBuilder(app) {
             var model = models[m];
             model.setup();
 
-            console.log("[mapTableToModel][m]", m);
+           console.log("[mapTableToModel][m]", m);
             /*
              Role.findOne({
              where: {
@@ -156,7 +156,7 @@ module.exports = function ModelBuilder(app) {
         if (err) throw err;
         app.models.repository.create([], function (err, repo) {
           if (err) throw err;
-          console.log('[ModelBuilder]Models created: \n', repo);
+         // console.log('[ModelBuilder]Models created: \n', repo);
           callback(true);
 
         });
@@ -167,7 +167,7 @@ module.exports = function ModelBuilder(app) {
         if (err) throw err;
         app.models.repositoryType.create([], function (err, type) {
           if (err) throw err;
-          console.log('[ModelBuilder]Models created: \n', type);
+       //   console.log('[ModelBuilder]Models created: \n', type);
           callback(true);
 
         });
@@ -183,8 +183,8 @@ module.exports = function ModelBuilder(app) {
     },
     persistModelAndCreateHasManyRealationWithCollectio : function(datasource,data,p_model,callback){
 
-      console.log("[persistModel]",data);
-      console.log("**[persistModel]**",p_model);
+     // console.log("[persistModel]",data);
+    //  console.log("**[persistModel]**",p_model);
 
       var repoDB = datasource;
       var table_name = data.name;
@@ -248,7 +248,7 @@ module.exports = function ModelBuilder(app) {
             subrepo: data.subrepo
           }
            ModelBuilder(app).mapTableToModel(repoDB, data_to_map, function(cb) {
-            console.log("[persistModel][mapTableToModel callback]", cb);
+          //  console.log("[persistModel][mapTableToModel callback]", cb);
             Collection.belongsTo(p_model,{foreignKey: 'authorId', as: 'author'});
             p_model.hasMany(Collection,{foreignKey: 'authorId', as: 'collections'});
             callback('ok');
@@ -258,7 +258,7 @@ module.exports = function ModelBuilder(app) {
     },
 
     persistData : function(datasource,data,callback) {
-      console.log("[persistData]",data);
+    //  console.log("[persistData]",data);
       var repoDB = datasource;
       var table_name = data.name;
       var schema_collection = {
@@ -271,19 +271,29 @@ module.exports = function ModelBuilder(app) {
             "table": table_name
           }
         },
+
         "properties": {
           "id": {
             "type": "number",
             "id": true,
             "generated": true
           },
-          "TypeName": {
+
+          "name": {
             "type": "String",
             "lenght": 20
           },
-          "Path": {
+          "path": {
             "type": "String",
             "lenght": 20
+          },
+          "location" : {
+            "type": "String",
+            "length":20
+          },
+          "owner_id": {
+            "type": "String",
+            "length":20
           },
           "VisibleAttrs": {
             "type": "String",
@@ -310,7 +320,7 @@ module.exports = function ModelBuilder(app) {
       repoDB.autoupdate(schema_collection.name,function (err,result) {
         if(err) throw err;
         ModelBuilder(app).mapTableToModel(datasource,data,function(next){
-          console.log("[persistData]",next);
+      //    console.log("[persistData]",next);
           callback('OK');
         })
       })

@@ -58,18 +58,29 @@ module.exports = function(Repository) {
               "table": table_name
             }
           },
+
           "properties": {
             "id": {
-              "type": "String",
-              "id": true
+              "type": "number",
+              "id": true,
+              "generated": true
             },
-            "TypeName": {
+
+            "name": {
               "type": "String",
               "lenght": 20
             },
-            "Path": {
+            "path": {
               "type": "String",
               "lenght": 20
+            },
+            "location" : {
+              "type": "String",
+              "length":20
+            },
+            "owner_id": {
+              "type": "String",
+              "length":20
             },
             "VisibleAttrs": {
               "type": "String",

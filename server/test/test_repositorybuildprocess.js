@@ -8,8 +8,8 @@ var lt = require('loopback-testing');
 var assert = require('assert');
 var app = require('../server.js');
 var request = require('request');
-
-describe('1) POST /repositories',function() {
+/*
+describe('1) GET /v1/repos',function() {
     it('should access ',function() {
       lt.beforeEach.withApp(app);
       lt.describe.whenCalledRemotely('POST', '/api/repositories',
@@ -26,32 +26,59 @@ describe('1) POST /repositories',function() {
           })
       })
     })
+*/
 
-describe('2) GET /nathan_never',function() {
-    it('should access ',function() {
+describe('1) Request repositories list',function() {
       lt.beforeEach.withApp(app);
-      lt.describe.whenCalledRemotely('GET', '/api/nathan_never', function (err, data) {
+      lt.describe.whenCalledRemotely('GET', '/v1/repos', function () {
           lt.it.shouldBeAllowed()
         })
-      })
 })
 
+describe('2) Request  metadata about "<repository_name>" ',function(){
+  lt.beforeEach.withApp(app);
+  lt.describe.whenCalledRemotely('GET','/v1/repos/verga',function(){
+    lt.it.shouldBeAllowed()
+  })
+})
+describe('3) Request a not existing repository ',function(){
+  lt.beforeEach.withApp(app);
+  lt.describe.whenCalledRemotely('GET','/v1/repos/doesnotexist',function(){
+    lt.it.shouldNotBeFound();
+  })
+})
 
-describe('3) POST api/nathan_never',function() {
-     it('should access ',function() {
-      lt.beforeEach.withApp(app);
-      lt.describe.whenCalledRemotely('POST', '/api/nathan_never',
-        {
-          id:7,
-          repositoryId:999,
-          ownerId:2,
-          name:"Nathan Never Storie",
-          location:"structure",
-          path:"/contents/nathan_never/storie",
-          storage:"cloud"
+/*
+describe('4) Create a new repository',function(){
+  lt.beforeEach.withApp(app);
+  var data = {
+    "id": 999,
+    "ownerId": 2,
+    "name": "myrepo",
+    "location": "myrepo",
+    "path": "/myrepo",
+    "storage": "cloud",
+    "subrepo": true
 
-       }, function (err, data) {
-          lt.it.shouldBeAllowed()
-      })
-     })
+  }
+  lt.describe.whenCalledRemotely('POST','/v1/repos',data,function(){
+    lt.it.shouldBeAllowed();
+  })
+})
+*/
+describe('5) Create new collection',function(){
+  lt.beforeEach.withApp(app);
+  var data = {
+    "id": 1,
+    "typename": "firstcollection",
+    "path": "/myrepo/firstcollection",
+    "visibleattrs": "attr1",
+    "filterattrs": "filter1",
+    "columnwidth": "10",
+    "parentid": 4,
+    "type": 2
+  }
+  lt.describe.whenCalledRemotely('POST','/v1/repos/myrepo',data,function(){
+    lt.it.shouldBeAllowed();
+  })
 })

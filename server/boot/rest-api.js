@@ -8,8 +8,16 @@ module.exports = function mountRestApi(server) {
   app.use(methodOverride());
   var modelBuilder = require('../lib/ModelBuilder');
 
+  var repositoryDB = app.dataSources.repoDB;
+
+
+  var ld = require('../../common/helpers/loadModule');
+  var camelize = require('underscore.string');
+
 
 //  server.use(restApiRoot, server.loopback.rest());
+
+
 
 // Repositories
 
@@ -36,24 +44,36 @@ module.exports = function mountRestApi(server) {
     })
   })
 
-
   //Collections
-
   /**
+   *
    * Elenco di tutte le collection del repository <repo_name>
    */
 
   server.get('/v1/repos/:repo_name',function(req,res,next){
     console.log("/repositories/:repo_name",req.params.repo_name)
-    var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
-    var model = app.models[modelName];
-    if(model) {
-        model.find(req.query.filter,function(err,value){
-          if(err) return res.sendStatus(500);
-          return res.send(value);
-        })
-      } else return res.sendStatus(404);
 
+    var runQuery = function(obj,callback) {
+      obj.find(req.query.filter,function(err,results){
+        if(err) callback(err);
+        callback(results)
+      })
+    }
+    var moduleName = camelize(req.params.repo_name).trim().capitalize().value();
+    if(app.models[moduleName]) {
+      runQuery(app.models[moduleName],function(results){
+        return res.send(results);
+      })
+    }
+    else {
+      ld.getmodel(app,req.params.repo_name,repositoryDB,repository,function(moduleObj){
+        if(moduleObj) {
+          runQuery(moduleObj,function(results){
+            return res.send(results);
+          })
+        } else return res.sendStatus(404);
+      })
+    }
   })
 
   /**
@@ -62,15 +82,25 @@ module.exports = function mountRestApi(server) {
    */
   server.post('/v1/repos/:repo_name',function(req,res,next){
 
+    md = new modelBuilder(app);
+    var repositoryDB = app.dataSources.repoDB;
+
     var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
     var model = app.models[modelName];
     if(model) {
-        model.create(req.body,function(err,value){
-          if(err) return res.send(JSON.stringify(err));
+      model.create(req.body,function(err,value){
+        if(err) return res.send(JSON.stringify(err));
+
+        md.persistData(repositoryDB,req.body,function(callback){
+          console.log("PERSIST DTA");
           return res.sendStatus(200,'Repository Created');
+          res.sendStatus(200,"Item created");
         })
-      } else return res.sendStatus(404);
+      })
+    } else return res.sendStatus(404);
+
   })
+
 
 
 
@@ -79,30 +109,54 @@ module.exports = function mountRestApi(server) {
    */
   server.get('/v1/repos/:repo_name/:collection_name',function(req,res,next){
 
-    console.log("/:collection/:entry",req.params.collection_name);
-    var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
-    var model = app.models[modelName];
-    if(model) {
-        model.find({where: {typename:req.params.collection_name}},req.query.filter,function(err,value){
-          if(err) return res.sendStatus(500);
-          return res.send(value);
+    console.log("/:repo_name/:collection_name",req.params.collection_name);
+
+    var runQuery = function(obj,callback){
+      obj.find(req.query.filter,function(err,results){
+        if(err) callback(err);
+        callback(results)
+      })
+    }
+    var moduleName = camelize(req.params.collection_name).trim().capitalize().value();
+
+    if(app.models[moduleName]) {
+      runQuery(app.models[moduleName],function(results){
+        return res.send(results);
+      })
+    } else {
+      var collectionModule = camelize(req.params.collection_name).trim().capitalize().value();
+      if(!app.models[collectionModule]) {
+        ld.getmodel(app, req.params.repo_name, repositoryDB, repository, function (moduleObj) {
+          if (moduleObj) {
+            console.log("TROVATO MODULO PADRE")
+            ld.getmodel(app, req.params.repo_name+'/'+ req.params.collection_name, repositoryDB, moduleObj, function (collectionObj) {
+              if (collectionObj) {
+                runQuery(collectionObj, function (results) {
+                  return res.send(results);
+                })
+              } else return res.sendStatus(401);
+            })
+          } else return res.sendStatus(404);
         })
-      } else return res.sendStatus(404);
+      }
+    }
   })
+
 
   /**
    * Modifica i metadati della <collection_name_id>
    */
 
   server.put('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
+
     var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
     var model = app.models[modelName];
     if (model) {
-        model.updateOrCreate(req.body, function (err) {
-          if (err) res.sendStatus(500);
-          return res.sendStatus(200);
-        })
-      } else return res.sendStatus(404);
+      model.updateOrCreate(req.body, function (err) {
+        if (err) res.sendStatus(500);
+        return res.sendStatus(200);
+      })
+    } else return res.sendStatus(404);
 
   })
 
@@ -114,11 +168,11 @@ module.exports = function mountRestApi(server) {
     var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
     var model = app.models[modelName];
     if(model) {
-        model.deleteById(req.params.collection_name_id,function(err,value){
-          if(err) res.sendStatus(500);
-          return res.sendStatus(200);
-        })
-      } else return res.sendStatus(404);
+      model.deleteById(req.params.collection_name_id,function(err,value){
+        if(err) res.sendStatus(500);
+        return res.sendStatus(200);
+      })
+    } else return res.sendStatus(404);
 
   })
 
@@ -129,25 +183,41 @@ module.exports = function mountRestApi(server) {
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
   server.post('/v1/repos/:repo_name/:collection_name',function(req,res,next){
-    console.log("POST ITEM");
-    md = new modelBuilder(app);
-    var repositoryDB = app.dataSources.repoDB;
+    console.log("POST ITEM",req.params.collection_name);
+    var modelName = req.params.collection_name.charAt(0).toUpperCase() + req.params.collection_name.substring(1);
+    var model = app.models[modelName];
+    if(model) {
+      model.create(req.body,function(err,value){
+        if(err) return res.sendStatus(500);
+        return res.send(value);
+      })
+    } else return res.sendStatus(404);
 
-    md.persistData(repositoryDB,req.body,function(callback){
-      console.log("PERSIST DTA");
-      res.sendStatus(200,"Item created");
-    })
+
+    /*
+     md = new modelBuilder(app);
+     var repositoryDB = app.dataSources.repoDB;
+
+     md.persistData(repositoryDB,req.body,function(callback){
+     console.log("PERSIST DTA");
+     res.sendStatus(200,"Item created");
+     })
+     */
+
+
   })
 
   /**
    * Restituisce i metadati di <item_name>
    */
-  server.get('/v1/repos/:repo_name/:collection_name/:item_name',function(req,res,next){
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_name");
-    var modelName = req.params.item_name.charAt(0).toUpperCase() + req.params.item_name.substring(1);
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id',function(req,res,next){
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id",req.params.collection_name,req.params.item_id);
+    var modelName = req.params.collection_name.charAt(0).toUpperCase() + req.params.collection_name.substring(1);
     var model = app.models[modelName];
+    console.log("modelName",modelName);
+
     if(model) {
-      model.find(req.query.filter,function(err,value){
+      model.findById(req.params.item_id,function(err,value){
         if(err) return res.sendStatus(500);
         return res.send(value);
       })
