@@ -5,14 +5,35 @@ GLIBRARY 2.0
 REST API v2.0 (Draft)
 *********************
 
+test
 
 Repositories
 ============ 
+
+Create a new repository.
 
 
 .. code-block:: http
 
 	GET	/v1/repos/ HTTP/1.1
+
+**Parameters**
+
+===========		==========	===============================================================================================================
+name 			type 		description
+===========		==========	===============================================================================================================
+name 			string 		Short name of the repository (will be the API path)
+description		string 		Descriptive text of the repo
+location 		string 		``local`` or ``remote`` (default: ``local``)
+type 			string 		``mysql``, ``postgresql``, ``mongodb``, ``sqlserver``, ``oracle`` (default: ``mongodb``)
+host 			string 		hostname or ipaddress of the DB server (default: ``localhost``)
+port			number 		port number of the DB server (default: ``27017``)
+dbname			string		name of the database that contains/will contain the repository's collections (can be overriden per collection)
+thumbnail 		url 		local or remote url of an image to be used as thumbnail
+id      		number 		unique identifier of the repo
+ownerId  		number		id of the repository creator
+===========		==========	===============================================================================================================
+
 
 
 Elenco di tutti i repositories hostati sul server
