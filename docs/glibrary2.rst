@@ -5,17 +5,27 @@ GLIBRARY 2.0
 REST API v2.0 (Draft)
 *********************
 
-test
 
 Repositories
 ============ 
 
-Create a new repository.
 
+List of all the repositories hosted on the server
+________________________________________________
 
 .. code-block:: http
 
 	GET	/v1/repos/ HTTP/1.1
+
+
+
+Create a new repository
+_______________________
+
+
+.. code-block:: http
+
+	POST /v1/repos/ HTTP/1.1
 
 **Parameters**
 
@@ -35,12 +45,6 @@ ownerId  		number		id of the repository creator
 ===========		==========	===============================================================================================================
 
 
-
-Elenco di tutti i repositories hostati sul server
-
-.. code-block:: http
-
-	POST /v1/repos/ HTTP/1.1
 
 Crea un nuovo repository
 
