@@ -1,7 +1,7 @@
 
 
 #############
-gLibrary 1.0 
+GLIBRARY 1.0 
 #############
 
 REST API v 1.0
