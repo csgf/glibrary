@@ -42,17 +42,5 @@
   "repository": {
     "dataSource": "repoDB",
     "public": true
-  },
-  "repositoryType": {
-    "dataSource": "repoDB",
-    "public": true
-  },
-  "collection": {
-    "dataSource": "db",
-    "public": true
-  },
-  "entry": {
-    "dataSource": "db",
-    "public": true
   }
 }

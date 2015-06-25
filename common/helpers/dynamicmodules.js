@@ -34,7 +34,7 @@ module.exports = function tmpModel(app) {
                   return next();
                 } else return res.sendStatus(404);
               })
-            }
+            } else return res.sendStatus(404);
           })
         } else {
           console.log("cache");

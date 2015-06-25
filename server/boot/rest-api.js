@@ -35,9 +35,14 @@ module.exports = function mountRestApi(server) {
   //Crea un nuovo repository
 
   server.post('/v1/repos', function (req, res) {
+    console.log(" POST repos  ");
+
     repository.create(req.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
-      return res.sendStatus(200, 'Repository Created');
+      service.createTable(repositoryDB, req.body, function (callback) {
+        if (callback)  return res.sendStatus(200, 'Repository Created');
+        else           return res.sendStatus(500);
+      })
     })
   })
 
