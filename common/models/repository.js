@@ -12,7 +12,7 @@ module.exports = function(Repository) {
    * Event Observe
    */
 
-
+/*
   Repository.observe('before save', function(ctx, next) {
     //creo dinamicamente il modello, passando i dati ricevuti in POST
     console.log("[Repository][Observe] Model name",JSON.stringify(ctx.instance.name, null,4));
@@ -26,11 +26,11 @@ module.exports = function(Repository) {
         var data = ctx.instance;
         data.startbeforeRemote = true;
         console.log("DATA----->>>>>", data);
-        /*
+        /!*
          md.createDynamicModel(postgreSQL,data,function(cb) {
          console.log("RITORNO:::::::",cb);
          });
-         */
+         *!/
       })
     } else {
       console.log('[Repository]Updated %s matching %j',
@@ -133,7 +133,7 @@ module.exports = function(Repository) {
         context.where);
     }
 
-  /*
+  /!*
     Repository.getApp(function(err,app) {
 
       var repoDB = app.dataSources.repoDB;
@@ -188,10 +188,15 @@ module.exports = function(Repository) {
       });
     })
 
-  */
+  *!/
 
-  })
-
+  })*/
+  Repository.observe('before delete', function(ctx, next) {
+    console.log('Going to delete %s matching %j',
+      ctx.Model.pluralModelName,
+      ctx.where,ctx.app);
+    next();
+  });
 
   Repository.remoteMethod('openstack_login', {
     returns :{ arg : 'client', type: 'object'},

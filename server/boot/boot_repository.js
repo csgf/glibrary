@@ -80,10 +80,6 @@ module.exports = function(app) {
   function createAllRepositoriesModelOnTheFly(callback) {
 
 
-
-
-
-
     app.models.repository.find(function(err,data){
       if(err) throw err;
       var keys = Object.keys( data );

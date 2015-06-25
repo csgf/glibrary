@@ -6,52 +6,94 @@ module.exports = function mountRestApi(server) {
   var methodOverride = require('method-override');
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());
-  var modelBuilder = require('../lib/ModelBuilder');
+
 
   var repositoryDB = app.dataSources.repoDB;
-
-
-  var ld = require('../../common/helpers/loadModule');
+  //var ld = require('../../common/helpers/loadModule');
   var service = require('../../common/service/persist');
+  var modelBuilder = require('../../common/helpers/dynamicmodules');
+  var ld = new modelBuilder(app);
 
-
-
-//  server.use(restApiRoot, server.loopback.rest());
-
-// Repositories
-
-  /**
-   * Elenco di tutti i repositories hostati sul server
-   */
-
-  server.get('/v1/repos',function(req,res,next){
-    repository.find(req.query.filter,function(err,value){
-      if(err)  return res.sendStatus(500);
-      return res.send(value);
-    })
-  })
-
-  /**
-   * Crea un nuovo repository
-   */
-
-  server.post('/v1/repos',function(req,res){
-    repository.create(req.body,function(err,value){
-      if(err) return res.send(JSON.stringify(err));
-      return res.sendStatus(200,'Repository Created');
-    })
-  })
-
-  //Collections
   /**
    *
-   * Elenco di tutte le collection del repository <repo_name>
+   *  REPOSITORIES
+   *
    */
-  server.get('/v1/repos/:repo_name',ld.getRepository,function(req,res,next){
-    console.log("MODEL",next.module);
-    next.module.find(req.query.filter,function(err,results) {
+
+    //Elenco di tutti i repositories hostati sul server
+
+
+  server.get('/v1/repos', function (req, res, next) {
+    repository.find(req.query.filter, function (err, instance) {
+      if (err)  return res.sendStatus(500);
+      if(!instance) return res.sendStatus(404);
+      return res.send(instance);
+    })
+  })
+
+
+  //Crea un nuovo repository
+
+  server.post('/v1/repos', function (req, res) {
+    repository.create(req.body, function (err, instance) {
+      if (err) return res.send(JSON.stringify(err));
+      return res.sendStatus(200, 'Repository Created');
+    })
+  })
+
+  server.put('/v1/repos/:repo_name', function (req, res, next) {
+    console.log("SIAMO QUI", req.params.repo_name);
+    repository.findOne({where: {name: req.params.repo_name}},
+      function (err, instance) {
+        if (err) res.sendStatus(500);
+        if(!instance) return res.sendStatus(404);
+        instance.updateAttributes(req.body, function (err) {
+          res.sendStatus(200, 'repository updated')
+        })
+      })
+  })
+
+
+  server.delete('/v1/repos/:repo_name', function (req, res, next) {
+    console.log("REPO", req.params.repo_name);
+    /*
+     repository.destroyById(3,function(err){
+     return res.sendStatus(200);
+     })
+     */
+    repository.findOne({where: {name: req.params.repo_name}},
+      function (err, instance) {
+        if(!instance) return res.sendStatus(404);
+        // instance.destroy(function (callback) {
+        repository.destroyById(instance.id, function (err) {
+          if (err) return res.sendStatus(500);
+          console.log("delete repository instance", instance.location);
+          ld.removeModel(req, res, function (cb) {
+            return res.sendStatus(200)
+          })
+        })
+
+        //  })
+
+
+      })
+  })
+
+
+  /**
+   *
+   * COLLECTIONS
+   *
+   */
+
+
+    //Elenco di tutte le collection del repository <repo_name>
+
+  server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+    next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
-      res.send(results);
+      if(!instance) return res.sendStatus(404);
+      res.send(instance);
     })
   });
 
@@ -60,143 +102,119 @@ module.exports = function mountRestApi(server) {
    * Il nome della collections viene passato come parametro nel body
    */
 
-  server.post('/v1/repos/:repo_name',ld.getRepository,function(req,res,next){
-    next.module.create(req.body,function(err,value) {
-
+  server.post('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+    next.module.create(req.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
-
-      service.createTable(repositoryDB,req.body,function(callback){
-        if(callback) {
-            return res.sendStatus(200,'Repository Created');
-          }  
-          else return res.sendStatus(500);
-        })
+      service.createTable(repositoryDB, req.body, function (callback) {
+        if (callback)  res.sendStatus(200, 'Repository Created');
+        else          res.sendStatus(500);
+      })
     })
   })
 
-  server.get('/v1/repos/:repo_name/:collection_name',ld.getCollection,function(req,res,next){
-    next.module.find(req.query.filter,function(err,results){
-      if(err) res.sendStatus(500);
-      res.send(results);
+
+  //Elenco di tutti gli item contenuti nella collection <collection_name>
+  server.get('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+    next.module.find(req.query.filter, function (err, instance) {
+      if (err) res.sendStatus(500);
+      if(!instance) return res.sendStatus(404);
+      res.send(instance);
     })
   })
-
-  /**
-   * Elenco di tutti gli item contenuti nella collection <collection_name>
-   */
-  /*
-  server.get('/v1/repos/:repo_name/:collection_name',function(req,res,next){
-
-    console.log("/:repo_name/:collection_name",req.params.collection_name);
-
-    var runQuery = function(obj,callback){
-      obj.find(req.query.filter,function(err,results){
-        if(err) callback(err);
-        callback(results)
-      })
-    }
-    var moduleName = camelize(req.params.collection_name).trim().capitalize().value();
-
-    if(app.models[moduleName]) {
-      runQuery(app.models[moduleName],function(results){
-        return res.send(results);
-      })
-    } else {
-      var collectionModule = camelize(req.params.collection_name).trim().capitalize().value();
-      if(!app.models[collectionModule]) {
-        ld.getmodel(app, req.params.repo_name, repositoryDB, repository, function (moduleObj) {
-          if (moduleObj) {
-            console.log("TROVATO MODULO PADRE")
-            ld.getmodel(app, req.params.repo_name+'/'+ req.params.collection_name, repositoryDB, moduleObj, function (collectionObj) {
-              if (collectionObj) {
-                runQuery(collectionObj, function (results) {
-                  return res.send(results);
-                })
-              } else return res.sendStatus(401);
-            })
-          } else return res.sendStatus(404);
-        })
-      }
-    }
-  })
-
-*/
-  /**
-   * Modifica i metadati della <collection_name_id>
-   */
-
-  server.put('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
-
-    var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
-    var model = app.models[modelName];
-    if (model) {
-      model.updateOrCreate(req.body, function (err) {
+  //Modifica i metadati della <collection_name_id>
+  server.put('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+    console.log("PUT /v1/repos/:repo_name/:collection_name")
+    next.module.findOne({where: {name: req.body.name}},
+      function (err, instance) {
         if (err) res.sendStatus(500);
-        return res.sendStatus(200);
+        if(!instance) return res.sendStatus(404);
+        instance.updateAttributes(req.body, function (err) {
+          res.sendStatus(200, 'repository updated')
+        })
       })
-    } else return res.sendStatus(404);
-
   })
 
   /**
    * Cancella la collection <collection_name_id>
    */
-  server.delete('/v1/repos/:repo_name/:collection_name_id',function(req,res,next){
-    console.log("REQ:",req.params,req.body);
-    var modelName = req.params.repo_name.charAt(0).toUpperCase() + req.params.repo_name.substring(1);
-    var model = app.models[modelName];
-    if(model) {
-      model.deleteById(req.params.collection_name_id,function(err,value){
-        if(err) res.sendStatus(500);
-        return res.sendStatus(200);
+  server.delete('/v1/repos/:repo_name/:collection_name', ld.getRepository, function (req, res, next) {
+    console.log("DELETE COLLECTION:", req.params.collection_name);
+    next.module.findOne({where: {name: req.params.collection_name}},
+      function (err, instance) {
+        if(err) return res.sendStatus(500);
+        if(!instance) return res.sendStatus(404);
+        instance.destroy(function (err) {
+          if (err) return res.sendStatus(500)
+          else {
+            console.log("delete repository instance", instance.location);
+            req.params.repo_name = req.params.collection_name;
+            ld.removeModel(req, res, function (cb) {
+              return res.sendStatus(200)
+            })
+          }
+        })
       })
-    } else return res.sendStatus(404);
-
   })
 
-  //Items
+  /**
+   *  ITEMS
+   */
 
   /**
    * POST /v1/repos/<repo_name>/<collection_name>/
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
-  server.post('/v1/repos/:repo_name/:collection_name',function(req,res,next){
-    console.log("POST ITEM",req.params.collection_name);
-    var modelName = req.params.collection_name.charAt(0).toUpperCase() + req.params.collection_name.substring(1);
-    var model = app.models[modelName];
-    if(model) {
-      model.create(req.body,function(err,value){
-        if(err) return res.sendStatus(500);
-        return res.send(value);
-      })
-    } else return res.sendStatus(404);
-
-  })
-
-  /**
-   * Restituisce i metadati di <item_name>
-   */
-
-  server.get('/v1/repos/:repo_name/:collection_name/:item_id',ld.getCollection,function(req,res,next){
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id",req.params.collection_name,req.params.item_id);
-    next.module.findById(req.params.item_id,function(err,value) {
-      if (err) return res.sendStatus(500);
-      return res.send(value);
+  server.post('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+    console.log("POST ITEM", req.body);
+    next.module.create(req.body, function (err, instance) {
+      if (err) res.sendStatus(500)
+      else res.sendStatus(200, 'Items created');
     })
   })
 
-  /**
-   * Cancella l'item indicato
-   */
-  server.delete('/v1/repos/:repo_name/:collection_name/:item_name_id',function(req,res,next){
-    var modelName = req.params.collection_name.charAt(0).toUpperCase() + req.params.collection_name.substring(1);
-    var model = app.models[modelName];
-    if(model) {
-      model.deleteById(req.params.item_name_id,function(err,value){
-        if(err) res.sendStatus(500);
-        return res.sendStatus(200);
+  // Restituisce i metadati di <item_name>
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id", req.params.collection_name, req.params.item_id);
+    next.module.findById(req.params.item_id, function (err, item) {
+      if (err) return res.sendStatus(500);
+      if (!item) return res.sendStatus(404);
+      else return res.send(item);
+    })
+  })
+  // aggiorna item
+  server.put('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+    console.log(" PUT /v1/repos/:repo_name/:collection_name/:item_id ");
+    next.module.findOne({where: {id: req.params.item_id}},
+      function (err, instance) {
+        if (err) return res.sendStatus(500)
+        if(!instance) return res.sendStatus(404);
+        else {
+          instance.updateAttributes(req.body, function (err) {
+            if (err) return res.sendStatus(500)
+            else return res.sendStatus(200, 'item updated');
+          })
+        }
       })
-    } else return res.sendStatus(404);
+  })
+
+  // Cancella item
+  server.delete('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+
+    console.log("DELETE ITEM:", req.params.item_id);
+    next.module.findOne({where: {id: req.params.item_id}},
+      function (err, instance) {
+        if(!instance) return res.sendStatus(404);
+        instance.destroy(function (err) {
+          if (err) return res.sendStatus(500)
+          else {
+            console.log("delete item instance", instance.location);
+            req.params.repo_name = req.params.collection_name;
+            ld.removeModel(req, res, function (cb) {
+              return res.sendStatus(200)
+            })
+          }
+        })
+      })
   })
 
 

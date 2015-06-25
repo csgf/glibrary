@@ -1,5 +1,5 @@
 module.exports = function(app) {
-  var collections = [
+  /*var collections = [
     {name: 'tony', path: 'path1',table:'table', repoId: 2},
     {name: 'Product2', path: 'path2', repoId: 2},
     {name: 'Product5', path: 'path3', repoId : 1}
@@ -21,7 +21,7 @@ module.exports = function(app) {
   collectionModel = app.models.Collection;
   repositoryModel = app.models.Repository;
   repositoryModel.hasMany(collectionModel,{foreignKey: 'repoId', as: 'collections'})
-  console.log("Relazione creata");
+  console.log("Relazione creata");*/
 
 }
 
