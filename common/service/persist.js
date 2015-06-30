@@ -1,61 +1,60 @@
 /**
  * Created by hellbreak on 23/06/15.
+ *
+ * Persit data
+ *
+ *
+ *
  */
 exports.createTable =  function createTable(datasource,data,callback) {
   console.log("[persistData]",data);
   var repoDB = datasource;
   var table_name = data.name;
   var schema_collection = {
-    "name": table_name,
+    "name" : table_name,
     "base": "PersistedModel",
+    "idInjection": true,
     "options": {
-      "idInjection": false,
-      "postgresql": {
-        "schema": "public",
-        "table": table_name
-      }
+      "validateUpsert": true
     },
-
     "properties": {
-      "id": {
-        "type": "number",
-        "id": true,
-        "generated": true
+      "ownerId": {
+        "type": "number"
       },
-
       "name": {
-        "type": "String",
-        "lenght": 20
+        "type": "string",
+        "required": true
+      },
+      "location": {
+        "type": "string",
+        "required": true
       },
       "path": {
-        "type": "String",
-        "lenght": 20
+        "type": "string",
+        "required": true
       },
-      "location" : {
-        "type": "String",
-        "length":20
+      "storage": {
+        "type": "string",
+        "required": true
       },
-      "owner_id": {
-        "type": "String",
-        "length":20
+
+      "host": {
+        "type": "string"
       },
-      "VisibleAttrs": {
-        "type": "String",
-        "lenght": 20
-      },
-      "FilterAttrs": {
-        "type": "String",
-        "lenght": 20
-      },
-      "ColumnWidth": {
-        "type": "String",
-        "lenght": 20
-      },
-      "ParentID": {
+      "port": {
         "type": "number"
       },
-      "Type": {
-        "type": "number"
+      "database": {
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      },
+      "connector": {
+        "type": "string"
       }
     }
   }
@@ -66,6 +65,23 @@ exports.createTable =  function createTable(datasource,data,callback) {
     callback(true);
 
   })
+
+}
+
+exports.importTable = function importTable(datasource,data,callback) {
+
+
+  datasource.discoverSchema('montalbano',{ schema: 'public'},
+    function(err,schema) {
+      if(err) throw err;
+      console.log(JSON.stringify(schema,null,'  '));
+
+
+
+
+
+    });
+
 
 }
 

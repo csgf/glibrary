@@ -53,8 +53,6 @@ module.exports = function tmpModel(app) {
     getRepository : function getRepository(req,res,next) {
       var moduleName = camelize(req.params.repo_name).trim().capitalize().value();
 
-
-
       if(app.models[moduleName]) {
         console.log("[getRepository][cache app.models",moduleName);
         next.module = app.models[moduleName];
@@ -78,8 +76,7 @@ module.exports = function tmpModel(app) {
         console.log("[getRepository][cache app.models",moduleName);
         app.models[moduleName] = null;
         return next();
-
-      }
+      } else return next();
     }
 
   }
@@ -96,7 +93,7 @@ module.exports = function tmpModel(app) {
  */
 var getmodel = function(app,path,ds,table,callback)
 {
-  console.log("GETMODEL");
+  console.log("GETMODEL", path);
   if(!ds || !table) {
     console.log("FALSE");
     return callback(false);
@@ -113,7 +110,9 @@ var getmodel = function(app,path,ds,table,callback)
     })
   })
 }
-/**
+
+
+/** ONLY for Relational Database
  *
  * @param app
  * @param datasource
@@ -122,13 +121,33 @@ var getmodel = function(app,path,ds,table,callback)
  */
 var mapTableToModel =  function (app,datasource,data, callback)
 {
-  //console.log("[mapTableToModel][data] :",data);
+  console.log("[mapTableToModel][data] :",data);
+  var loopback = require('loopback');
 
   var $model_path = data.path;
   var $model_name = data.name;
   var $table_name = data.location;
   var owner_id = data.ownerId;
   console.log("[mapTableToModel][data] :",$table_name);
+  // inserire un ulteriore controllo per identificare che stiamo processando dati relativi a una collections
+
+
+  if (data.storage == 'remote') {
+    console.log("STORAGE REMOTO");
+    var remoteDBsetup = {
+      "host" : data.host,
+      "port" : data.port,
+      "database" : data.database,
+      "username" : data.username,
+      "password" : data.password,
+      "connector" : data.connector
+    }
+
+    var datasource = loopback.createDataSource(remoteDBsetup);
+    /*if (data.connector == 'mongodb') {
+
+    }*/
+  }
   datasource.discoverAndBuildModels($table_name,
     {
       schema: 'public',
@@ -139,17 +158,26 @@ var mapTableToModel =  function (app,datasource,data, callback)
     },
     function (er, models) {
       if (er) callback(err);
-      app.model(models[camelize($table_name).trim().capitalize().value()]);
+      if(models) {
+        app.model(models[camelize($table_name).trim().capitalize().value()]);
+/*
+        app.model(models[camelize($table_name).trim().capitalize().value()]).find(function(err,records){
+          if(err) throw err;
+             console.log('Records:',records);
+        })
+*/
+        /*
+         for (var m in models) {
+         console.log("MODELLO",m);
+         var model = models[m];
+         model.setup();
+         app.model(model);
+         }
+         */
+        console.log('[ModelBuilder][Access new Model at *]: ', $model_path);
+        callback(models[camelize($table_name).trim().capitalize().value()]);
 
-      /*
-       for (var m in models) {
-       console.log("MODELLO",m);
-       var model = models[m];
-       model.setup();
-       app.model(model);
-       }
-       */
-      console.log('[ModelBuilder][Access new Model at *]: ', $model_path);
-      callback(models[camelize($table_name).trim().capitalize().value()]);
+      } else callback()
     })
 }
+

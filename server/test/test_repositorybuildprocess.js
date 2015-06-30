@@ -3,9 +3,7 @@
  */
 
 var lt = require('loopback-testing');
-var assert = require('assert');
 var app = require('../server.js');
-var request = require('request');
 
 
 var POST_repos_data =
@@ -15,8 +13,7 @@ var POST_repos_data =
   "name": "nathan",
   "location": "nathan",
   "path": "/nathan",
-  "storage": "cloud",
-  "subrepo": true
+  "storage": "cloud"
 }
 var POST_reponame_data = {
   "id":1,
@@ -24,8 +21,7 @@ var POST_reponame_data = {
   "name": "girls",
   "location": "girls",
   "path": "/nathan/girls",
-  "storage": "cloud",
-  "subrepo": true
+  "storage": "cloud"
 }
 
 
@@ -46,7 +42,7 @@ describe('1)----[repository][CRUD TEST]----',function() {
       lt.describe.whenCalledRemotely('DELETE','/v1/repos/nathan',function(){
         lt.it.shouldBeAllowed()
       })
-      lt.describe.whenCalledRemotely('GET', '/v1/repos/nathn',function(){
+      lt.describe.whenCalledRemotely('GET', '/v1/repos/nathan',function(){
         lt.it.shouldNotBeFound()
       })
 })
@@ -69,11 +65,7 @@ describe('2)----[collection][CRUD TEST]----',function(){
           "path": "/nathan/girls/1",
           "location": "agent",
           "ownerId": "2",
-          "visibleattrs": "Agenzia Alpha Agent Legs ",
-          "filterattrs": "Filtri Agenzia Alpha Legs ",
-          "columnwidth": "100",
-          "parentid": 2,
-          "type": null
+          "storage": "cloud"
         },function () {
           lt.it.shouldBeAllowed()
         })
@@ -83,11 +75,7 @@ describe('2)----[collection][CRUD TEST]----',function(){
         "path": "/nathan/girls/1",
         "location": "agent",
         "ownerId": "2",
-        "visibleattrs": "Agenzia Alpha Special Agent Legs ",
-        "filterattrs": "Filtri Agenzia Special Alpha Agent Legs ",
-        "columnwidth": "100",
-        "parentid": 2,
-        "type": null
+        "storage" : "testing_cloud_modificato"
       },function () {
         lt.it.shouldBeAllowed()
       })
@@ -118,11 +106,7 @@ describe('3)---[item][CRUD TEST]----',function(){
         "path": "/nathan/girls/1",
         "location": "agent",
         "ownerId": "2",
-        "visibleattrs": "Agenzia Alpha Agent Legs Edited ",
-        "filterattrs": "Filtri Agenzia Alpha Legs Edited ",
-        "columnwidth": "100",
-        "parentid": 2,
-        "type": null
+        "storage": "testing_cloud"
       },function(){
         lt.it.shouldBeAllowed()
 
