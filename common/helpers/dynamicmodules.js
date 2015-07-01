@@ -61,6 +61,7 @@ module.exports = function tmpModel(app) {
       else {
         getmodel(app,req.params.repo_name,repositoryDB,repository,function(moduleObj){
           if(moduleObj) {
+            console.log("moduleObj",moduleObj);
             next.module = moduleObj;
             return next();
 
@@ -104,14 +105,57 @@ var getmodel = function(app,path,ds,table,callback)
   },function(err,data){
     if(err) return callback(false);
     if(!data) return callback(false);
-    mapTableToModel(app,ds,data,function(obj){
+    NoSQLmapTableToModel(app,ds,data,function(obj){
       console.log("getModel return callback");
       return callback(obj);
     })
   })
 }
+/** ONLY FOR NOSQL Database
+ * @param app
+ * @param datasource
+ * @param data
+ * @param callback
+ * @returns {*}
+ */
+var NoSQLmapTableToModel = function (app,datasource,data,callback )
+{
+  console.log("[NoSQLmapTableToModel][data] :",data);
+
+  var $model_path = data.path;
+  var $table_name = data.location;
+
+  // defailt json schema
+  var json_test = {
+    name: 'Joe',
+    age: 30,
+    birthday: new Date()
+
+  };
+  /* DA ABILITARE
+  if (data.storage == 'remote') {
+    console.log("STORAGE REMOTO");
+    var remoteDBsetup = {
+      "host" : data.host,
+      "port" : data.port,
+      "database" : data.database,
+      "username" : data.username,
+      "password" : data.password,
+      "connector" : data.connector
+    }
+    var datasource = loopback.createDataSource(remoteDBsetup);
+  }
+  */
+  // building Model from json_test schema
+  var runtimeModel = datasource.buildModelFromInstance($table_name, json_test, {idInjection: true});
+  //
+  app.model(runtimeModel);
+  console.log('[NoSQLmapTableToModel][Access new Model at *]: ', $model_path);
+  return callback( runtimeModel );
 
 
+
+}
 /** ONLY for Relational Database
  *
  * @param app
@@ -119,7 +163,8 @@ var getmodel = function(app,path,ds,table,callback)
  * @param data
  * @param callback
  */
-var mapTableToModel =  function (app,datasource,data, callback)
+
+/*var mapTableToModel =  function (app,datasource,data, callback)
 {
   console.log("[mapTableToModel][data] :",data);
   var loopback = require('loopback');
@@ -144,9 +189,9 @@ var mapTableToModel =  function (app,datasource,data, callback)
     }
 
     var datasource = loopback.createDataSource(remoteDBsetup);
-    /*if (data.connector == 'mongodb') {
+    /!*if (data.connector == 'mongodb') {
 
-    }*/
+    }*!/
   }
   datasource.discoverAndBuildModels($table_name,
     {
@@ -160,24 +205,24 @@ var mapTableToModel =  function (app,datasource,data, callback)
       if (er) callback(err);
       if(models) {
         app.model(models[camelize($table_name).trim().capitalize().value()]);
-/*
+/!*
         app.model(models[camelize($table_name).trim().capitalize().value()]).find(function(err,records){
           if(err) throw err;
              console.log('Records:',records);
         })
-*/
-        /*
+*!/
+        /!*
          for (var m in models) {
          console.log("MODELLO",m);
          var model = models[m];
          model.setup();
          app.model(model);
          }
-         */
+         *!/
         console.log('[ModelBuilder][Access new Model at *]: ', $model_path);
         callback(models[camelize($table_name).trim().capitalize().value()]);
 
       } else callback()
     })
-}
+}*/
 

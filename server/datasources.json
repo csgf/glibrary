@@ -6,28 +6,19 @@
   "postgreSQL": {
     "host": "localhost",
     "port": "5432",
-    "database": "hellbreak",
-    "username": "hellbreak",
-    "password": "",
-    "name": "postgreSQL",
-    "connector": "postgresql"
-  },
-  "repoDB": {
-    "host": "localhost",
-    "port": "5432",
     "database": "repository",
     "username": "hellbreak",
     "password": "",
     "name": "repoDB",
     "connector": "postgresql"
   },
-  "typeDB": {
+  "repoDB": {
     "host": "localhost",
-    "port": "5432",
+    "port": "27017",
     "database": "repository",
-    "username": "hellbreak",
+    "username": "",
     "password": "",
-    "name": "typeDB",
-    "connector": "postgresql"
+    "name": "mongoDB",
+    "connector": "mongodb"
   }
 }
