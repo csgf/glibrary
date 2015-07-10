@@ -24,26 +24,12 @@
     },
     "storage": {
       "type": "string",
-      "required": true
+      "required": false
     },
-    "host": {
-      "type": "string"
-    },
-    "port": {
-      "type": "number"
-    },
-    "database": {
-      "type": "string"
-    },
-    "username": {
-      "type": "string"
-    },
-    "password": {
-      "type": "string"
-    },
-    "connector": {
+    "import": {
       "type": "string"
     }
+
   },
   "validations": [],
   "relations": {

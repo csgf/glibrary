@@ -14,6 +14,7 @@ module.exports = function mountRestApi(server) {
   var modelBuilder = require('../../common/helpers/dynamicmodules');
   var ld = new modelBuilder(app);
 
+
   /**
    *
    *  REPOSITORIES
@@ -25,7 +26,7 @@ module.exports = function mountRestApi(server) {
 
   server.get('/v1/repos', function (req, res, next) {
     repository.find(req.query.filter, function (err, instance) {
-      if (err)  return res.sendStatus(500);
+      if (err)  return res.send(JSON.stringify(err));
       if(!instance) return res.sendStatus(404);
       return res.send(instance);
     })
@@ -39,6 +40,9 @@ module.exports = function mountRestApi(server) {
 
     repository.create(req.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
+
+
+
       service.createTable(repositoryDB, req.body, function (callback) {
         if (callback)  return res.sendStatus(200, 'Repository Created');
         else           return res.sendStatus(500);
@@ -95,8 +99,9 @@ module.exports = function mountRestApi(server) {
     //Elenco di tutte le collection del repository <repo_name>
 
   server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+
     next.module.find(req.query.filter, function (err, instance) {
-      if (err) res.sendStatus(500);
+      if (err) res.send(err);
       if(!instance) return res.sendStatus(404);
       res.send(instance);
     })
@@ -118,12 +123,22 @@ module.exports = function mountRestApi(server) {
   })
 
 
+  server.head('/v1/repos/:repo_name/:collection_name',ld.getCollection,function(req,res,next){
+
+    console.log("MODELLO",next.module.definition.rawProperties); // stampa properties del modello
+
+
+    res.end(next.module.definition.rawProperties);
+
+  })
+
   //Elenco di tutti gli item contenuti nella collection <collection_name>
   server.get('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+    console.log("GET collection_name")
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
       if(!instance) return res.sendStatus(404);
-      res.send(instance);
+      res.json(instance);
     })
   })
   //Modifica i metadati della <collection_name_id>
@@ -172,7 +187,7 @@ module.exports = function mountRestApi(server) {
   server.post('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
     console.log("POST ITEM", req.body);
     next.module.create(req.body, function (err, instance) {
-      if (err) res.sendStatus(500)
+      if (err) res.send(err);
       else res.sendStatus(200, 'Items created');
     })
   })
@@ -183,7 +198,7 @@ module.exports = function mountRestApi(server) {
     next.module.findById(req.params.item_id, function (err, item) {
       if (err) return res.sendStatus(500);
       if (!item) return res.sendStatus(404);
-      else return res.send(item);
+       else return res.send(item);
     })
   })
   // aggiorna item
@@ -221,6 +236,5 @@ module.exports = function mountRestApi(server) {
         })
       })
   })
-
 
 };
