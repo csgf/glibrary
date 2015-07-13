@@ -3,7 +3,7 @@
  */
 var camelize = require('underscore.string');
 var loopback = require('loopback');
-
+var async = require('async');
 
 var dati_repo_name = {
 
@@ -103,8 +103,11 @@ var dati_coll_name = {
 
 
 module.exports = function tmpModel(app) {
+  // Datasource di sistema
   var repositoryDB = app.dataSources.repoDB;
+  // Modello Repository
   var repository = app.models.Repository;
+
   return {
     getCollection: function getCollection(req, res, next) {
 
@@ -118,28 +121,27 @@ module.exports = function tmpModel(app) {
       } else {
         var collection_table;
         if (!app.models[RepoName]) {
-          console.log('CARICO repo_name');
-          initRepoNameModel(app,req.params.repo_name, repositoryDB, repository, function (moduleObj) {
-            if(moduleObj) {
+          console.log('[getCollection][load repo_name Model');
+          initRepoNameModel(app, req.params.repo_name, repositoryDB, repository, function (moduleObj) {
+            if (moduleObj) {
               var collection_table = moduleObj;
-                  var fullPath = req.params.repo_name + '/' + req.params.collection_name;
+              var fullPath = req.params.repo_name + '/' + req.params.collection_name;
 
-                  initCollNameModel(app,fullPath,app.CollectionDataSource,collection_table,function(collectionObj){
-                    if (collectionObj) {
-                      console.log('carico collection name');
-                      next.module = collectionObj;
-                      return next();
-                    } else return res.sendStatus(404);
-                  })
+              initCollNameModel(app, fullPath, app.CollectionDataSource, collection_table, function (collectionObj) {
+                if (collectionObj) {
+                  console.log('[getCollection][load  collection name Model');
+                  next.module = collectionObj;
+                  return next();
+                } else return res.sendStatus(404);
+              })
             } else return res.sendStatus(404);
           })
         } else {
           console.log("app.models[RepoName] -----cache-----");
           var collection_table = app.models[RepoName];
-
           initCollNameModel(app, req.params.repo_name + '/' + req.params.collection_name, app.CollectionDataSource, collection_table, function (collectionObj) {
             if (collectionObj) {
-              console.log('ok cache');
+              console.log('[initCollNameModel with RepoName cached CALLBACK to view');
               next.module = collectionObj;
               return next();
             } else return res.sendStatus(404);
@@ -156,9 +158,14 @@ module.exports = function tmpModel(app) {
         return next();
       }
       else {
-        initRepoNameModel(app, req.params.repo_name, repositoryDB, repository, function (moduleObj) {
+        //var initRepoNameModel = function (app, path, ds, model, callback) {
+        var path = req.params.repo_name;
+        var ds = repositoryDB;
+        var model = repository;
+
+        initRepoNameModel(app, path, ds, model, function (moduleObj) {
           if (moduleObj) {
-            console.log("moduleObj", moduleObj);
+            console.log("[getRepository][moduleObj]")
             next.module = moduleObj;
             return next();
 
@@ -174,105 +181,70 @@ module.exports = function tmpModel(app) {
         app.models[RepoName] = null;
         return next();
       } else return next();
+    },
+
+    getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
+      console.log("[getDatasourceToWrite]", req.body);
+      if (req.body.coll_db.host != "" && req.body.coll_db.location == "remote") {
+        CreateDataSource(app, req.body, function (datasource) {
+          return next()
+        })
+      } else next();
     }
+
   }
 
 }
-var CreateDataSource = function(app,data,callback) {
-  console.log("Default Collections DB configuration");
+var CreateDataSource = function (app, data, callback) {
   var datasource_setup = {
 
     "host": data.coll_db.host,
     "port": data.coll_db.port,
-    "database" : data.coll_db.database,
-    "username" : data.coll_db.username,
-    "password" : data.coll_db.password,
-    "connector" : data.coll_db.connector
+    "database": data.coll_db.database,
+    "username": data.coll_db.username,
+    "password": data.coll_db.password,
+    "connector": data.coll_db.connector
 
   }
+  console.log("[CreateDataSource]", datasource_setup.host);
   var datasource = loopback.createDataSource(datasource_setup);
   app.CollectionDataSource = datasource;
   return callback(datasource);
 }
-/*
-var CreateCustomDatasource = function(app,path,ds,table,callback) {
-  console.log("getDefaultCollectionDBInfoFromRepository", path);
-  if (!ds || !table) {
-    console.log("getDefaultCollectionDBInfoFromRepository FALSE");
-    return callback(false);
-  }
-  table.findOne({
-    where: {path: '/' + path}
-  }, function (err, data) {
-    if (err) return callback(false);
-    if (!data) return callback(false);
-    else {
-      if(data.coll_db.location == "remote") {
-        console.log("Default Collections DB configuration");
-        var datasource_setup = {
 
-          "host": data.coll_db.host,
-          "port": data.coll_db.port,
-          "database" : data.coll_db.database,
-          "username" : data.coll_db.username,
-          "password" : data.coll_db.password,
-          "connector" : data.coll_db.connector
-
-        }
-        var datasource = loopback.createDataSource(datasource_setup);
-        app.CollectionDataSource = datasource;
-        return callback(datasource);
-      } else {
-        console.log("No Default Collection DB configuration");
-        return callback(ds);
-      }
-
-    }
-  })
-}
-*/
-
-var initRepoNameModel = function (app, path, ds, table, callback) {
-  console.log("initRepoNameModel", path);
-  if (!ds || !table) {
+var initRepoNameModel = function (app, path, ds, model, callback) {
+  console.log("[initRepoNameModel][PATH]", path);
+  if (!ds || !model) {
     console.log("initRepoNameModel FALSE");
     return callback(false);
   }
-  table.findOne({
+  model.findOne({
     where: {path: '/' + path}
   }, function (err, data) {
     if (err) return callback(false);
     if (!data) return callback(false);
     else {
-      if(data.coll_db.location == "remote") {
-        console.log("initRepoNameModel Default Collections DB configuration");
-        CreateDataSource(app,data,function(datasource){
-          var ds = datasource;
-        });
-        /*var datasource_setup = {
-
-          "host": data.coll_db.host,
-          "port": data.coll_db.port,
-          "database": data.coll_db.database,
-          "username": data.coll_db.username,
-          "password": data.coll_db.password,
-          "connector": data.coll_db.connector
-
-        }
-        var datasource = loopback.createDataSource(datasource_setup);
-        app.CollectionDataSource = datasource;
-        */
+      if (data.coll_db.host != "" && data.coll_db.location == "remote") {
+        console.log("[initRepoNameModel][custom datasource]");
+        CreateDataSource(app,data,function(callback){
+          if(callback) {
+            console.log("[initRepoNameModel] Repository "+ path + " has a custom  datasource");
+          }
+        })
+      } else {
+        console.log("[initRepoNameModel][DS: datasource.json]");
+        app.CollectionDataSource = ds;
       }
-
+      console.log("[initRepoNameModel] data.coll_db", data.coll_db);
       if (data.repo_db.type != 'mongodb') {
         mapTableToModel(app, ds, data, function (obj) {
-          console.log("mapTableToModel return callback");
+          console.log("[initRepoNameModel]mapTableToModel return callback");
           return callback(obj);
         })
       }
       else {
         NoSQLmapTableToModel(app, ds, data, function (obj) {
-          console.log("NoSQLmapTableToModel return callback");
+          console.log("[initRepoNameModel] NoSQLmapTableToModel return callback");
           return callback(obj);
         })
       }
@@ -280,10 +252,10 @@ var initRepoNameModel = function (app, path, ds, table, callback) {
   })
 }
 
-var initCollNameModel = function(app,path,ds,table,callback) {
-  console.log("initCollNameModel", path);
-  if (!ds || !table) {
-    console.log("initCollNameModel FALSE");
+var initCollNameModel = function (app, path, ds, table, callback) {
+  console.log("[initCollNameModel] path:", path);
+  if (!table) {
+    console.log("[initCollNameModel][ERROR][!table]");
     return callback(false);
   }
   table.findOne({
@@ -292,32 +264,52 @@ var initCollNameModel = function(app,path,ds,table,callback) {
     if (err) return callback(false);
     if (!data) return callback(false);
     else {
-      if(data.import == true) {
-        if(data.coll_db.host != "" && data.coll_db.location == "remote") {
-          console.log("-----------location remote datasouce custom---------");
-          CreateDataSource(app,data,function(datasource){
-            var ds = datasource;
-          })
+      async.waterfall(
+        [
+          // check per datasource remoti diversi da quelli specificati nel repository
+          function (callback) {
+            // devo importare, cambio datasource
+            if (data.coll_db.host != "" && data.coll_db.location == "remote") {
+              console.log("[initCollNameModel][custom remote datasource]");
+              CreateDataSource(app, data, function (datasource) {
+                var ds = datasource;
+                callback(ds);
+              })
+            } else {
+              app.CollectionDataSource = ds;
+              callback(ds);
+            }
+          },
+        ],
+        function (ds) {
+          console.log("[initCollNameModel] waterfall end")
+          if (data.coll_db.type == 'mysql') {
+            console.log("[initCollNameModel][MySQL]", data.coll_db.type);
+            mapTableToModel(app, ds, data, function (obj) {
+              console.log("[initCollNameModel][mysql] mapTableToModel return callback");
+              return callback(obj);
+            })
+          }
+          if (data.coll_db.type == 'postgresql') {
+            console.log("[initCollNameModel][postgreSQL]", data.coll_db.type);
+            mapTableToModel(app, ds, data, function (obj) {
+              console.log("[initCollNameModel] mapTableToModel return callback");
+              return callback(obj);
+            })
+          }
+          if (data.coll_db.type == 'mongodb') {
+            console.log("[initCollNameModel] mongodb", data.coll_db.type);
+            NoSQLmapTableToModel(app, ds, data, function (obj) {
+              console.log("[initCollNameModel] NoSQLmapTableToModel return callback");
+              return callback(obj);
+            })
+          }
+          if (!data.coll_db.type) {
+            console.log("[initCollNameModel][ERRORE][!data.coll_db.type]", data.coll_db.type);
+            return callback(null);
+          }
         }
-      }
-      if(data.coll_db.type == 'mysql') {
-        mapTableToModel(app, ds, data, function (obj) {
-          console.log("mapTableToModel return callback");
-          return callback(obj);
-        })
-      }
-      if(data.coll_db.type == 'postgresql') {
-        NoSQLmapTableToModel(app, ds, data, function (obj) {
-          console.log("NoSQLmapTableToModel return callback");
-          return callback(obj);
-        })
-      }
-      if(data.coll_db.type == 'mongodb') {
-        NoSQLmapTableToModel(app, ds, data, function (obj) {
-          console.log("NoSQLmapTableToModel return callback");
-          return callback(obj);
-        })
-      }
+      )
     }
   })
 }
@@ -330,7 +322,7 @@ var initCollNameModel = function(app,path,ds,table,callback) {
  * @returns {*}
  */
 var NoSQLmapTableToModel = function (app, datasource, data, callback) {
-  console.log("[NoSQLmapTableToModel][data] :");
+  console.log("[NoSQLmapTableToModel]");
 
   var $model_path = data.path;
   var $table_name = data.location;
@@ -355,17 +347,19 @@ var NoSQLmapTableToModel = function (app, datasource, data, callback) {
  */
 
 var mapTableToModel = function (app, datasource, data, callback) {
-  console.log("[mapTableToModel][data] :");
 
   var $model_path = data.path;
   var $model_name = data.name;
   var $table_name = data.location;
   var owner_id = data.ownerId;
   console.log("[mapTableToModel][data] :", $table_name);
-
-//  var schema = 'public';
-  var schema = 'dboe_test_daily';
-//var schema = data.coll_db.database;
+  if (data.coll_db.type == 'mysql') {
+    var schema = data.coll_db.database
+  }
+  if (data.coll_db.type == 'postgresql') {
+    var schema = 'public';
+  }
+  console.log("SCHEMA:", schema);
   datasource.discoverAndBuildModels($table_name,
     {
       schema: schema,
@@ -374,14 +368,16 @@ var mapTableToModel = function (app, datasource, data, callback) {
       plural: $model_path,
       http: {"path": $model_path}
     },
-    function (er, models) {
-      if (er) callback(err);
+    function (err, models) {
+      if (err) callback(err);
       if (models) {
         app.model(models[camelize($table_name).trim().capitalize().value()]);
         console.log('[ModelBuilder][Access new Model at *]: ', $model_path);
-        callback(models[camelize($table_name).trim().capitalize().value()]);
+        return callback(models[camelize($table_name).trim().capitalize().value()]);
 
-      } else callback()
+      } else {
+        console.log('[ModelBuilder][ERROR building new Model at *]: ', $model_path);
+        return callback()
+      }
     })
 }
-

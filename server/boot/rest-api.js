@@ -35,7 +35,7 @@ module.exports = function mountRestApi(server) {
 
   //Crea un nuovo repository
 
-  server.post('/v1/repos', function (req, res) {
+  server.post('/v1/repos',function (req, res) {
     console.log(" POST repos  ");
 
     repository.create(req.body, function (err, instance) {
@@ -112,14 +112,17 @@ module.exports = function mountRestApi(server) {
    * Il nome della collections viene passato come parametro nel body
    */
 
-  server.post('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+  server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
+    console.log("POST /v1/repos/:repo_name");
     next.module.create(req.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
-      service.createTable(repositoryDB, req.body, function (callback) {
+
+      service.createTable(app.CollectionDataSource, req.body, function (callback) {
         if (callback)  res.sendStatus(200, 'Repository Created');
         else          res.sendStatus(500);
       })
     })
+
   })
 
 
@@ -185,7 +188,6 @@ module.exports = function mountRestApi(server) {
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
   server.post('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
-    console.log("POST ITEM", req.body);
     next.module.create(req.body, function (err, instance) {
       if (err) res.send(err);
       else res.sendStatus(200, 'Items created');
