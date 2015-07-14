@@ -14,7 +14,8 @@ module.exports = function mountRestApi(server) {
   var modelBuilder = require('../../common/helpers/dynamicmodules');
   var ld = new modelBuilder(app);
 
-
+  var testLib = require('../../common/helpers/loadModel');
+  var tl = new testLib(app);
   /**
    *
    *  REPOSITORIES
@@ -97,8 +98,9 @@ module.exports = function mountRestApi(server) {
 
 
     //Elenco di tutte le collection del repository <repo_name>
+  server.get('/v1/repos/:repo_name', tl.getRepository, function (req, res, next) {
 
-  server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+ // server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
 
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.send(err);
