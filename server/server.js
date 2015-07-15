@@ -4,7 +4,6 @@ var loopback = require('loopback');
 var path = require('path');
 
 var app = module.exports = loopback();
-var queryLimit = require('./middleware/bodyParser');
 
 
 var https = require('https');
@@ -25,7 +24,7 @@ var container = ds.createModel('container');
 app.model(container);
 
 
-var test = function(req,res,next) {
+var limitQuery = function(req,res,next) {
   if( ! req.query.filter ) {
     console.log("set query limit to 10 records");
     req.query.filter = {limit : 10 };
@@ -34,7 +33,7 @@ var test = function(req,res,next) {
 }
 
 app.middleware('initial', bodyParser.urlencoded({ extended: true }));
-app.middleware('parse', test);
+app.middleware('parse', limitQuery);
 
 // Bootstrap the application, configure models, datasources and middleware.
 // Sub-apps like REST API are mounted via boot scripts.

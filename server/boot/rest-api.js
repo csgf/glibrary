@@ -6,6 +6,16 @@ module.exports = function mountRestApi(server) {
   var methodOverride = require('method-override');
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());
+  //Catch json error
+  app.use (function (error, req, res, next){
+    if(error instanceof SyntaxError) {
+      console.trace();
+      console.error(error);
+      res.sendStatus(400);
+    }else next();
+
+  });
+
 
 
   var repositoryDB = app.dataSources.repoDB;
@@ -16,6 +26,10 @@ module.exports = function mountRestApi(server) {
 
   var testLib = require('../../common/helpers/loadModel');
   var tl = new testLib(app);
+
+  var check = require('../middleware/bodyParser');
+  var ck = new check();
+
   /**
    *
    *  REPOSITORIES
@@ -113,8 +127,9 @@ module.exports = function mountRestApi(server) {
    * Crea una nuova collection o importa una tabella di un db esistente come collection nel repository <repo_name>.
    * Il nome della collections viene passato come parametro nel body
    */
+  server.post('/v1/repos/:repo_name', tl.getRepository, function (req, res, next) {
 
-  server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
+  //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
     console.log("POST /v1/repos/:repo_name");
     next.module.create(req.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
@@ -128,7 +143,7 @@ module.exports = function mountRestApi(server) {
   })
 
 
-  server.head('/v1/repos/:repo_name/:collection_name',ld.getCollection,function(req,res,next){
+  server.head('/v1/repos/:repo_name/:collection_name',tl.getCollection,function(req,res,next){
 
     console.log("MODELLO",next.module.definition.rawProperties); // stampa properties del modello
 
@@ -138,7 +153,7 @@ module.exports = function mountRestApi(server) {
   })
 
   //Elenco di tutti gli item contenuti nella collection <collection_name>
-  server.get('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+  server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
     console.log("GET collection_name")
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
@@ -147,7 +162,7 @@ module.exports = function mountRestApi(server) {
     })
   })
   //Modifica i metadati della <collection_name_id>
-  server.put('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+  server.put('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
     console.log("PUT /v1/repos/:repo_name/:collection_name")
     next.module.findOne({where: {name: req.body.name}},
       function (err, instance) {
@@ -162,7 +177,7 @@ module.exports = function mountRestApi(server) {
   /**
    * Cancella la collection <collection_name_id>
    */
-  server.delete('/v1/repos/:repo_name/:collection_name', ld.getRepository, function (req, res, next) {
+  server.delete('/v1/repos/:repo_name/:collection_name', tl.getRepository, function (req, res, next) {
     console.log("DELETE COLLECTION:", req.params.collection_name);
     next.module.findOne({where: {name: req.params.collection_name}},
       function (err, instance) {
@@ -172,10 +187,11 @@ module.exports = function mountRestApi(server) {
           if (err) return res.sendStatus(500)
           else {
             console.log("delete repository instance", instance.location);
-            req.params.repo_name = req.params.collection_name;
-            ld.removeModel(req, res, function (cb) {
+            req.params.pathToDelete = req.params.collection_name;
+            tl.removeModel(req, res, function (cb) {
               return res.sendStatus(200)
             })
+
           }
         })
       })
@@ -189,7 +205,7 @@ module.exports = function mountRestApi(server) {
    * POST /v1/repos/<repo_name>/<collection_name>/
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
-  server.post('/v1/repos/:repo_name/:collection_name', ld.getCollection, function (req, res, next) {
+  server.post('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
     next.module.create(req.body, function (err, instance) {
       if (err) res.send(err);
       else res.sendStatus(200, 'Items created');
@@ -197,7 +213,7 @@ module.exports = function mountRestApi(server) {
   })
 
   // Restituisce i metadati di <item_name>
-  server.get('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
     console.log("GET /v1/repos/:repo_name/:collection_name/:item_id", req.params.collection_name, req.params.item_id);
     next.module.findById(req.params.item_id, function (err, item) {
       if (err) return res.sendStatus(500);
@@ -206,7 +222,7 @@ module.exports = function mountRestApi(server) {
     })
   })
   // aggiorna item
-  server.put('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+  server.put('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
     console.log(" PUT /v1/repos/:repo_name/:collection_name/:item_id ");
     next.module.findOne({where: {id: req.params.item_id}},
       function (err, instance) {
@@ -222,7 +238,7 @@ module.exports = function mountRestApi(server) {
   })
 
   // Cancella item
-  server.delete('/v1/repos/:repo_name/:collection_name/:item_id', ld.getCollection, function (req, res, next) {
+  server.delete('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
 
     console.log("DELETE ITEM:", req.params.item_id);
     next.module.findOne({where: {id: req.params.item_id}},
