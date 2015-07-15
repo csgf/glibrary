@@ -7,7 +7,9 @@ module.exports = function mountRestApi(server) {
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());
   //Catch json error
+
   app.use (function (error, req, res, next){
+  console.log("CATCH ERRORE")
     if(error instanceof SyntaxError) {
       console.trace();
       console.error(error);
@@ -149,6 +151,12 @@ module.exports = function mountRestApi(server) {
 
 
     res.end(next.module.definition.rawProperties);
+
+  })
+
+  server.get('/v1/repos/:repo_name/:collection_name/_schema',tl.getCollection,function(req,res,next){
+    console.log("GET collection SCHEMA");
+    res.json(next.module.definition.properties);
 
   })
 

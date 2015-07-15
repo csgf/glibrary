@@ -229,11 +229,18 @@ var buildModelFromNoSQL = function (app, datasource, table, callback) {
     firstname: '',
     lastname: ''
   };
-  var runtimeModel = datasource.buildModelFromInstance(table, json_test, {idInjection: true});
-  app.model(runtimeModel);
-  console.log('[buildModelFromNoSQL]');
-  return callback(runtimeModel);
-}
+  try {
+    var runtimeModel = datasource.buildModelFromInstance(table, json_test, {idInjection: true});
+    app.model(runtimeModel);
+    console.log('[buildModelFromNoSQL]');
+    return callback(runtimeModel);
+
+  }catch(er) {
+    console.trace()
+    console.error(er);
+    return callback(null);
+  }
+  }
 
 var getDataSource = function getDataSource(app, data) {
   console.log("EVENT getDataSource");
