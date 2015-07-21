@@ -1,5 +1,7 @@
 /**
- * Created by hellbreak on 05/06/15.
+ * Created by Antonio Di Mariano on 05/06/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
 var lt = require('loopback-testing');
 var assert = require('assert');
