@@ -19,14 +19,8 @@ module.exports = function mountRestApi(server) {
   });
 
   app.use(restApiRoot, server.loopback.rest());
-
-
   var repositoryDB = app.dataSources.repoDB;
-  //var ld = require('../../common/helpers/loadModule');
   var service = require('../../common/service/persist');
-  var modelBuilder = require('../../common/helpers/dynamicmodules');
-  var ld = new modelBuilder(app);
-
   var testLib = require('../../common/helpers/loadModel');
   var tl = new testLib(app);
 
