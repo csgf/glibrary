@@ -31,14 +31,6 @@
     "dataSource": "db",
     "public": true
   },
-  "team": {
-    "dataSource": "db",
-    "public": false
-  },
-  "project": {
-    "dataSource": "db",
-    "public": true
-  },
   "repository": {
     "dataSource": "repoDB",
     "public": true

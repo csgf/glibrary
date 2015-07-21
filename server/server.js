@@ -9,7 +9,7 @@ var https = require('https');
 var fs = require('fs');
 
 var options = {
-  cert: fs.readFileSync(path.join(__dirname, './private/certificate.pem'))
+  //cert: fs.readFileSync(path.join(__dirname, './private/certificate.pem'))
 };
 
 var limitQuery = function(req,res,next) {
