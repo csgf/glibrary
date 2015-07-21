@@ -1,5 +1,7 @@
 /**
- * Created by hellbreak on 14/07/15.
+ * Created by Antonio Di Mariano on 14/07/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
 var camelize = require('underscore.string');
 var loopback = require('loopback');
@@ -8,6 +10,11 @@ var events = require('events');
 var eventEmitter = new events.EventEmitter();
 
 var ModelTableMap = {};
+var logger = require("./logger");
+
+var RoleMapper = require('./rolemapping');
+
+
 /**
  * Effettuata una query sul model e ritorna i records
  * @param app
@@ -23,11 +30,11 @@ var findDataFromModel = function (app, path, model, callback) {
     if (err) {
       console.trace()
       console.error(err);
-      console.log("model.findOne ERROR");
+      logger.debug("model.findOne ERROR");
       return callback(false);
     }
     if (!data) {
-      console.log("model.findOne !data ");
+      logger.debug("model.findOne !data ");
       return callback(false);
     }
     else {
@@ -35,10 +42,6 @@ var findDataFromModel = function (app, path, model, callback) {
     }
   })
 }
-
-
-
-
 
 /**
  * Validates coll_db data in order to provide a datasource entity for collections
@@ -69,12 +72,12 @@ var findDatabaseCredentialsFromModel = function (data, callback) {
       "password": db.password,
       "connector": db.connector
     }
-    console.log("[findDatabaseCredentialsFromModel]", datasource_setup.host);
+    logger.debug("[findDatabaseCredentialsFromModel]", datasource_setup.host);
     try {
       var datasource = loopback.createDataSource(datasource_setup);
       return callback(datasource)
     } catch (e) {
-      console.log("loopback.createDataSource ERROR");
+      logger.debug("loopback.createDataSource ERROR");
       //console.error(e);
       //console.trace(e);
     }
@@ -108,7 +111,7 @@ var getSystemDataSource = function (app, callback) {
 
 
 var checkTypeOfDB = function(db_type,callback) {
-  console.log("CHECK TYPE OF DB",db_type);
+  logger.debug("CHECK TYPE OF DB",db_type);
   var db_list = {}
 
   db_list['mysql'] = {type:'mysql'}
@@ -116,7 +119,7 @@ var checkTypeOfDB = function(db_type,callback) {
   db_list['postgresql'] = {type:'postgresql'}
 
   if (db_type in db_list) {
-    console.log("TROVATO",db_list[db_type].type);
+    logger.debug("TROVATO",db_list[db_type].type);
     return callback(true)
 
   } else return callback(false)
@@ -134,7 +137,7 @@ var checkTypeOfDB = function(db_type,callback) {
  */
 var buildModelfromTable = function (app, db_type, db_name, table, modelName, modelPath, datasource, callback) {
 
-  console.log("buildModelFromTable",db_type);
+  logger.debug("buildModelFromTable",db_type,table,modelName);
 
   checkTypeOfDB(db_type,function(value){
     if(!value) {
@@ -160,7 +163,7 @@ var buildModelfromTable = function (app, db_type, db_name, table, modelName, mod
           http: {"path": modelPath}
         }
           buildModelFromRDBMS(app, datasource, table, relation_options, function (model) {
-            console.log("[buildModelfromTable][buildModelFromRDBMS] return callback");
+            logger.debug("[buildModelfromTable][buildModelFromRDBMS] return callback : ", modelName);
             if(model) {
               return callback(model);
             }
@@ -172,7 +175,7 @@ var buildModelfromTable = function (app, db_type, db_name, table, modelName, mod
       if (db_type == 'mongodb') {
 
         buildModelFromNoSQL(app, datasource, table, function (model) {
-          console.log("[buildModelfromTable][buildModelFromNoSQL] return callback");
+          logger.debug("[buildModelfromTable][buildModelFromNoSQL] return callback");
           return callback(model);
         })
 
@@ -189,7 +192,7 @@ var buildModelfromTable = function (app, db_type, db_name, table, modelName, mod
  * @param callback
  */
 var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
-  console.log("TABLE", table);
+  logger.debug("[buildModelFromRDBMS][table]", table,options);
   datasource.discoverAndBuildModels(table, options,
     function (err, models) {
       if (err) {
@@ -198,18 +201,20 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
         // don't stop after a getaddrinfo ENOTFOUND error;
       }
       if (models) {
+        logger.debug("[buildModelFromRDBMS][models]")
         try {
-          app.model(models[camelize(table).trim().capitalize().value()])
-          console.log('[buildModelFromRDBMS][from path]:', camelize(table).trim().capitalize().value());
-          return callback(models[camelize(table).trim().capitalize().value()]);
+          app.model(models[camelize(options.name).trim().capitalize().value()])
+          logger.debug('[buildModelFromRDBMS][from path]:', camelize(options.name).trim().capitalize().value());
+          return callback(models[camelize(options.name).trim().capitalize().value()]);
         } catch (e) {
           // avoid [TypeError: Cannot read property 'prototype' of undefined] error to stop all the stuff
+          logger.debug("[buildModelFromRDBMS][catch error]")
           console.error(e)
           return callback(null);
         }
 
       } else {
-        console.log('[buildModelFromRDBMS][ERROR building]: ', options.http.path);
+        logger.debug('[buildModelFromRDBMS][ERROR building]: ', options.http.path);
         return callback(null)
       }
     })
@@ -232,7 +237,7 @@ var buildModelFromNoSQL = function (app, datasource, table, callback) {
   try {
     var runtimeModel = datasource.buildModelFromInstance(table, json_test, {idInjection: true});
     app.model(runtimeModel);
-    console.log('[buildModelFromNoSQL]');
+    logger.debug('[buildModelFromNoSQL]');
     return callback(runtimeModel);
 
   }catch(er) {
@@ -243,19 +248,19 @@ var buildModelFromNoSQL = function (app, datasource, table, callback) {
   }
 
 var getDataSource = function getDataSource(app, data) {
-  console.log("EVENT getDataSource");
+  logger.debug("EVENT getDataSource");
 
   // devo verificare se coll_db contiene credentiali DB e costruisco il datasource
   findDatabaseCredentialsFromModel(data, function (datasource) {
     if (datasource) {
-      console.log("datasource custom salvato in app")
+      logger.debug("datasource custom salvato in app")
       // è stato creato un datasource a partire dalla informazioni del repository
       app.CollectionDataSource = datasource;
     }
     /*
      else {
      getSystemDataSource(app, function (defaultdatasource) {
-     console.log("datasource default salvato in app")
+     logger.debug("datasource default salvato in app")
      app.CollectionDataSource = defaultdatasource;
 
      })
@@ -264,32 +269,53 @@ var getDataSource = function getDataSource(app, data) {
   })
 }
 var buildModel = function buildModel(app, db_type, db_name, db_table, modelName, modelPath, datasource, data) {
-  console.log("EVENT builModel");
+  logger.debug("EVENT builModel");
   buildModelfromTable(app, db_type, db_name, db_table, modelName, modelPath, datasource, function (model) {
     if (model) {
-      console.log("model generato");
+      logger.debug("[buildModel][model generato]",modelName);
       app.buildedModel = null;
       app.buildedModel = model;
+
+      var role = new RoleMapper(app);
+      var data = {
+         principalId_value : 4,
+         principalType_value : 'repositoryOwner',
+         userId: 2
+      }
+
+      role.assignRoleToModel(data,function(cb){
+        logger.debug("Ritorno da assignRoleToModel",cb);
+      })
+
     }
     if (!model) {
-      console.log("model nn generato");
+      logger.debug("[buildModel] model NON generato");
       app.buildedModel = null;
     }
   })
 
 }
 var checkCache = function (app, modelName, callaback) {
+  logger.debug("[checkCache][ModelName] ",modelName);
+
+  logger.debug("[ModelTableMap]",ModelTableMap);
+  /*
+   Disabilitata dopo nuovo schema per il nome della tabella della collection RepoColl
+   la tabella è sempre diversa dal ModelName
 
   if (modelName in ModelTableMap) {
+    logger.debug("[checkCache][ModelName is in ModelTableMap]", ModelTableMap[modelName])
+
     if (ModelTableMap[modelName].table != modelName) {
+      logger.debug("[checkCache]ModelTableMap[modelName].table != modelName ")
       modelName = ModelTableMap[modelName].table
     }
   }
-
+  */
   var ModelName = camelize(modelName).trim().capitalize().value();
-  console.log("ModelName", ModelName);
   if (app.models[ModelName]) {
-    console.log("[checkCache][cache app.models]", ModelName);
+    logger.debug("--[checkCache][cache app.models]", ModelName);
+    logger.debug("--[checkCache][app.buildedModel] = app.model[", ModelName+"] ");
     app.buildedModel = app.models[ModelName];
     //return callback(app.models[RepoName]);
 
@@ -301,7 +327,7 @@ var loadRepository = function (app, req, res, callback) {
   // Modello Repository
   var repositoryBuiltinModel = app.models.Repository;
   eventEmitter.emit('checkCache', app, req.params.repo_name);
-  console.log("ritorno da evento checkCache");
+  logger.debug("ritorno da evento checkCache");
   if (app.buildedModel) {
     callback.module = app.buildedModel;
     return callback(callback.module);
@@ -311,8 +337,8 @@ var loadRepository = function (app, req, res, callback) {
       if (repo_data) {
         eventEmitter.emit('getDataSource', app, repo_data);
         eventEmitter.emit('buildModel', app, 'mongodb', '', repo_data.location, repo_data.name, repo_data.path, repositoryDB);
-        console.log("ritorno dagli eventi");
-        console.log("--------------------------------------------------------------------------");
+        logger.debug("ritorno dagli eventi");
+        logger.debug("--------------------------------------------------------------------------");
 
         if (app.buildedModel) {
           callback.module = app.buildedModel;
@@ -325,6 +351,66 @@ var loadRepository = function (app, req, res, callback) {
     })
   }
 }
+
+/**
+ *
+ * @param app
+ * @param coll_data
+ * @returns {string|string|string}
+ */
+var setDB_type = function(app,coll_data) {
+
+  if (coll_data.coll_db.type != '')
+    var db_type = coll_data.coll_db.type;
+  else
+    var db_type = app.repo_data.coll_db.type;
+
+  return db_type;
+}
+/**
+ *
+ * @param app
+ * @param coll_data
+ * @returns {string|string|string|string|string|string|*}
+ */
+var setDB_name = function(app,coll_data) {
+
+  if (app.repo_data.coll_db.database)
+    var db_name = app.repo_data.coll_db.database
+  if (coll_data.coll_db.database)
+    var db_name = coll_data.coll_db.database;
+  return db_name;
+}
+/**
+ *
+ * @param app
+ * @param req_params
+ * @returns {*}
+ */
+var setModelName = function(app,req_params) {
+  var repoNameTMP = camelize(req_params.repo_name).trim().capitalize().value();
+  var collNameTMP = camelize(req_params.collection_name).trim().capitalize().value();
+
+  var modelName = repoNameTMP+collNameTMP
+  return modelName;
+
+}
+/**
+ *
+ * @param app
+ * @param req_params
+ * @returns {string}
+ */
+var setModelTable = function(app,req_params) {
+  var modelTable = req_params.repo_name+"_"+req_params.collection_name;
+  return modelTable;
+}
+
+
+
+
+
+
 
 
 eventEmitter.on('getDataSource', getDataSource);
@@ -346,12 +432,12 @@ module.exports = function (app) {
     },
     getCollection: function getCollection(req, res, next) {
 
-      console.log("***********************************************************************");
+      logger.debug("***********************************************************************");
 
-
-      eventEmitter.emit('checkCache', app, req.params.collection_name);
+      var modelName = setModelName(app,req.params);
+      eventEmitter.emit('checkCache', app, modelName);
       if (app.buildedModel) {
-        console.log("TROVATA CACHE GETCOLLECTION");
+        logger.debug("[checkCache][Model Loaded From Cache]");
         next.module = app.buildedModel;
         return next();
       }
@@ -364,15 +450,24 @@ module.exports = function (app) {
               if (coll_data) {
                 eventEmitter.emit('getDataSource', app, coll_data);
 
-                if (coll_data.coll_db.type != '') var db_type = coll_data.coll_db.type;
-                else var db_type = app.repo_data.coll_db.type;
+                var db_type = setDB_type(app,coll_data);
+                var db_name = setDB_name(app,coll_data);
+                var modelName = setModelName(app,req.params);
+                var modelTable = setModelTable(app,req.params);
 
-                if (app.repo_data.coll_db.database) var db_name = app.repo_data.coll_db.database
-                if (coll_data.coll_db.database) var db_name = coll_data.coll_db.database;
-                buildModelfromTable(app, db_type, db_name, coll_data.location, coll_data.name, coll_data.path, app.CollectionDataSource, function (model) {
+                logger.debug("----->modelTable<-----",modelTable);
+                //al posto di modelName ci stava coll_data.name
+                buildModelfromTable(app, db_type, db_name, modelTable, modelName, coll_data.path,
+                  app.CollectionDataSource, function (model) {
                   if (model) {
-                    console.log("OK.....");
-                    ModelTableMap[req.params.collection_name] = {table: coll_data.location};
+                    logger.debug("[getCollection][buildModelfromTable][OK]");
+
+//                    ModelTableMap[req.params.collection_name] = {table: coll_data.location};
+                    //ModelTableMap[modelName] = {table: coll_data.location};
+                    ModelTableMap[modelName] = {table: modelTable};
+                    logger.stream.write("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}")
+                    logger.debug("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}");
+
 
                     next.module = model;
                     return next()
@@ -393,7 +488,7 @@ module.exports = function (app) {
 
       eventEmitter.emit('checkCache', app, req.params.pathToDelete);
       if (app.buildedModel) {
-        console.log("TROVATA CACHE pathToDelete");
+        logger.debug("TROVATA CACHE pathToDelete");
         app.buildedModel = null;
         return next();
       } else return next();

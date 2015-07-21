@@ -1,11 +1,10 @@
 /**
- * Created by hellbreak on 23/06/15.
- *
- * Persit data
- *
- *
- *
+ * Created by Antonio Di Mariano on 23/06/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
+var camelize = require('underscore.string');
+
 exports.createTable = function createTable(datasource, data, callback) {
   console.log("[persistData]", data);
   var repoDB = datasource;
@@ -109,10 +108,27 @@ exports.createTable = function createTable(datasource, data, callback) {
         }
 
       }
-      repoDB.createModel(schema_collection.name, schema_collection.properties, schema_collection.options);
-      repoDB.autoupdate(schema_collection.name, function (err, result) {
+
+      var modelName;
+
+      var result = data.path;
+
+      if( result.lastIndexOf('/') != -1) {
+        console.log("COLLECTION PATH",result);
+        console.log("First part",result.split('/')[1])
+        console.log("Second part",result.split('/')[2]);
+
+           modelName = camelize(result.split('/')[1]).trim().capitalize().value() + "_" +
+                        camelize(result.split('/')[2]).trim().capitalize().value()
+          console.log("modelName----->",modelName)
+      } else{
+          modelName = camelize(schema_collection.name).trim().capitalize().value()
+          console.log("modelName----->",modelName)
+      }
+      repoDB.createModel(modelName, schema_collection.properties, schema_collection.options);
+      repoDB.autoupdate(modelName, function (err, result) {
         if (err) throw err;
-        console.log("RESULT:",result);
+        console.log("Model:",modelName);
         callback(true);
       })
     }
@@ -120,7 +136,8 @@ exports.createTable = function createTable(datasource, data, callback) {
 }
 
 var checkIfDataHasToBeImported = function(data,callback) {
-  if(data.import == true && data.coll_db.location == "remote") {
+  console.log("DATA",data.import);
+  if(data.import == "true" || data.import == true ) { //cambiare in boolean
     console.log("[PERSIST] Data has to be Impoterd");
     callback(true);
   } else callback(false);

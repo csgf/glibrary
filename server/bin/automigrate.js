@@ -1,8 +1,7 @@
 /**
- * Created by hellbreak on 29/06/15.
- */
-/**
- * Created by hellbreak on 25/06/15.
+ * Created by Antonio Di Mariano on 25/06/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
 var path = require('path');
 var app = require(path.resolve(__dirname, '../server'));

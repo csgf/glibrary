@@ -1,12 +1,12 @@
 module.exports = function mountRestApi(server) {
   var restApiRoot = server.get('restApiRoot');
+
   var repository = server.models.Repository;
   var app = require('../server.js');
   var bodyParser = require('body-parser');
   var methodOverride = require('method-override');
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
-  app.use(methodOverride());
-  //Catch json error
+  app.use(methodOverride());//Catch json error
 
   app.use (function (error, req, res, next){
   console.log("CATCH ERRORE")
@@ -18,6 +18,7 @@ module.exports = function mountRestApi(server) {
 
   });
 
+  app.use(restApiRoot, server.loopback.rest());
 
 
   var repositoryDB = app.dataSources.repoDB;
@@ -29,8 +30,6 @@ module.exports = function mountRestApi(server) {
   var testLib = require('../../common/helpers/loadModel');
   var tl = new testLib(app);
 
-  var check = require('../middleware/bodyParser');
-  var ck = new check();
 
   /**
    *
@@ -39,7 +38,6 @@ module.exports = function mountRestApi(server) {
    */
 
     //Elenco di tutti i repositories hostati sul server
-
 
   server.get('/v1/repos', function (req, res, next) {
     repository.find(req.query.filter, function (err, instance) {
@@ -232,7 +230,7 @@ module.exports = function mountRestApi(server) {
   // aggiorna item
   server.put('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
     console.log(" PUT /v1/repos/:repo_name/:collection_name/:item_id ");
-    next.module.findOne({where: {id: req.params.item_id}},
+    next.module.findById(req.params.item_id,
       function (err, instance) {
         if (err) return res.sendStatus(500)
         if(!instance) return res.sendStatus(404);
@@ -249,7 +247,7 @@ module.exports = function mountRestApi(server) {
   server.delete('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
 
     console.log("DELETE ITEM:", req.params.item_id);
-    next.module.findOne({where: {id: req.params.item_id}},
+    next.module.findById(req.params.item_id,
       function (err, instance) {
         if(!instance) return res.sendStatus(404);
         instance.destroy(function (err) {

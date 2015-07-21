@@ -1,6 +1,6 @@
 {
-  "name": "loopback-example-access-control",
-  "version": "0.0.0",
+  "name": "gLibrary",
+  "version": "2.0.0",
   "main": "server/server.js",
   "scripts": {
     "pretest": "jshint ."
@@ -27,7 +27,8 @@
     "querystring": "^0.2.0",
     "request": "^2.57.0",
     "serve-favicon": "^2.0.1",
-    "underscore.string": "^3.1.1"
+    "underscore.string": "^3.1.1",
+    "winston": "^1.0.1"
   },
   "optionalDependencies": {
     "loopback-explorer": "^1.1.0"

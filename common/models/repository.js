@@ -1,3 +1,8 @@
+/**
+ * created by Antonio Di Mariano on 6/6/2015
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
+ */
 module.exports = function(Repository) {
 
   userId = null;

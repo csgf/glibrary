@@ -1,8 +1,8 @@
 /**
- * Created by hellbreak on 13/07/15.
+ * Created by Antonio Di Mariano on 13/07/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
-module.exports = {
-  SetQueryLimit:function(req,res,next)  {
-    console.log("Set Query Limit", req);
-  }
+module.exports = function(){
+
 }

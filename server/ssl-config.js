@@ -1,5 +1,7 @@
 /**
- * Created by hellbreak on 09/06/15.
+ * Created by Antonio Di Mariano on 09/06/15.
+ * email:antonio.dimariano@gmail.com
+ * https://github.com/antoniodimariano/
  */
 var path = require('path'),
     fs = require("fs");
