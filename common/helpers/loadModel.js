@@ -200,6 +200,11 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
       if (err) {
         console.trace();
         console.error(err);
+        console.log("ERR",err.code)
+        if(err.code == 'ER_ACCESS_DENIED_ERROR') {
+          callback.code_error = 412;
+          return callback(null);
+        }
         // don't stop after a getaddrinfo ENOTFOUND error;
       }
       if (models) {
@@ -216,6 +221,7 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
 
       } else {
         logger.debug('[buildModelFromRDBMS][ERROR building]: ', options.http.path);
+
         return callback(null)
       }
     })
@@ -506,7 +512,9 @@ module.exports = function (app) {
 
                     next.module = model;
                     return next()
-                  } else return res.sendStatus(404);
+                  } else {
+                    return res.sendStatus(404);
+                  }
 
                 })
               } else {
@@ -517,6 +525,11 @@ module.exports = function (app) {
           } else return res.sendStatus(404);
         })
       }
+    },
+    getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
+      eventEmitter.emit('getDataSource', app, req.body);
+      next();
+
     },
     removeModel: function removeModel(req, res, next) {
 
