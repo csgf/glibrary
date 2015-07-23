@@ -1,6 +1,10 @@
 module.exports = function mountRestApi(server) {
   var restApiRoot = server.get('restApiRoot');
 
+  var events = require('events');
+  var eventEmitter = new events.EventEmitter();
+
+
   var repository = server.models.Repository;
   var app = require('../server.js');
   var bodyParser = require('body-parser');
@@ -121,7 +125,7 @@ module.exports = function mountRestApi(server) {
    * Crea una nuova collection o importa una tabella di un db esistente come collection nel repository <repo_name>.
    * Il nome della collections viene passato come parametro nel body
    */
-  server.post('/v1/repos/:repo_name', tl.getRepository, function (req, res, next) {
+  server.post('/v1/repos/:repo_name', tl.getRepository,tl.getDatasourceToWrite, function (req, res, next) {
 
   //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
     console.log("POST /v1/repos/:repo_name");
@@ -132,6 +136,7 @@ module.exports = function mountRestApi(server) {
         if (callback)  res.sendStatus(200, 'Repository Created');
         else          res.sendStatus(500);
       })
+
     })
 
   })
