@@ -2,9 +2,7 @@
   "name": "gLibrary",
   "version": "2.0.0",
   "main": "server/server.js",
-  "scripts": {
-    "pretest": "jshint ."
-  },
+
   "engines": {
     "node": "0.10.26",
     "npm": "1.4.13"
