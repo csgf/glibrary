@@ -5,7 +5,6 @@
  */
 var camelize = require('underscore.string');
 var loopback = require('loopback');
-var async = require('async');
 var events = require('events');
 var eventEmitter = new events.EventEmitter();
 
@@ -36,7 +35,7 @@ var findDataFromModel = function (app, path, model, callback) {
       return callback(false);
     }
     if (!data) {
-      logger.debug("model.findOne !data ");
+      logger.debug("model.findOne !data");
       return callback(false);
     }
     else {
@@ -139,7 +138,9 @@ var checkTypeOfDB = function(db_type,callback) {
  */
 var buildModelfromTable = function (app, db_type, db_name, table, modelName, modelPath, datasource, callback) {
 
-  logger.debug("buildModelFromTable",db_type,table,modelName);
+  logger.debug("----------[buildModelFromTable]-------------")
+  logger.debug("\nDB_TYPE:",db_type,"\nTABLE: ",table,"\nmodelName: ",modelName);
+  logger.debug("--------------------------------------------")
 
   checkTypeOfDB(db_type,function(value){
     if(!value) {
@@ -255,8 +256,7 @@ var buildModelFromNoSQL = function (app, datasource, table, callback) {
   }
 
 var getDataSource = function getDataSource(app, data) {
-  logger.debug("EVENT getDataSource",data);
-  logger.debug("EVENT app.repo_data",  app.repo_data);
+
   // devo verificare se coll_db contiene credentiali DB e costruisco il datasource
   findDatabaseCredentialsFromModel(data, function (datasource) {
     if (datasource) {
@@ -264,27 +264,20 @@ var getDataSource = function getDataSource(app, data) {
       // è stato creato un datasource a partire dalla informazioni del repository
       app.CollectionDataSource = datasource;
     } else {
+      logger.debug("[getDataSource] Using Repository's Datasource")
       app.CollectionDataSource = app.repo_ds;
     }
-    /*
-     else {
-     getSystemDataSource(app, function (defaultdatasource) {
-     logger.debug("datasource default salvato in app")
-     app.CollectionDataSource = defaultdatasource;
-
-     })
-     }
-     */
   })
 }
 var buildModel = function buildModel(app, db_type, db_name, db_table, modelName, modelPath, datasource, data) {
-  logger.debug("EVENT builModel");
+  logger.debug("-------------[buildModel]--------------");
   buildModelfromTable(app, db_type, db_name, db_table, modelName, modelPath, datasource, function (model) {
     if (model) {
       logger.debug("[buildModel][model generato]",modelName);
       app.buildedModel = null;
       app.buildedModel = model;
 
+      /*
       var role = new RoleMapper(app);
       var data = {
          principalId_value : 4,
@@ -295,6 +288,7 @@ var buildModel = function buildModel(app, db_type, db_name, db_table, modelName,
       role.assignRoleToModel(data,function(cb){
         logger.debug("Ritorno da assignRoleToModel",cb);
       })
+      */
 
     }
     if (!model) {
@@ -305,31 +299,27 @@ var buildModel = function buildModel(app, db_type, db_name, db_table, modelName,
 
 }
 var checkCache = function (app, modelName, callaback) {
-  logger.debug("[checkCache][ModelName] ",modelName);
 
-  logger.debug("[ModelTableMap]",ModelTableMap);
-  /*
-   Disabilitata dopo nuovo schema per il nome della tabella della collection RepoColl
-   la tabella è sempre diversa dal ModelName
-  */
+  logger.debug("------------[checkCache]----------------");
+
   if (modelName in ModelTableMap) {
-    logger.debug("[checkCache][ModelName is in ModelTableMap]", ModelTableMap[modelName])
-
+    logger.debug("-*-[checkCache][ModelName is in ModelTableMap]", ModelTableMap[modelName])
     if (ModelTableMap[modelName].table != modelName) {
-      logger.debug("[checkCache]ModelTableMap[modelName].table != modelName ")
+      logger.debug("-*-[checkCache]ModelTableMap[modelName].table != modelName ")
       modelName = ModelTableMap[modelName].table
     }
   }
 
   var ModelName = camelize(modelName).trim().capitalize().value();
+
   if (app.models[ModelName]) {
-    logger.debug("--[checkCache][cache app.models]", ModelName);
-    logger.debug("--[checkCache][app.buildedModel] = app.model[", ModelName+"] ");
-    console.log("RepoDataSource",RepoDataSource);
-    if(modelName in   RepoDataSource) {
-      console.log("--[checkCache][UPDATE app.CollectionDataSource]")
+    logger.debug("--[checkCache][found in cache] app.model[",ModelName+"]");
+
+    if(modelName in RepoDataSource) {
       app.CollectionDataSource = RepoDataSource[modelName].datasource;
+      logger.debug("-*-[checkCache][app.CollectionDataSource = RepoDataSource[modelName].datasource]")
     }
+
     app.buildedModel = app.models[ModelName];
     //return callback(app.models[RepoName]);
 
@@ -337,16 +327,17 @@ var checkCache = function (app, modelName, callaback) {
 }
 
 var loadRepository = function (app, req, res, callback) {
+
   var repositoryDB = app.dataSources.repoDB;
+
   // Modello Repository
   var repositoryBuiltinModel = app.models.Repository;
   eventEmitter.emit('checkCache', app, req.params.repo_name);
-  logger.debug("ritorno da evento checkCache");
-  logger.debug("CONTROLLO REPO_DATA",app.repo_data);
+
+
+ // logger.debug("CONTROLLO REPO_DATA",app.repo_data);
 
   if (app.buildedModel) {
-    logger.debug("[if app.buildedModel] ->CONTROLLO REPO_DATA",app.repo_data);
-
     callback.module = app.buildedModel;
     return callback(callback.module);
   }
@@ -355,19 +346,18 @@ var loadRepository = function (app, req, res, callback) {
       if (repo_data) {
         eventEmitter.emit('getDataSource', app, repo_data);
         eventEmitter.emit('buildModel', app, 'mongodb', '', repo_data.location, repo_data.name, repo_data.path, repositoryDB);
-        logger.debug("ritorno dagli eventi");
-        logger.debug("--------------------------------------------------------------------------");
+        callback.module = app.buildedModel;
+        app.repo_data = repo_data;
+       // usato nel getDataSource
+        app.repo_ds = app.CollectionDataSource;
 
-        if (app.buildedModel) {
-          logger.debug("Update app.repo_data with ",repo_data);
+        RepoDataSource[req.params.repo_name] = {datasource: app.CollectionDataSource};
+        logger.debug("*[loadRepository][app.repo_data = repo_data]");
+        logger.debug("*[loadRepository][app.repo_ds = app.CollectionDataSource]");
+        logger.debug("*[loadRepository][RepoDataSource[req.params.repo_name] = {datasource: app.CollectionDataSource};]");
+        logger.debug("*[loadRepository][return callback]");
+        return callback(callback.module);
 
-          callback.module = app.buildedModel;
-          app.repo_data = repo_data;
-          app.repo_ds = app.CollectionDataSource;
-          RepoDataSource[req.params.repo_name] = {datasource: app.CollectionDataSource};
-
-          return callback(callback.module);
-        }
       } else {
         return callback(null);//res.sendStatus(404);
       }
@@ -429,13 +419,6 @@ var setModelTable = function(app,req_params) {
   return modelTable;
 }
 
-
-
-
-
-
-
-
 eventEmitter.on('getDataSource', getDataSource);
 eventEmitter.on('buildModel', buildModel);
 eventEmitter.on('checkCache', checkCache);
@@ -449,14 +432,14 @@ module.exports = function (app) {
       loadRepository(app, req, res, function (cb) {
         if (cb) {
           next.module = cb;
+          logger.debug("------------end of getRepository---------------")
           return next()
         } else return res.sendStatus(404);
       })
     },
     getCollection: function getCollection(req, res, next) {
 
-      logger.debug("***********************************************************************");
-      logger.debug("getCOLLECTION CONTROLLO app.repo_data",app.repo_data);
+      logger.debug("-------------- START [getCOLLECTION] -----------------");
       var modelName = setModelName(app,req.params);
 
       eventEmitter.emit('checkCache', app, modelName);
@@ -468,7 +451,6 @@ module.exports = function (app) {
 
       else {
         logger.debug("--------------[getCOLLECTION] loadRepository---------------");
-
         loadRepository(app, req, res, function (repoModel) {
           if (repoModel) {
             var requestURL = req.params.repo_name + '/' + req.params.collection_name;
@@ -480,7 +462,7 @@ module.exports = function (app) {
                 var db_name = setDB_name(app,coll_data);
 
                 if (coll_data.import == "true" ) {
-                  console.log("DATA IMPORT");
+                  logger.debug("[getCOLLECTION] IMPORT DATA==TRUE");
                   var modelTable = coll_data.location;
                   var modelName = modelTable;
 
@@ -489,7 +471,7 @@ module.exports = function (app) {
                   var modelName = setModelName(app,req.params);
 
                 }
-                logger.debug("----->modelTable<-----",modelTable);
+                logger.debug("[getCOLLECTION][modelTable]",modelTable);
                 //al posto di modelName ci stava coll_data.name
                 buildModelfromTable(app, db_type, db_name, modelTable, modelName, coll_data.path,
                   app.CollectionDataSource, function (model) {
@@ -502,14 +484,6 @@ module.exports = function (app) {
                       logger.debug("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}");
 
                     }
-//                    ModelTableMap[req.params.collection_name] = {table: coll_data.location};
-                    //ModelTableMap[modelName] = {table: coll_data.location};
-                    /*
-                    ModelTableMap[modelName] = {table: modelTable};
-                    logger.stream.write("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}")
-                    logger.debug("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}");
-                    */
-
                     next.module = model;
                     return next()
                   } else {

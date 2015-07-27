@@ -5,8 +5,10 @@
  */
 var camelize = require('underscore.string');
 
+
 exports.createTable = function createTable(datasource, data, callback) {
   console.log("[persistData]", data);
+
   var repoDB = datasource;
   var table_name = data.name;
 
@@ -67,7 +69,6 @@ exports.createTable = function createTable(datasource, data, callback) {
     }
     else {
       console.log("checkIfDataHasToBeImported FALSE");
-
       if (data.schema) {
         var schema_collection = {
           "name": table_name,
@@ -78,7 +79,8 @@ exports.createTable = function createTable(datasource, data, callback) {
           },
           "properties": data.schema
         }
-      } else {
+      }
+      else {
         var schema_collection = {
           "name": table_name,
           "base": "PersistedModel",
@@ -118,11 +120,16 @@ exports.createTable = function createTable(datasource, data, callback) {
         console.log("First part",result.split('/')[1])
         console.log("Second part",result.split('/')[2]);
 
-           modelName = camelize(result.split('/')[1]).trim().capitalize().value() + "_" +
+            /*
+            modelName = camelize(result.split('/')[1]).trim().capitalize().value() + "_" +
                         camelize(result.split('/')[2]).trim().capitalize().value()
-          console.log("modelName----->",modelName)
+           */
+           modelName =  result.split('/')[1]+"_"+result.split('/')[2];
+
+        console.log("modelName----->",modelName)
       } else{
-          modelName = camelize(schema_collection.name).trim().capitalize().value()
+          modelName = schema_collection.name;
+          //modelName = camelize(schema_collection.name).trim().capitalize().value()
           console.log("modelName----->",modelName)
       }
       repoDB.createModel(modelName, schema_collection.properties, schema_collection.options);
