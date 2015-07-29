@@ -4,13 +4,12 @@
     "connector": "memory"
   },
   "repoDB": {
-    "host": "ds055792.mongolab.com",
-    "port": "55792",
-    "database": "heroku_79dt6c66",
-    "username": "heroku_79dt6c66",
+    "host": "ds053448.mongolab.com",
+    "port": "53448",
+    "database": "heroku_bp1hkt5p",
+    "username": "hellbreak",
     "password": "2015MongoLab",
     "name": "mongoDB",
     "connector": "mongodb"
   }
 }
-
