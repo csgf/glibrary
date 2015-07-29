@@ -4,11 +4,11 @@
     "connector": "memory"
   },
   "repoDB": {
-    "host": "localhost",
+    "host": "ds037468.mongolab.com:37468/heroku_app24425766",
     "port": "27017",
     "database": "repository",
-    "username": "",
-    "password": "",
+    "username": "hellbreak",
+    "password": "2015MongoLab",
     "name": "mongoDB",
     "connector": "mongodb"
   }
