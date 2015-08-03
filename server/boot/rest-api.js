@@ -3,6 +3,8 @@ module.exports = function mountRestApi(server) {
 
   var events = require('events');
   var eventEmitter = new events.EventEmitter();
+  var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+
 
 
   var repository = server.models.Repository;
@@ -29,6 +31,22 @@ module.exports = function mountRestApi(server) {
   var tl = new testLib(app);
 
 
+
+  app.use(function(req,res,next){
+    console.log("VERIFY TOKEN");
+    // check header or url parameters or post parameters for token
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+    // decode token
+    if (token) {
+      console.log("OK TOKEN",token);
+      next();
+    } else {
+      console.log("NO TOKEN");
+      next();
+    }
+  })
+
   /**
    *
    *  REPOSITORIES
@@ -37,7 +55,11 @@ module.exports = function mountRestApi(server) {
 
     //Elenco di tutti i repositories hostati sul server
 
-  server.get('/v1/repos', function (req, res, next) {
+  server.get('/noauth',function(req,res,next){
+    console.log("NO",req.user);
+    res.sendStatus(401);
+  })
+  server.get('/v1/repos',function (req, res, next) {
     repository.find(req.query.filter, function (err, instance) {
       if (err)  return res.send(JSON.stringify(err));
       if(!instance) return res.sendStatus(404);
@@ -48,31 +70,28 @@ module.exports = function mountRestApi(server) {
 
   //Crea un nuovo repository
 
-  server.post('/v1/repos',function (req, res) {
+  server.post('/v1/repos',tl.buildpayload,function (req, res,next) {
     console.log(" POST repos  ");
-
-    repository.create(req.body, function (err, instance) {
+    repository.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
-
-
-
-      service.createTable(repositoryDB, req.body, function (callback) {
+      service.createTable(repositoryDB, next.body, function (callback) {
         if (callback)  return res.sendStatus(200, 'Repository Created');
         else           return res.sendStatus(500);
       })
     })
   })
 
-  server.put('/v1/repos/:repo_name', function (req, res, next) {
+  server.put('/v1/repos/:repo_name',  function (req, res, next) {
     console.log("SIAMO QUI", req.params.repo_name);
     repository.findOne({where: {name: req.params.repo_name}},
-      function (err, instance) {
-        if (err) res.sendStatus(500);
-        if(!instance) return res.sendStatus(404);
-        instance.updateAttributes(req.body, function (err) {
-          res.sendStatus(200, 'repository updated')
+        function (err, instance) {
+          if (err) res.sendStatus(500);
+          if(!instance) return res.sendStatus(404);
+          instance.updateAttributes(req.body, function (err) {
+            res.sendStatus(200, 'repository updated')
+          })
         })
-      })
+
   })
 
 
@@ -90,7 +109,7 @@ module.exports = function mountRestApi(server) {
         repository.destroyById(instance.id, function (err) {
           if (err) return res.sendStatus(500);
           console.log("delete repository instance", instance.location);
-          ld.removeModel(req, res, function (cb) {
+          tl.removeModel(req, res, function (cb) {
             return res.sendStatus(200)
           })
         })
@@ -129,10 +148,9 @@ module.exports = function mountRestApi(server) {
 
   //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
     console.log("POST /v1/repos/:repo_name");
-    next.module.create(req.body, function (err, instance) {
+    next.module.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
-
-      service.createTable(app.CollectionDataSource, req.body, function (callback) {
+      service.createTable(app.CollectionDataSource, next.body, function (callback) {
         if (callback)  res.sendStatus(200, 'Repository Created');
         else          res.sendStatus(500);
       })
@@ -159,7 +177,7 @@ module.exports = function mountRestApi(server) {
 
   //Elenco di tutti gli item contenuti nella collection <collection_name>
   server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
-    console.log("GET collection_name")
+    console.log("GET collection_name",req.query.filter);
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
       if(!instance) return res.sendStatus(404);
@@ -174,7 +192,7 @@ module.exports = function mountRestApi(server) {
         if (err) res.sendStatus(500);
         if(!instance) return res.sendStatus(404);
         instance.updateAttributes(req.body, function (err) {
-          res.sendStatus(200, 'repository updated')
+          res.sendStatus(200, 'collection updated')
         })
       })
   })
@@ -192,6 +210,7 @@ module.exports = function mountRestApi(server) {
           if (err) return res.sendStatus(500)
           else {
             console.log("delete repository instance", instance.location);
+
             req.params.pathToDelete = req.params.collection_name;
             tl.removeModel(req, res, function (cb) {
               return res.sendStatus(200)
@@ -254,7 +273,7 @@ module.exports = function mountRestApi(server) {
           else {
             console.log("delete item instance", instance.location);
             req.params.repo_name = req.params.collection_name;
-            ld.removeModel(req, res, function (cb) {
+            tl.removeModel(req, res, function (cb) {
               return res.sendStatus(200)
             })
           }

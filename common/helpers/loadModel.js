@@ -109,6 +109,10 @@ var getSystemDataSource = function (app, callback) {
   var repositoryDB = app.dataSources.repoDB;
   return callback(repositoryDB);
 }
+var setSystemDataSource = function(app) {
+  app.CollectionDataSource = app.dataSources.repoDB;
+  return true;
+}
 
 
 var checkTypeOfDB = function(db_type,callback) {
@@ -344,10 +348,20 @@ var loadRepository = function (app, req, res, callback) {
   else {
     findDataFromModel(app, req.params.repo_name, repositoryBuiltinModel, function (repo_data) {
       if (repo_data) {
-        eventEmitter.emit('getDataSource', app, repo_data);
+
+        if(!repo_data.coll_db || repo_data.coll_db.host == ''){
+          logger.debug("[loadRepository] Load system datasources");
+          app.CollectionDataSource = app.dataSources.repoDB;
+
+        } else {
+          eventEmitter.emit('getDataSource', app, repo_data);
+        }
+
         eventEmitter.emit('buildModel', app, 'mongodb', '', repo_data.location, repo_data.name, repo_data.path, repositoryDB);
         callback.module = app.buildedModel;
         app.repo_data = repo_data;
+        console.log("REPO DATA:",app.repo_data);
+
        // usato nel getDataSource
         app.repo_ds = app.CollectionDataSource;
 
@@ -373,10 +387,10 @@ var loadRepository = function (app, req, res, callback) {
  */
 var setDB_type = function(app,coll_data) {
 
-  if (coll_data.coll_db.type != '')
+  if (coll_data.coll_db && coll_data.coll_db.type != '')
     var db_type = coll_data.coll_db.type;
   else
-    var db_type = app.repo_data.coll_db.type;
+    var db_type = 'mongodb';
 
   return db_type;
 }
@@ -388,7 +402,13 @@ var setDB_type = function(app,coll_data) {
  */
 var setDB_name = function(app,coll_data) {
 
-  if (app.repo_data.coll_db.database)
+
+  console.log("REPO",app.repo_data);
+  if(!app.repo_data.coll_db) {
+    var db_name =   'repository';
+    console.log("QUI");
+  }
+  if (app.repo_data.coll_db && app.repo_data.coll_db.database != '')
     var db_name = app.repo_data.coll_db.database
   if (coll_data.coll_db.database)
     var db_name = coll_data.coll_db.database;
@@ -456,10 +476,17 @@ module.exports = function (app) {
             var requestURL = req.params.repo_name + '/' + req.params.collection_name;
             findDataFromModel(app, requestURL, repoModel, function (coll_data) {
               if (coll_data) {
-                eventEmitter.emit('getDataSource', app, coll_data);
+                if(!coll_data.coll_db || coll_data.coll_db == null ) {
+                  app.CollectionDataSource = app.dataSources.repoDB;
+                  var db_type = 'mongodb';
+                  var db_name = app.dataSources.repoDB.database;
 
-                var db_type = setDB_type(app,coll_data);
-                var db_name = setDB_name(app,coll_data);
+                } else {
+                  eventEmitter.emit('getDataSource', app, coll_data);
+                  var db_type = setDB_type(app,coll_data);
+                  var db_name = setDB_name(app,coll_data);
+
+                }
 
                 if (coll_data.import == "true" ) {
                   logger.debug("[getCOLLECTION] IMPORT DATA==TRUE");
@@ -501,21 +528,78 @@ module.exports = function (app) {
       }
     },
     getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
-      eventEmitter.emit('getDataSource', app, req.body);
-      next();
 
+      setupParameters(req,res,function(json_body){
+        logger.debug("[getDatasourceToWrite][json_body]",json_body);
+        next.body = json_body;
+        if(!next.body.coll_db) {
+          app.CollectionDataSource = app.dataSources.repoDB;
+        } else {
+          eventEmitter.emit('getDataSource', app, req.body);
+        }
+        next();
+      })
     },
     removeModel: function removeModel(req, res, next) {
 
 
-      eventEmitter.emit('checkCache', app, req.params.pathToDelete);
+      eventEmitter.emit('checkCache', app,  req.params.pathToDelete);
       if (app.buildedModel) {
         logger.debug("TROVATA CACHE pathToDelete");
         app.buildedModel = null;
         return next();
-      } else return next();
+      } else {
+        console.log("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
+        app.buildedModel = null;
+        return next();
+      }
 
     },
 
+    buildpayload: function buildpayload(req,res,next) {
+      setupParameters(req,res,function(json_body){
+        logger.debug("[json_body]",json_body);
+        next.body = json_body;
+        next();
+      })
+
+    }
+
   }
+}
+var setupParameters = function(req,res,next) {
+  // POST su /v1/repos
+  var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
+  var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
+
+  if(!req.params.repo_name) {
+    var path = (!req.body.path ?  '/'+req.body.name.trim() :  req.body.path.trim());
+  }
+  //POST su /v1/repo/:repo_name
+  if(req.params.repo_name) {
+    var path = (!req.body.path ? '/'+req.params.repo_name+'/'+req.body.name.trim() : req.body.path.trim());
+    var import_flag = (!req.body.import ? "false" : req.body.import);
+    var schema = (!req.body.schema ? null : req.body.schema);
+  }
+
+  if(import_flag) {
+    parameters = {
+      "name":req.body.name,
+      "path": path,
+      "location":location,
+      "coll_db" : coll_db,
+      "import": import_flag,
+      "schema":schema
+    }
+  } else {
+    parameters = {
+      "name":req.body.name,
+      "path": path,
+      "location":location,
+      "coll_db" : coll_db,
+    }
+
+  }
+  logger.debug("[setupParameters][parameters]:",parameters);
+  next(parameters);
 }
