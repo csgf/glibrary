@@ -28,10 +28,14 @@
     "public": false
   },
   "user": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": true
   },
   "repository": {
+    "dataSource": "repoDB",
+    "public": true
+  },
+  "replica": {
     "dataSource": "repoDB",
     "public": true
   }
