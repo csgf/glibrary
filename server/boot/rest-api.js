@@ -8,6 +8,7 @@ module.exports = function mountRestApi(server) {
 
 
   var repository = server.models.Repository;
+  var Replica = server.models.Replica;
   var app = require('../server.js');
   var bodyParser = require('body-parser');
   var methodOverride = require('method-override');
@@ -30,6 +31,8 @@ module.exports = function mountRestApi(server) {
   var testLib = require('../../common/helpers/loadModel');
   var tl = new testLib(app);
 
+  var relation = require("../../common/helpers/modelRelation");
+  var rl = new relation(app);
 
 
   app.use(function(req,res,next){
@@ -175,8 +178,8 @@ module.exports = function mountRestApi(server) {
 
   })
 
-  //Elenco di tutti gli item contenuti nella collection <collection_name>
-  server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
+  //Ritorna le properties della collection  :collection_name
+  server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, rl.setRelation,function (req, res, next) {
     console.log("GET collection_name",req.query.filter);
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
@@ -245,7 +248,42 @@ module.exports = function mountRestApi(server) {
        else return res.send(item);
     })
   })
-  // aggiorna item
+
+  // Elenco Repliche per collection
+
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection,rl.setRelation, function (req, res, next) {
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
+    next.module.findById(
+      req.params.item_id,
+      {include: 'replicas'},
+
+      function (err, instance) {
+      if (err) res.sendStatus(500);
+      if(!instance) return res.sendStatus(404);
+      res.json(instance);
+    })
+
+  })
+
+
+  // GET replica per collection
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id', tl.getCollection,rl.setRelation, function (req, res, next) {
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id",  req.params.replica_id);
+    Replica.findById(req.params.replica_id,
+      {
+          fields: {"collectionId":false, "id":false},
+          where: {id: req.params.item_id}
+      },
+      function (err, instance) {
+        if (err)
+        res.sendStatus(500);
+        if(!instance) return res.sendStatus(404);
+        res.json(instance);
+      })
+  })
+
+
+    // aggiorna item
   server.put('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
     console.log(" PUT /v1/repos/:repo_name/:collection_name/:item_id ");
     next.module.findById(req.params.item_id,
