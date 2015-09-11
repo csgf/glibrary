@@ -452,6 +452,7 @@ module.exports = function (app) {
       loadRepository(app, req, res, function (cb) {
         if (cb) {
           next.module = cb;
+          app.repositoryModel =cb;
           logger.debug("------------end of getRepository---------------")
           return next()
         } else return res.sendStatus(404);
@@ -514,11 +515,9 @@ module.exports = function (app) {
                     }
                     next.module = model;
                     app.next_module = model; // necessario per chiamata diretta
-                    return next();
+                    //return next();
 
-                    /*
-                      set hasMany Replicas
-
+                    //set hasMany Replicas
                     var relation = require("./modelRelation");
                     var rl = new relation(app);
                     var Replica = app.models.Replica;
@@ -528,7 +527,7 @@ module.exports = function (app) {
                       return next()
 
                     });
-                    */
+
                   } else {
                     return res.sendStatus(404);
                   }
