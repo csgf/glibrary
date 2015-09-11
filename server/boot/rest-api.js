@@ -6,7 +6,6 @@ module.exports = function mountRestApi(server) {
   var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 
 
-
   var repository = server.models.Repository;
   var Replica = server.models.Replica;
   var app = require('../server.js');
@@ -15,13 +14,13 @@ module.exports = function mountRestApi(server) {
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());//Catch json error
 
-  app.use (function (error, req, res, next){
-  console.log("CATCH ERRORE")
-    if(error instanceof SyntaxError) {
+  app.use(function (error, req, res, next) {
+    console.log("CATCH ERRORE")
+    if (error instanceof SyntaxError) {
       console.trace();
       console.error(error);
       res.sendStatus(400);
-    }else next();
+    } else next();
 
   });
 
@@ -35,14 +34,14 @@ module.exports = function mountRestApi(server) {
   var rl = new relation(app);
 
 
-  app.use(function(req,res,next){
+  app.use(function (req, res, next) {
     console.log("VERIFY TOKEN");
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
 
     // decode token
     if (token) {
-      console.log("OK TOKEN",token);
+      console.log("OK TOKEN", token);
       next();
     } else {
       console.log("NO TOKEN");
@@ -58,14 +57,14 @@ module.exports = function mountRestApi(server) {
 
     //Elenco di tutti i repositories hostati sul server
 
-  server.get('/noauth',function(req,res,next){
-    console.log("NO",req.user);
+  server.get('/noauth', function (req, res, next) {
+    console.log("NO", req.user);
     res.sendStatus(401);
   })
-  server.get('/v1/repos',function (req, res, next) {
+  server.get('/v1/repos', function (req, res, next) {
     repository.find(req.query.filter, function (err, instance) {
       if (err)  return res.send(JSON.stringify(err));
-      if(!instance) return res.sendStatus(404);
+      if (!instance) return res.sendStatus(404);
       return res.send(instance);
     })
   })
@@ -73,7 +72,7 @@ module.exports = function mountRestApi(server) {
 
   //Crea un nuovo repository
 
-  server.post('/v1/repos',tl.buildpayload,function (req, res,next) {
+  server.post('/v1/repos', tl.buildpayload, function (req, res, next) {
     console.log(" POST repos  ");
     repository.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
@@ -84,16 +83,16 @@ module.exports = function mountRestApi(server) {
     })
   })
 
-  server.put('/v1/repos/:repo_name',  function (req, res, next) {
+  server.put('/v1/repos/:repo_name', function (req, res, next) {
     console.log("SIAMO QUI", req.params.repo_name);
     repository.findOne({where: {name: req.params.repo_name}},
-        function (err, instance) {
-          if (err) res.sendStatus(500);
-          if(!instance) return res.sendStatus(404);
-          instance.updateAttributes(req.body, function (err) {
-            res.sendStatus(200, 'repository updated')
-          })
+      function (err, instance) {
+        if (err) res.sendStatus(500);
+        if (!instance) return res.sendStatus(404);
+        instance.updateAttributes(req.body, function (err) {
+          res.sendStatus(200, 'repository updated')
         })
+      })
 
   })
 
@@ -107,7 +106,7 @@ module.exports = function mountRestApi(server) {
      */
     repository.findOne({where: {name: req.params.repo_name}},
       function (err, instance) {
-        if(!instance) return res.sendStatus(404);
+        if (!instance) return res.sendStatus(404);
         // instance.destroy(function (callback) {
         repository.destroyById(instance.id, function (err) {
           if (err) return res.sendStatus(500);
@@ -134,11 +133,11 @@ module.exports = function mountRestApi(server) {
     //Elenco di tutte le collection del repository <repo_name>
   server.get('/v1/repos/:repo_name', tl.getRepository, function (req, res, next) {
 
- // server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
+    // server.get('/v1/repos/:repo_name', ld.getRepository, function (req, res, next) {
 
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.send(err);
-      if(!instance) return res.sendStatus(404);
+      if (!instance) return res.sendStatus(404);
       res.send(instance);
     })
   });
@@ -147,9 +146,9 @@ module.exports = function mountRestApi(server) {
    * Crea una nuova collection o importa una tabella di un db esistente come collection nel repository <repo_name>.
    * Il nome della collections viene passato come parametro nel body
    */
-  server.post('/v1/repos/:repo_name', tl.getRepository,tl.getDatasourceToWrite, function (req, res, next) {
+  server.post('/v1/repos/:repo_name', tl.getRepository, tl.getDatasourceToWrite, function (req, res, next) {
 
-  //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
+    //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
     console.log("POST /v1/repos/:repo_name");
     next.module.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
@@ -163,27 +162,27 @@ module.exports = function mountRestApi(server) {
   })
 
 
-  server.head('/v1/repos/:repo_name/:collection_name',tl.getCollection,function(req,res,next){
+  server.head('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
 
-    console.log("MODELLO",next.module.definition.rawProperties); // stampa properties del modello
+    console.log("MODELLO", next.module.definition.rawProperties); // stampa properties del modello
 
 
     res.end(next.module.definition.rawProperties);
 
   })
 
-  server.get('/v1/repos/:repo_name/:collection_name/_schema',tl.getCollection,function(req,res,next){
+  server.get('/v1/repos/:repo_name/:collection_name/_schema', tl.getCollection, function (req, res, next) {
     console.log("GET collection SCHEMA");
     res.json(next.module.definition.properties);
 
   })
 
   //Ritorna le properties della collection  :collection_name
-  server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, rl.setRelation,function (req, res, next) {
-    console.log("GET collection_name",req.query.filter);
+  server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
+    console.log("GET collection_name", req.query.filter);
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
-      if(!instance) return res.sendStatus(404);
+      if (!instance) return res.sendStatus(404);
       res.json(instance);
     })
   })
@@ -193,7 +192,7 @@ module.exports = function mountRestApi(server) {
     next.module.findOne({where: {name: req.body.name}},
       function (err, instance) {
         if (err) res.sendStatus(500);
-        if(!instance) return res.sendStatus(404);
+        if (!instance) return res.sendStatus(404);
         instance.updateAttributes(req.body, function (err) {
           res.sendStatus(200, 'collection updated')
         })
@@ -207,8 +206,8 @@ module.exports = function mountRestApi(server) {
     console.log("DELETE COLLECTION:", req.params.collection_name);
     next.module.findOne({where: {name: req.params.collection_name}},
       function (err, instance) {
-        if(err) return res.sendStatus(500);
-        if(!instance) return res.sendStatus(404);
+        if (err) return res.sendStatus(500);
+        if (!instance) return res.sendStatus(404);
         instance.destroy(function (err) {
           if (err) return res.sendStatus(500)
           else {
@@ -245,51 +244,18 @@ module.exports = function mountRestApi(server) {
     next.module.findById(req.params.item_id, function (err, item) {
       if (err) return res.sendStatus(500);
       if (!item) return res.sendStatus(404);
-       else return res.send(item);
+      else return res.send(item);
     })
   })
 
-  // Elenco Repliche per collection
 
-  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection,rl.setRelation, function (req, res, next) {
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
-    next.module.findById(
-      req.params.item_id,
-      {include: 'replicas'},
-
-      function (err, instance) {
-      if (err) res.sendStatus(500);
-      if(!instance) return res.sendStatus(404);
-      res.json(instance);
-    })
-
-  })
-
-
-  // GET replica per collection
-  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id', tl.getCollection,rl.setRelation, function (req, res, next) {
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id",  req.params.replica_id);
-    Replica.findById(req.params.replica_id,
-      {
-          fields: {"collectionId":false, "id":false},
-          where: {id: req.params.item_id}
-      },
-      function (err, instance) {
-        if (err)
-        res.sendStatus(500);
-        if(!instance) return res.sendStatus(404);
-        res.json(instance);
-      })
-  })
-
-
-    // aggiorna item
+  // aggiorna item
   server.put('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
     console.log(" PUT /v1/repos/:repo_name/:collection_name/:item_id ");
     next.module.findById(req.params.item_id,
       function (err, instance) {
         if (err) return res.sendStatus(500)
-        if(!instance) return res.sendStatus(404);
+        if (!instance) return res.sendStatus(404);
         else {
           instance.updateAttributes(req.body, function (err) {
             if (err) return res.sendStatus(500)
@@ -299,13 +265,14 @@ module.exports = function mountRestApi(server) {
       })
   })
 
+
   // Cancella item
   server.delete('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
 
     console.log("DELETE ITEM:", req.params.item_id);
     next.module.findById(req.params.item_id,
       function (err, instance) {
-        if(!instance) return res.sendStatus(404);
+        if (!instance) return res.sendStatus(404);
         instance.destroy(function (err) {
           if (err) return res.sendStatus(500)
           else {
@@ -318,5 +285,105 @@ module.exports = function mountRestApi(server) {
         })
       })
   })
+
+  /* --- Collection Relationships --- */
+
+  /*
+   creates an hasMany relationship between :collection_name module and the one passed as body parameter
+
+   */
+
+  server.post('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
+    console.log("Set Relation between models", req.body);
+    first_model = next.module;
+    req.params.collection_name = req.body.relatedCollection;
+    tl.getCollection(req, res, function (cb) {
+      related_model = app.next_module;
+      fk = req.body.fk;
+      name = req.body.name;
+      rl.setModelRelation(first_model, related_model, fk, name, function (callback) {
+        res.sendStatus(200, 'Relation between models has just created')
+
+      })
+    })
+
+  })
+
+  /*
+   retrives collection_name by item_id and its related collection module
+   */
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection,rl.buildRelation, function (req, res, next) {
+
+    next.module.findById(req.params.item_id,
+      {include : app.relationName},
+      function (err, instance) {
+
+        if (err){
+          console.log("Relation Query Error:",err);
+        }
+        if (!instance) return res.sendStatus(404);
+        res.json(instance);
+      })
+  })
+
+  /* -- Replicas --*/
+
+  /* List all  replicas
+
+   server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/list', tl.getCollection, function (req, res, next) {
+   console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
+
+   next.module.findById(
+   req.params.item_id,
+   {include: 'replicas'},
+
+   function (err, instance) {
+   if (err) console.log("Replica Relation Error:",err);//res.sendStatus(500);
+   if (!instance) return res.sendStatus(404);
+   res.json(instance);
+   })
+   })
+   */
+
+  /* Sets replica for collection */
+  server.post('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection, function (req, res, next) {
+    var Replica = app.models.Replica;
+    req.body.collectionId = req.params.item_id;
+    console.log("req.body", req.body);
+    Replica.create(req.body, function (err, instance) {
+      console.log("REPLICA CREATE")
+      service.createTable(repositoryDB, req.body, function (callback) {
+        if (callback) {
+          first_model = next.module;
+          related_model = Replica;
+          rl.setModelRelation(first_model, related_model, 'collectionId', 'replicas', function (callback) {
+            console.log('Relation between models has just created')
+          })
+          return res.sendStatus(200, 'Repository Created');
+        }
+        else           return res.sendStatus(500);
+      })
+    })
+  })
+
+  // GET replica per collection
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id', tl.getCollection, rl.setReplicaRelation, function (req, res, next) {
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id", req.params.replica_id);
+
+
+    Replica.findById(req.params.replica_id,
+      {
+        fields: {"collectionId": false, "id": false},
+        where: {Collectionid: req.params.item_id}
+      },
+      function (err, instance) {
+        if (err)
+          res.sendStatus(500);
+        if (!instance) return res.sendStatus(404);
+        res.json(instance);
+      })
+
+  })
+
 
 };

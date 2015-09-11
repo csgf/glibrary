@@ -219,7 +219,7 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
           return callback(models[camelize(options.name).trim().capitalize().value()]);
         } catch (e) {
           // avoid [TypeError: Cannot read property 'prototype' of undefined] error to stop all the stuff
-          logger.debug("[buildModelFromRDBMS][catch error]")
+          logger.error("[buildModelFromRDBMS][catch error]");
           console.error(e)
           return callback(null);
         }
@@ -458,7 +458,7 @@ module.exports = function (app) {
       })
     },
     getCollection: function getCollection(req, res, next) {
-
+      console.log("COLLECTION:------------->",req.params.collection_name);
       logger.debug("-------------- START [getCOLLECTION] -----------------");
       var modelName = setModelName(app,req.params);
 
@@ -474,6 +474,7 @@ module.exports = function (app) {
         loadRepository(app, req, res, function (repoModel) {
           if (repoModel) {
             var requestURL = req.params.repo_name + '/' + req.params.collection_name;
+            console.log("REQUEST URL", requestURL);
             findDataFromModel(app, requestURL, repoModel, function (coll_data) {
               if (coll_data) {
                 if(!coll_data.coll_db || coll_data.coll_db == null ) {
@@ -512,7 +513,22 @@ module.exports = function (app) {
 
                     }
                     next.module = model;
-                    return next()
+                    app.next_module = model; // necessario per chiamata diretta
+                    return next();
+
+                    /*
+                      set hasMany Replicas
+
+                    var relation = require("./modelRelation");
+                    var rl = new relation(app);
+                    var Replica = app.models.Replica;
+
+                    rl.setModelRelation(model,Replica,'collectionId','replicas',function(cb){
+                      // TODO: check cb value before return next()
+                      return next()
+
+                    });
+                    */
                   } else {
                     return res.sendStatus(404);
                   }
@@ -527,6 +543,8 @@ module.exports = function (app) {
         })
       }
     },
+
+
     getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
 
       setupParameters(req,res,function(json_body){
