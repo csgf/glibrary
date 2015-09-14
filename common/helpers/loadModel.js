@@ -329,7 +329,14 @@ var checkCache = function (app, modelName, callaback) {
 
   } else app.buildedModel = null;//return callaback(null);
 }
-
+/**
+ *
+ * @param app
+ * @param req
+ * @param res
+ * @param callback
+ * @returns {*}
+ */
 var loadRepository = function (app, req, res, callback) {
 
   var repositoryDB = app.dataSources.repoDB;
@@ -343,6 +350,8 @@ var loadRepository = function (app, req, res, callback) {
 
   if (app.buildedModel) {
     callback.module = app.buildedModel;
+    app.repositoryModel = callback.module;
+
     return callback(callback.module);
   }
   else {
@@ -370,6 +379,8 @@ var loadRepository = function (app, req, res, callback) {
         logger.debug("*[loadRepository][app.repo_ds = app.CollectionDataSource]");
         logger.debug("*[loadRepository][RepoDataSource[req.params.repo_name] = {datasource: app.CollectionDataSource};]");
         logger.debug("*[loadRepository][return callback]");
+
+        app.repositoryModel = callback.module;
         return callback(callback.module);
 
       } else {
@@ -438,6 +449,68 @@ var setModelTable = function(app,req_params) {
   var modelTable = req_params.repo_name+"_"+req_params.collection_name;
   return modelTable;
 }
+/**
+ *
+ * @param app
+ * @param model
+ * @param next
+ */
+var setReplicaRelation = function(app,model,next) {
+  var relation = require("./modelRelation");
+  var rl = new relation(app);
+  var Replica = app.models.Replica;
+
+  //set hasMany Replicas
+  rl.setModelRelation(model,Replica,'collectionId','replicas',function(cb){
+    // TODO: check cb value before return next()
+    return next(cb)
+
+  });
+
+}
+
+/**
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
+var setupParameters = function(req,res,next) {
+  // POST su /v1/repos
+  var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
+  var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
+
+  if(!req.params.repo_name) {
+    var path = (!req.body.path ?  '/'+req.body.name.trim() :  req.body.path.trim());
+  }
+  //POST su /v1/repo/:repo_name
+  if(req.params.repo_name) {
+    var path = (!req.body.path ? '/'+req.params.repo_name+'/'+req.body.name.trim() : req.body.path.trim());
+    var import_flag = (!req.body.import ? "false" : req.body.import);
+    var schema = (!req.body.schema ? null : req.body.schema);
+  }
+
+  if(import_flag) {
+    parameters = {
+      "name":req.body.name,
+      "path": path,
+      "location":location,
+      "coll_db" : coll_db,
+      "import": import_flag,
+      "schema":schema
+    }
+  } else {
+    parameters = {
+      "name":req.body.name,
+      "path": path,
+      "location":location,
+      "coll_db" : coll_db,
+    }
+
+  }
+  logger.debug("[setupParameters][parameters]:",parameters);
+  next(parameters);
+}
 
 eventEmitter.on('getDataSource', getDataSource);
 eventEmitter.on('buildModel', buildModel);
@@ -452,7 +525,7 @@ module.exports = function (app) {
       loadRepository(app, req, res, function (cb) {
         if (cb) {
           next.module = cb;
-          app.repositoryModel =cb;
+          //app.repositoryModel =cb;
           logger.debug("------------end of getRepository---------------")
           return next()
         } else return res.sendStatus(404);
@@ -514,21 +587,16 @@ module.exports = function (app) {
 
                     }
                     next.module = model;
-                    app.next_module = model; // necessario per chiamata diretta
+                    app.next_module = model;
+                    // sets relation btw Collection Model and Replica Model
+                    setReplicaRelation(app,model,function(callback){
+                      if(callback) {
+                        return next();
+                      }
+                    })
                     //return next();
 
-                    //set hasMany Replicas
-                    var relation = require("./modelRelation");
-                    var rl = new relation(app);
-                    var Replica = app.models.Replica;
-
-                    rl.setModelRelation(model,Replica,'collectionId','replicas',function(cb){
-                      // TODO: check cb value before return next()
-                      return next()
-
-                    });
-
-                  } else {
+                   } else {
                     return res.sendStatus(404);
                   }
 
@@ -584,39 +652,4 @@ module.exports = function (app) {
 
   }
 }
-var setupParameters = function(req,res,next) {
-  // POST su /v1/repos
-  var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
-  var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
 
-  if(!req.params.repo_name) {
-    var path = (!req.body.path ?  '/'+req.body.name.trim() :  req.body.path.trim());
-  }
-  //POST su /v1/repo/:repo_name
-  if(req.params.repo_name) {
-    var path = (!req.body.path ? '/'+req.params.repo_name+'/'+req.body.name.trim() : req.body.path.trim());
-    var import_flag = (!req.body.import ? "false" : req.body.import);
-    var schema = (!req.body.schema ? null : req.body.schema);
-  }
-
-  if(import_flag) {
-    parameters = {
-      "name":req.body.name,
-      "path": path,
-      "location":location,
-      "coll_db" : coll_db,
-      "import": import_flag,
-      "schema":schema
-    }
-  } else {
-    parameters = {
-      "name":req.body.name,
-      "path": path,
-      "location":location,
-      "coll_db" : coll_db,
-    }
-
-  }
-  logger.debug("[setupParameters][parameters]:",parameters);
-  next(parameters);
-}

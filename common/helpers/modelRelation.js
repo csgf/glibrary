@@ -22,21 +22,43 @@ module.exports = function (app) {
 
       relatedModelName = req.params.repo_name + '_' + req.params.related_coll_name;
       first_model = next.module;
-      console.log("relatedModelName", relatedModelName);
-      //   console.log("model.definition",model.definition.modelBuilder.definitions.relatedModel);
+      logger.debug("[buildRelation][relatedModelName] : ",relatedModelName);
       if (next.module.definition.modelBuilder.definitions[relatedModelName]) {
-        console.log("relatedTo PRESENTE ******************************************")
+        logger.debug("[buildRelation] Relation has been builded with ",relatedModelName);
         next()
       } else {
-        console.log("related NON PRESENTE **********************************")
+        logger.debug("[buildRelation] Relation is not present. Let's build it");
 
+        app.repositoryModel.findOne({where: {name: req.params.collection_name}},
+          function (err, instance) {
+            if (err) {
+              logger.error("[buildRelation][Query Error]",err);
+              res.sendStatus(500);
+            }
+            if (!instance) return res.sendStatus(404);
+            req.params.collection_name = req.params.related_coll_name;
+            tl.getCollection(req, res, function (cb) {
+              related_model = app.next_module;
+              fk = instance.relatedTo.fk;
+              name = instance.relatedTo.name;
+
+              first_model.hasMany(related_model, {foreignKey: fk, as: name});
+              related_model.belongsTo(first_model, {foreignKey: fk});
+              app.relationName = name;
+              logger.debug("[buildRelation][setRelation hasMany] with ", app.relationName);
+              return next();
+
+            })
+          })
+
+        /*
         tl.getRepository(req, res, function (callback) {
 
           app.repositoryModel.findOne({where: {name: req.params.collection_name}},
             function (err, instance) {
-              console.log("---------------------------------instance", instance);
               if (err) {
-                console.log("Relation Query Error:", err);
+                logger.error("[buildRelation][Query Error]",err);
+                res.sendStatus(500);
               }
               if (!instance) return res.sendStatus(404);
               req.params.collection_name = req.params.related_coll_name;
@@ -47,50 +69,26 @@ module.exports = function (app) {
 
                 first_model.hasMany(related_model, {foreignKey: fk, as: name});
                 related_model.belongsTo(first_model, {foreignKey: fk});
-                logger.debug("[buildRelation][setRelation hasMany]");
                 app.relationName = name;
-                console.log("RELAZIONE ", app.relationName);
+                logger.debug("[buildRelation][setRelation hasMany] with ", app.relationName);
                 return next();
 
               })
             })
         })
-
-
-        /* if (err) {
-         console.log("Relation Query Error:", err);
-         }
-         if (!instance) return res.sendStatus(404);
-
-         tl.getCollection(req, res, function (cb) {
-         related_model = app.next_module;
-         fk = instance.relatedTo.fk;
-         name = instance.relatedTo.name;
-         first_model.hasMany(related_model, {foreignKey: fk, as:name});
-         related_model.belongsTo(first_model,{foreignKey:fk});
-         logger.debug("[buildRelation][setRelation hasMany]");
-         app.relationName = name;
-         return next();
-
-
-         })
-         */
+        */
       }
 
     },
 
 
     setModelRelation: function setModelRelation(firstModule, secondModule, fk, name, next) {
-      console.log("SET MODEL RELATION", firstModule)
       firstModule.hasMany(secondModule, {foreignKey: fk, as: name});
       secondModule.belongsTo(firstModule, {foreignKey: fk});
       logger.debug("[setRelationTest][setRelationTest hasMany]");
       next('ok')
 
-    }
-
-    ,
-
+    },
 
     setReplicaRelation: function setReplicaRelation(req, res, next) {
 
@@ -98,25 +96,6 @@ module.exports = function (app) {
       Replica.belongsTo(next.module, {foreignKey: 'collectionId'});
       logger.debug("[modelRelation][Setted hasMany replica]");
       next();
-
-      /*
-       next.module.find({
-       include: 'replicas',
-
-       },function(err,result){
-       if(err) console.log(err);
-       console.log("MIDDLE",result)
-       })
-       */
-      /*
-       next.module.find(req.query.filter, function (err, instance) {
-       if (err) res.sendStatus(500);
-       if (!instance) return res.sendStatus(404);
-       console.log("MIDDLEWARE: ", instance);
-       })
-       */
-
-
     }
   }
 }

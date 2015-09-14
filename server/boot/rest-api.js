@@ -289,37 +289,40 @@ module.exports = function mountRestApi(server) {
   /* --- Collection Relationships --- */
 
   /*
-   creates an hasMany relationship between :collection_name module and the one passed as body parameter
-
+   Adds informations to repo_name about the related Collection Model
    */
 
   server.post('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
-    console.log("Set Relation between models", req.body);
-    first_model = next.module;
-    req.params.collection_name = req.body.relatedCollection;
-    tl.getCollection(req, res, function (cb) {
-      related_model = app.next_module;
-      fk = req.body.fk;
-      name = req.body.name;
-      rl.setModelRelation(first_model, related_model, fk, name, function (callback) {
-        res.sendStatus(200, 'Relation between models has just created')
-
-      })
-    })
-
+    app.repositoryModel.findOne({where: {name: req.params.collection_name}},
+      function (err, instance) {
+        if (err) res.sendStatus(500);
+        if (!instance) return res.sendStatus(404);
+        var body = {
+          "relatedTo": {
+            "relatedCollection": req.body.relatedModel,
+            "fk": req.body.fk,
+            "name": req.body.name
+          }
+        }
+        instance.updateAttributes(body, function (err) {
+          if (err) console.log("ERR:", err);
+          res.sendStatus(200, 'relatedTo has been inserted')
+        })
+      }
+    )
   })
 
   /*
    retrives collection_name by item_id and its related collection module
    */
-  server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection,rl.buildRelation, function (req, res, next) {
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection, rl.buildRelation, function (req, res, next) {
 
     next.module.findById(req.params.item_id,
-      {include : app.relationName},
+      {include: app.relationName},
       function (err, instance) {
 
-        if (err){
-          console.log("Relation Query Error:",err);
+        if (err) {
+          console.log("Relation Query Error:", err);
         }
         if (!instance) return res.sendStatus(404);
         res.json(instance);
@@ -328,22 +331,25 @@ module.exports = function mountRestApi(server) {
 
   /* -- Replicas --*/
 
-  /* List all  replicas
+  /* List all  replicas */
 
-   server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/list', tl.getCollection, function (req, res, next) {
-   console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
+  server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/list', tl.getCollection, function (req, res, next) {
+    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
 
-   next.module.findById(
-   req.params.item_id,
-   {include: 'replicas'},
+    next.module.findById(
+      req.params.item_id,
+      {include: 'replicas'},
 
-   function (err, instance) {
-   if (err) console.log("Replica Relation Error:",err);//res.sendStatus(500);
-   if (!instance) return res.sendStatus(404);
-   res.json(instance);
-   })
-   })
-   */
+      function (err, instance) {
+        if (err) {
+          console.log("Replica Relation Error:", err);
+          res.sendStatus(500);
+        }
+        if (!instance) return res.sendStatus(404);
+        res.json(instance);
+      })
+  })
+
 
   /* Sets replica for collection */
   server.post('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection, function (req, res, next) {
@@ -354,14 +360,9 @@ module.exports = function mountRestApi(server) {
       console.log("REPLICA CREATE")
       service.createTable(repositoryDB, req.body, function (callback) {
         if (callback) {
-          first_model = next.module;
-          related_model = Replica;
-          rl.setModelRelation(first_model, related_model, 'collectionId', 'replicas', function (callback) {
-            console.log('Relation between models has just created')
-          })
           return res.sendStatus(200, 'Repository Created');
         }
-        else           return res.sendStatus(500);
+        else return res.sendStatus(500);
       })
     })
   })
