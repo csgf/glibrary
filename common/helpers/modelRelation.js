@@ -3,10 +3,10 @@
  * email:antonio.dimariano@gmail.com
  * https://github.com/antoniodimariano/
  */
-//            collectionModel.hasMany(replica,{foreignKey: 'collectionId', as: 'collections'})
 var logger = require("./logger");
+var camelize = require('underscore.string');
 
-
+var RelationInfo = {}
 module.exports = function (app) {
   var Replica = app.models.Replica;
 
@@ -22,61 +22,55 @@ module.exports = function (app) {
 
       relatedModelName = req.params.repo_name + '_' + req.params.related_coll_name;
       first_model = next.module;
-      logger.debug("[buildRelation][relatedModelName] : ",relatedModelName);
-      if (next.module.definition.modelBuilder.definitions[relatedModelName]) {
-        logger.debug("[buildRelation] Relation has been builded with ",relatedModelName);
+      repo = camelize(req.params.repo_name).trim().capitalize().value()
+      coll = camelize(req.params.related_coll_name).trim().capitalize().value()
+
+      if (next.module.definition.modelBuilder.definitions[relatedModelName] ||
+        next.module.definition.modelBuilder.definitions[repo+coll]
+
+
+      ) {
+        app.relationName = RelationInfo[req.params.collection_name].relationName;
+        logger.debug("[buildRelation][Found Relation with]", app.relationName);
         next()
       } else {
-        logger.debug("[buildRelation] Relation is not present. Let's build it");
+        logger.debug("[buildRelation][Bulding Relation with] ",req.params.collection_name);
 
-        app.repositoryModel.findOne({where: {name: req.params.collection_name}},
-          function (err, instance) {
-            if (err) {
-              logger.error("[buildRelation][Query Error]",err);
-              res.sendStatus(500);
-            }
-            if (!instance) return res.sendStatus(404);
-            req.params.collection_name = req.params.related_coll_name;
-            tl.getCollection(req, res, function (cb) {
-              related_model = app.next_module;
-              fk = instance.relatedTo.fk;
-              name = instance.relatedTo.name;
-
-              first_model.hasMany(related_model, {foreignKey: fk, as: name});
-              related_model.belongsTo(first_model, {foreignKey: fk});
-              app.relationName = name;
-              logger.debug("[buildRelation][setRelation hasMany] with ", app.relationName);
-              return next();
-
-            })
-          })
-
-        /*
         tl.getRepository(req, res, function (callback) {
+          /*
+          app.repositoryModel.findOne(function (e, d) {
+            console.log("DATI REPOSITORY MODEL", d);
+          })
+          */
 
           app.repositoryModel.findOne({where: {name: req.params.collection_name}},
             function (err, instance) {
               if (err) {
-                logger.error("[buildRelation][Query Error]",err);
+                logger.error("[buildRelation][Query Error]", err);
                 res.sendStatus(500);
               }
-              if (!instance) return res.sendStatus(404);
+              if (!instance) {
+                logger.error("[buildRelation][404 Error]", err);
+                return next();
+                //return res.sendStatus(404);
+              }
+              var coll_name = req.params.collection_name
               req.params.collection_name = req.params.related_coll_name;
               tl.getCollection(req, res, function (cb) {
+
                 related_model = app.next_module;
                 fk = instance.relatedTo.fk;
                 name = instance.relatedTo.name;
-
                 first_model.hasMany(related_model, {foreignKey: fk, as: name});
                 related_model.belongsTo(first_model, {foreignKey: fk});
                 app.relationName = name;
-                logger.debug("[buildRelation][setRelation hasMany] with ", app.relationName);
+                RelationInfo[coll_name] =  { relationName :name };
+
                 return next();
 
               })
             })
         })
-        */
       }
 
     },

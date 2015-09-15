@@ -4,6 +4,7 @@ module.exports = function mountRestApi(server) {
   var events = require('events');
   var eventEmitter = new events.EventEmitter();
   var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+  var logger = require("../../common/helpers/logger");
 
 
   var repository = server.models.Repository;
@@ -35,16 +36,16 @@ module.exports = function mountRestApi(server) {
 
 
   app.use(function (req, res, next) {
-    console.log("VERIFY TOKEN");
+    //console.log("VERIFY TOKEN");
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
 
     // decode token
     if (token) {
-      console.log("OK TOKEN", token);
+    //  console.log("OK TOKEN", token);
       next();
     } else {
-      console.log("NO TOKEN");
+    //  console.log("NO TOKEN");
       next();
     }
   })
@@ -73,7 +74,6 @@ module.exports = function mountRestApi(server) {
   //Crea un nuovo repository
 
   server.post('/v1/repos', tl.buildpayload, function (req, res, next) {
-    console.log(" POST repos  ");
     repository.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
       service.createTable(repositoryDB, next.body, function (callback) {
@@ -84,7 +84,6 @@ module.exports = function mountRestApi(server) {
   })
 
   server.put('/v1/repos/:repo_name', function (req, res, next) {
-    console.log("SIAMO QUI", req.params.repo_name);
     repository.findOne({where: {name: req.params.repo_name}},
       function (err, instance) {
         if (err) res.sendStatus(500);
@@ -98,7 +97,6 @@ module.exports = function mountRestApi(server) {
 
 
   server.delete('/v1/repos/:repo_name', function (req, res, next) {
-    console.log("REPO", req.params.repo_name);
     /*
      repository.destroyById(3,function(err){
      return res.sendStatus(200);
@@ -148,8 +146,6 @@ module.exports = function mountRestApi(server) {
    */
   server.post('/v1/repos/:repo_name', tl.getRepository, tl.getDatasourceToWrite, function (req, res, next) {
 
-    //server.post('/v1/repos/:repo_name', ld.getRepository,ld.getDatasourceToWrite, function (req, res, next) {
-    console.log("POST /v1/repos/:repo_name");
     next.module.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
       service.createTable(app.CollectionDataSource, next.body, function (callback) {
@@ -172,14 +168,14 @@ module.exports = function mountRestApi(server) {
   })
 
   server.get('/v1/repos/:repo_name/:collection_name/_schema', tl.getCollection, function (req, res, next) {
-    console.log("GET collection SCHEMA");
+    //console.log("GET collection SCHEMA");
     res.json(next.module.definition.properties);
 
   })
 
   //Ritorna le properties della collection  :collection_name
   server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
-    console.log("GET collection_name", req.query.filter);
+    //console.log("GET collection_name", req.query.filter);
     next.module.find(req.query.filter, function (err, instance) {
       if (err) res.sendStatus(500);
       if (!instance) return res.sendStatus(404);
@@ -292,22 +288,29 @@ module.exports = function mountRestApi(server) {
    Adds informations to repo_name about the related Collection Model
    */
 
-  server.post('/v1/repos/:repo_name/:collection_name/:item_id', tl.getCollection, function (req, res, next) {
-    app.repositoryModel.findOne({where: {name: req.params.collection_name}},
+  server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, function (req, res, next) {
+
+    next.module.findOne({where: {name: req.params.collection_name}},
       function (err, instance) {
         if (err) res.sendStatus(500);
         if (!instance) return res.sendStatus(404);
         var body = {
           "relatedTo": {
-            "relatedCollection": req.body.relatedModel,
+            "relatedCollection": req.body.relatedCollection,
             "fk": req.body.fk,
             "name": req.body.name
           }
         }
         instance.updateAttributes(body, function (err) {
           if (err) console.log("ERR:", err);
-          res.sendStatus(200, 'relatedTo has been inserted')
+          else {
+            logger.debug("[rest-api][updateAttribute on = ",instance.path+ "of Repository Model "+next.module.definition.name);
+            res.sendStatus(200, 'relatedTo has been inserted')
+
+          }
+
         })
+
       }
     )
   })
@@ -316,13 +319,13 @@ module.exports = function mountRestApi(server) {
    retrives collection_name by item_id and its related collection module
    */
   server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection, rl.buildRelation, function (req, res, next) {
-
+    logger.debug("[rest-api][app.relationName = ",app.relationName+"]");
     next.module.findById(req.params.item_id,
       {include: app.relationName},
       function (err, instance) {
 
         if (err) {
-          console.log("Relation Query Error:", err);
+          logger.error("Relation Query Error:", err);
         }
         if (!instance) return res.sendStatus(404);
         res.json(instance);
@@ -355,9 +358,7 @@ module.exports = function mountRestApi(server) {
   server.post('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection, function (req, res, next) {
     var Replica = app.models.Replica;
     req.body.collectionId = req.params.item_id;
-    console.log("req.body", req.body);
     Replica.create(req.body, function (err, instance) {
-      console.log("REPLICA CREATE")
       service.createTable(repositoryDB, req.body, function (callback) {
         if (callback) {
           return res.sendStatus(200, 'Repository Created');
