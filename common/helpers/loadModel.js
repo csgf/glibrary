@@ -206,7 +206,9 @@ var buildModelfromTable = function (app, db_type, db_name, table, modelName, mod
  * @param callback
  */
 var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
-  //logger.debug("[buildModelFromRDBMS][table]", table,options);
+  logger.debug("[buildModelFromRDBMS][table] = ", table);
+
+  // logger.debug("[buildModelFromRDBMS][table]", table,options);
   datasource.discoverAndBuildModels(table, options,
     function (err, models) {
       if (err) {
@@ -281,11 +283,10 @@ var getDataSource = function getDataSource(app, data) {
     }
     if(!datasource) {
       //  logger.debug("[getDataSource] datasource callback FALSE")
-      /* capire cosa fare nel caso in cui i dati di coll_db non passino la validazione*/
+
+      /* Todo: capire cosa fare nel caso in cui i dati di coll_db non passino la validazione*/
       // somethings went wrong. Let's use the system default mongodb
 
-      // updates app.CollectionDataSource with info from server/datasources.json
-      //app.CollectionDataSource = app.repo_ds;
       app.CollectionDataSource = RepoDataSource[req.params.repo_name].datasource;
       logger.debug("[getDataSource][app.CollectionDataSource]=",app.CollectionDataSource.settings.host +
         " DB =",app.CollectionDataSource.settings.database);
@@ -577,7 +578,7 @@ var setupParameters = function(req,res,next) {
     }
 
   }
-  //logger.debug("[setupParameters][parameters]:",parameters);
+  logger.debug("[setupParameters][parameters]:",parameters);
   next(parameters);
 }
 
@@ -607,9 +608,12 @@ module.exports = function (app) {
 
       eventEmitter.emit('checkCache', app, modelName);
       if (app.buildedModel) {
-        logger.debug("[checkCache][Model Loaded From Cache]=",app.buildedModel.definition.name);
+        logger.debug("[getCollection][Model Loaded From Cache]=",app.buildedModel.definition.name);
         next.module = app.buildedModel;
         app.next_module = next.module;
+        logger.debug("[getCollection][app.CollectionDataSource]=",app.CollectionDataSource.settings.host +
+          " DB =",app.CollectionDataSource.settings.database);
+
         return next();
       }
 
@@ -643,7 +647,7 @@ module.exports = function (app) {
                 }
 
                 if (coll_data.import == "true" ) {
-                  logger.debug("[getCollection][Import Data]");
+                  logger.debug("-------[getCollection][Import Data]----------");
                   var modelTable = coll_data.location;
                   var modelName = modelTable;
 

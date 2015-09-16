@@ -19,17 +19,13 @@ module.exports = function (app) {
     buildRelation: function buildRelation(req, res, next) {
 
       var repository = app.models.Repository;
+      first_model = next.module;
 
       relatedModelName = req.params.repo_name + '_' + req.params.related_coll_name;
-      first_model = next.module;
-      repo = camelize(req.params.repo_name).trim().capitalize().value()
-      coll = camelize(req.params.related_coll_name).trim().capitalize().value()
 
-      if (next.module.definition.modelBuilder.definitions[relatedModelName] ||
-        next.module.definition.modelBuilder.definitions[repo+coll]
+      if( RelationInfo[req.params.collection_name] &&  RelationInfo[req.params.collection_name].relationName)
 
-
-      ) {
+       {
         app.relationName = RelationInfo[req.params.collection_name].relationName;
         logger.debug("[buildRelation][Found Relation with]", app.relationName);
         next()
@@ -71,7 +67,7 @@ module.exports = function (app) {
               })
             })
         })
-      }
+      } //<---
 
     },
 

@@ -60,6 +60,12 @@ exports.createTable = function createTable(datasource, data, callback) {
    }
    }
    }
+   "id" : {
+   type: "Number",
+   generated: true,
+   id: true
+   },
+
    */
 
   checkIfDataHasToBeImported(data,function(cb){
@@ -68,67 +74,73 @@ exports.createTable = function createTable(datasource, data, callback) {
       return callback(true);
     }
     else {
+
+      var result = data.path;
+      if (result && result.lastIndexOf('/') != -1) {
+        //console.log("COLLECTION PATH",result);
+        //console.log("First part",result.split('/')[1])
+        //console.log("Second part",result.split('/')[2]);
+
+        /*
+         modelName = camelize(result.split('/')[1]).trim().capitalize().value() + "_" +
+         camelize(result.split('/')[2]).trim().capitalize().value()
+         */
+        modelName =  result.split('/')[1]+"_"+result.split('/')[2];
+
+      } else{
+        modelName = schema_collection.name;
+        //modelName = camelize(schema_collection.name).trim().capitalize().value()
+      }
+
+
       if (data.schema) {
         var schema_collection = {
-          "name": table_name,
+          "name": modelName,
           "base": "PersistedModel",
           "idInjection": true,
-          "options": {
-            "validateUpsert": true
+
+          "options" : {
+            "validateUpsert": false
+
           },
           "properties": data.schema
         }
       }
       else {
         var schema_collection = {
-          "name": table_name,
+          "name": modelName,
           "base": "PersistedModel",
           "idInjection": true,
           "options": {
-            "validateUpsert": true
+            "validateUpsert": false
           },
+
           "properties": {
-            "id" : {type: Number, generated: true, id: true},
+
+
             "firstname": {
               "type": "string",
               "required": true
             },
             "lastname": {
               "type": "string",
-              "required": true
+              "required": false
             },
             "location": {
               "type": "string",
-              "required": true
+              "required": false
             },
             "hobby": {
               "type": "string",
-              "required": true
+              "required": false
               }
             }
         }
 
       }
 
-      var modelName;
-
-      var result = data.path;
-      if (result && result.lastIndexOf('/') != -1) {
-          //console.log("COLLECTION PATH",result);
-          //console.log("First part",result.split('/')[1])
-          //console.log("Second part",result.split('/')[2]);
-
-          /*
-           modelName = camelize(result.split('/')[1]).trim().capitalize().value() + "_" +
-           camelize(result.split('/')[2]).trim().capitalize().value()
-           */
-          modelName =  result.split('/')[1]+"_"+result.split('/')[2];
-
-      } else{
-        modelName = schema_collection.name;
-        //modelName = camelize(schema_collection.name).trim().capitalize().value()
-      }
-      repoDB.createModel(modelName, schema_collection.properties, schema_collection.options);
+      repoDB.createModel(modelName, schema_collection.properties, {"base": "PersistedModel", "idInjection": true});
+      //repoDB.createModel(schema_collection);
       repoDB.autoupdate(modelName, function (err, result) {
         if (err) throw err;
         logger.debug("[persit][autoupdate on ",modelName+"]");

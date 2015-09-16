@@ -337,7 +337,6 @@ module.exports = function mountRestApi(server) {
   /* List all  replicas */
 
   server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/list', tl.getCollection, function (req, res, next) {
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas", req.params.collection_name, req.params.item_id);
 
     next.module.findById(
       req.params.item_id,
@@ -370,8 +369,6 @@ module.exports = function mountRestApi(server) {
 
   // GET replica per collection
   server.get('/v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id', tl.getCollection, rl.setReplicaRelation, function (req, res, next) {
-    console.log("GET /v1/repos/:repo_name/:collection_name/:item_id/replicas/:replica_id", req.params.replica_id);
-
 
     Replica.findById(req.params.replica_id,
       {
