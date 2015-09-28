@@ -6,10 +6,11 @@
   "repoDB": {
     "host": "localhost",
     "port": "27017",
-    "database": "repository",
+    "database": "glibrary",
     "username": "",
     "password": "",
     "name": "mongoDB",
     "connector": "mongodb"
   }
+
 }

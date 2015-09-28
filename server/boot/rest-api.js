@@ -1,22 +1,25 @@
 module.exports = function mountRestApi(server) {
   var restApiRoot = server.get('restApiRoot');
-
   var events = require('events');
   var eventEmitter = new events.EventEmitter();
   var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
   var logger = require("../../common/helpers/logger");
-
-
+  var loopback = require('loopback');
   var repository = server.models.Repository;
   var Replica = server.models.Replica;
   var app = require('../server.js');
   var bodyParser = require('body-parser');
   var methodOverride = require('method-override');
+  var repositoryDB = app.dataSources.repoDB;
+  var service = require('../../common/service/persist');
+  var testLib = require('../../common/helpers/loadModel');
+  var tl = new testLib(app);
+  var relation = require("../../common/helpers/modelRelation");
+  var rl = new relation(app);
+
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());//Catch json error
-
   app.use(function (error, req, res, next) {
-    console.log("CATCH ERRORE")
     if (error instanceof SyntaxError) {
       console.trace();
       console.error(error);
@@ -24,22 +27,11 @@ module.exports = function mountRestApi(server) {
     } else next();
 
   });
-
   app.use(restApiRoot, server.loopback.rest());
-  var repositoryDB = app.dataSources.repoDB;
-  var service = require('../../common/service/persist');
-  var testLib = require('../../common/helpers/loadModel');
-  var tl = new testLib(app);
-
-  var relation = require("../../common/helpers/modelRelation");
-  var rl = new relation(app);
-
-
   app.use(function (req, res, next) {
     //console.log("VERIFY TOKEN");
     // check header or url parameters or post parameters for token
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
-
     // decode token
     if (token) {
     //  console.log("OK TOKEN", token);
@@ -50,11 +42,13 @@ module.exports = function mountRestApi(server) {
     }
   })
 
+
   /**
    *
    *  REPOSITORIES
    *
    */
+
 
     //Elenco di tutti i repositories hostati sul server
 
@@ -173,7 +167,6 @@ module.exports = function mountRestApi(server) {
 
   })
 
-  //Ritorna le properties della collection  :collection_name
   server.get('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
     //console.log("GET collection_name", req.query.filter);
     next.module.find(req.query.filter, function (err, instance) {
@@ -227,11 +220,16 @@ module.exports = function mountRestApi(server) {
    * POST /v1/repos/<repo_name>/<collection_name>/
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
-  server.post('/v1/repos/:repo_name/:collection_name', tl.getCollection, function (req, res, next) {
-    next.module.create(req.body, function (err, instance) {
-      if (err) res.send(err);
+  server.post('/v1/repos/:repo_name/:collection_name', tl.getCollection, tl.createPersistedModel,function (req, res, next) {
+
+    next.persistedModel.create(req.body,function(err,instance) {
+      if (err) {
+        res.send(err);
+      }
+
       else res.sendStatus(200, 'Items created');
     })
+
   })
 
   // Restituisce i metadati di <item_name>
@@ -384,5 +382,9 @@ module.exports = function mountRestApi(server) {
 
   })
 
+
+  server.get('*',function(req,res,next){
+    return res.sendStatus(404)
+  })
 
 };

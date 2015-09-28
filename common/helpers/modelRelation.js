@@ -7,6 +7,9 @@ var logger = require("./logger");
 var camelize = require('underscore.string');
 
 var RelationInfo = {}
+
+
+
 module.exports = function (app) {
   var Replica = app.models.Replica;
 
@@ -21,24 +24,18 @@ module.exports = function (app) {
       var repository = app.models.Repository;
       first_model = next.module;
 
-      relatedModelName = req.params.repo_name + '_' + req.params.related_coll_name;
-
-      if( RelationInfo[req.params.collection_name] &&  RelationInfo[req.params.collection_name].relationName)
-
-       {
+      if (RelationInfo[req.params.collection_name] &&
+        RelationInfo[req.params.collection_name].relationName &&
+        RelationInfo[req.params.collection_name].relatedModel == req.params.related_coll_name
+      )
+      {
         app.relationName = RelationInfo[req.params.collection_name].relationName;
         logger.debug("[buildRelation][Found Relation with]", app.relationName);
         next()
       } else {
-        logger.debug("[buildRelation][Bulding Relation with] ",req.params.collection_name);
+        logger.debug("[buildRelation][Bulding Relation with] ", req.params.collection_name);
 
         tl.getRepository(req, res, function (callback) {
-          /*
-          app.repositoryModel.findOne(function (e, d) {
-            console.log("DATI REPOSITORY MODEL", d);
-          })
-          */
-
           app.repositoryModel.findOne({where: {name: req.params.collection_name}},
             function (err, instance) {
               if (err) {
@@ -48,7 +45,6 @@ module.exports = function (app) {
               if (!instance) {
                 logger.error("[buildRelation][404 Error]", err);
                 return next();
-                //return res.sendStatus(404);
               }
               var coll_name = req.params.collection_name
               req.params.collection_name = req.params.related_coll_name;
@@ -60,14 +56,13 @@ module.exports = function (app) {
                 first_model.hasMany(related_model, {foreignKey: fk, as: name});
                 related_model.belongsTo(first_model, {foreignKey: fk});
                 app.relationName = name;
-                RelationInfo[coll_name] =  { relationName :name };
-
+                RelationInfo[coll_name] = {relationName: name, relatedModel: req.params.related_coll_name};
                 return next();
 
               })
             })
         })
-      } //<---
+      }
 
     },
 

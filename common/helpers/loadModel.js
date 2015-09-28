@@ -674,6 +674,10 @@ module.exports = function (app) {
                       logger.debug("[getCollection]ModelTableMap["+modelName+"]={table:"+modelTable+"}");
 
                     }
+                    app.CollectionModelTable = modelTable;
+                    console.log("app.CollectionModelTable = modelName",app.CollectionModelTable )
+
+
                     next.module = model;
                     app.next_module = model;
                     // sets relation btw Collection Model and Replica Model
@@ -700,6 +704,9 @@ module.exports = function (app) {
     },
 
 
+
+
+
     getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
 
       setupParameters(req,res,function(json_body){
@@ -716,6 +723,39 @@ module.exports = function (app) {
         }
       })
     },
+    /*
+
+    This FIX the id auto incement issue.
+
+
+
+
+     */
+    createPersistedModel : function createModel(req,res,next) {
+
+      if ( app.CollectionDataSource.settings.connector != 'mongodb' ) {
+        var datasource = loopback.createDataSource(app.CollectionDataSource.settings);
+        console.log("datasource:", datasource.settings,app.CollectionModelTable );
+
+        datasource.discoverSchema(app.CollectionModelTable,{},function(err,schema){
+          console.log("schema",schema);
+          if(err) throw err;
+          delete schema.properties.id;
+          var collmodel = datasource.createModel(app.CollectionModelTable,schema.properties);
+          next.persistedModel = collmodel;
+          next()
+        })
+
+      } else {
+        logger.debug("[createPersistedModel][mongodb]");
+
+        next.persistedModel = next.module;
+        next()
+      }
+
+
+    },
+
     removeModel: function removeModel(req, res, next) {
 
 
