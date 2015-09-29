@@ -138,7 +138,7 @@ module.exports = function mountRestApi(server) {
    * Crea una nuova collection o importa una tabella di un db esistente come collection nel repository <repo_name>.
    * Il nome della collections viene passato come parametro nel body
    */
-  server.post('/v1/repos/:repo_name', tl.getRepository, tl.getDatasourceToWrite, function (req, res, next) {
+  server.post('/v1/repos/:repo_name', tl.getRepository,tl.validatebody, tl.getDatasourceToWrite, function (req, res, next) {
 
     next.module.create(next.body, function (err, instance) {
       if (err) return res.send(JSON.stringify(err));
