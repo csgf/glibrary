@@ -34,10 +34,10 @@ module.exports = function mountRestApi(server) {
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
     // decode token
     if (token) {
-    //  console.log("OK TOKEN", token);
+      //  console.log("OK TOKEN", token);
       next();
     } else {
-    //  console.log("NO TOKEN");
+      //  console.log("NO TOKEN");
       next();
     }
   })
@@ -68,13 +68,19 @@ module.exports = function mountRestApi(server) {
   //Crea un nuovo repository
 
   server.post('/v1/repos', tl.buildpayload, function (req, res, next) {
-    repository.create(next.body, function (err, instance) {
+
+    repository.findOne({where: {"name": req.body.name}}, function (err, value) {
       if (err) return res.send(JSON.stringify(err));
-      service.createTable(repositoryDB, next.body, function (callback) {
-        if (callback)  return res.sendStatus(200, 'Repository Created');
-        else           return res.sendStatus(500);
+      if (value) return res.status(409).send({error: "A repository named " + req.body.name + " is already defined"})
+      repository.create(next.body, function (err, instance) {
+        if (err) return res.send(JSON.stringify(err));
+        service.createTable(repositoryDB, next.body, function (callback) {
+          if (callback) res.status(201).send({message: "The repository was successfully created "})
+          else           return res.sendStatus(500);
+        })
       })
     })
+
   })
 
   server.put('/v1/repos/:repo_name', function (req, res, next) {
@@ -138,17 +144,18 @@ module.exports = function mountRestApi(server) {
    * Crea una nuova collection o importa una tabella di un db esistente come collection nel repository <repo_name>.
    * Il nome della collections viene passato come parametro nel body
    */
-  server.post('/v1/repos/:repo_name', tl.getRepository,tl.validatebody, tl.getDatasourceToWrite, function (req, res, next) {
-
-    next.module.create(next.body, function (err, instance) {
+  server.post('/v1/repos/:repo_name', tl.validatebody, tl.getRepository, tl.getDatasourceToWrite, function (req, res, next) {
+    next.module.findOne({where: {"name": req.body.name}}, function (err, value) {
       if (err) return res.send(JSON.stringify(err));
-      service.createTable(app.CollectionDataSource, next.body, function (callback) {
-        if (callback)  res.sendStatus(200, 'Repository Created');
-        else          res.sendStatus(500);
+      if (value) return res.status(409).send({error: "A collection named " + req.body.name + " is already defined"})
+      next.module.create(next.body, function (err, instance) {
+        if (err) return res.send(JSON.stringify(err));
+        service.createTable(app.CollectionDataSource, next.body, function (callback) {
+          if (callback) res.status(201).send({message: "The collection was successfully created "})
+          else res.sendStatus(500);
+        })
       })
-
     })
-
   })
 
 
@@ -220,9 +227,9 @@ module.exports = function mountRestApi(server) {
    * POST /v1/repos/<repo_name>/<collection_name>/
    *  Crea un nuovo item nella collection <collection_name> con tutti i suoi metadati
    */
-  server.post('/v1/repos/:repo_name/:collection_name', tl.getCollection, tl.createPersistedModel,function (req, res, next) {
+  server.post('/v1/repos/:repo_name/:collection_name', tl.getCollection, tl.createPersistedModel, function (req, res, next) {
 
-    next.persistedModel.create(req.body,function(err,instance) {
+    next.persistedModel.create(req.body, function (err, instance) {
       if (err) {
         res.send(err);
       }
@@ -286,12 +293,14 @@ module.exports = function mountRestApi(server) {
    Adds informations to repo_name about the related Collection Model
    */
 
-  server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, function (req, res, next) {
+  server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, tl.validateRelationBody,tl.validateRelationBody,
+    function (req, res, next) {
 
     next.module.findOne({where: {name: req.params.collection_name}},
       function (err, instance) {
         if (err) res.sendStatus(500);
         if (!instance) return res.sendStatus(404);
+/*
         var body = {
           "relatedTo": {
             "relatedCollection": req.body.relatedCollection,
@@ -299,10 +308,23 @@ module.exports = function mountRestApi(server) {
             "name": req.body.name
           }
         }
-        instance.updateAttributes(body, function (err) {
+        */
+        console.log("*-------relatedTO :",instance.relatedTo);
+
+
+        console.log("*-------RELATION BODY:",next.relationbody);
+
+        var relation_array = (!instance.relatedTo ? [] : instance.relatedTo)
+        relation_array.push(next.relationbody)
+        console.log("MODIFICA:",relation_array);
+
+          var relatedTo = {"relatedTo": relation_array}
+          console.log("relatedTo:",relatedTo);
+
+        instance.updateAttributes(relatedTo , function (err) {
           if (err) console.log("ERR:", err);
           else {
-            logger.debug("[rest-api][updateAttribute on = ",instance.path+ "of Repository Model "+next.module.definition.name);
+            logger.debug("[rest-api][updateAttribute on = ", instance.path + "of Repository Model " + next.module.definition.name);
             res.sendStatus(200, 'relatedTo has been inserted')
 
           }
@@ -317,7 +339,7 @@ module.exports = function mountRestApi(server) {
    retrives collection_name by item_id and its related collection module
    */
   server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection, rl.buildRelation, function (req, res, next) {
-    logger.debug("[rest-api][app.relationName = ",app.relationName+"]");
+    logger.debug("[rest-api][app.relationName = ", app.relationName + "]");
     next.module.findById(req.params.item_id,
       {include: app.relationName},
       function (err, instance) {
@@ -383,7 +405,7 @@ module.exports = function mountRestApi(server) {
   })
 
 
-  server.get('*',function(req,res,next){
+  server.get('*', function (req, res, next) {
     return res.sendStatus(404)
   })
 

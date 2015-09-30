@@ -16,6 +16,17 @@ var logger = require("./logger");
 var RoleMapper = require('./rolemapping');
 
 
+var validatereqbodyname = function (body, next) {
+  if (body && body.name) {
+    var qry = body.name;
+    if (qry.match(/[^a-z\d]+/i)) {
+        next(false);
+    } else next(true);
+
+  } else next(false)
+
+}
+
 /**
  * Effettuata una query sul model e ritorna i records
  * @param app
@@ -222,10 +233,19 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
         // don't stop after a getaddrinfo ENOTFOUND error;
       }
       if (models) {
+        console.log("***[MODEL NAME]: ",Object.keys(models)[0]
+      )
+
         try {
           logger.debug('[buildModelFromRDBMS][Model]:', camelize(options.name).trim().capitalize().value());
-          app.model(models[camelize(options.name).trim().capitalize().value()])
-          return callback(models[camelize(options.name).trim().capitalize().value()]);
+
+          //var nome = "FragebogenAutor"
+          var nome = Object.keys(models)[0];
+          var modello = app.model(models[nome]);
+          return callback(modello)
+
+          //app.model(models[camelize(options.name).trim().capitalize().value()])
+          //return callback(models[camelize(options.name).trim().capitalize().value()]);
         } catch (e) {
           // avoid [TypeError: Cannot read property 'prototype' of undefined] error to stop all the stuff
           logger.error("[buildModelFromRDBMS][catch error]");
@@ -546,266 +566,268 @@ var setReplicaRelation = function (app, model, next) {
  */
 var setupParameters = function (req, res, next) {
 
-  if (req.body && req.body.name) {
-    var qry = req.body.name;
-    if (qry.match(/[^a-z\d]+/i)) {
-      return res.status(500).send({error: "Invalid charachers"})
+  validatereqbodyname(req.body, function (cb) {
 
-    } else {
+    if(!cb) return res.status(400).send({error: "Invalid request"})
 
-      // POST su /v1/repos
-      var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
-      var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
+    // POST su /v1/repos
+    var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
+    var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
 
-      if (!req.params.repo_name) {
-        var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim());
-      }
-      //POST su /v1/repo/:repo_name
-      if (req.params.repo_name) {
-        var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim());
-        var import_flag = (!req.body.import ? "false" : req.body.import);
-        var schema = (!req.body.schema ? null : req.body.schema);
-      }
-
-      if (import_flag) {
-        parameters = {
-          "name": req.body.name,
-          "path": path,
-          "location": location,
-          "coll_db": coll_db,
-          "import": import_flag,
-          "schema": schema
-        }
-      } else {
-        parameters = {
-          "name": req.body.name,
-          "path": path,
-          "location": location,
-          "coll_db": coll_db,
-        }
-
-      }
-      logger.debug("[setupParameters][parameters]:", parameters);
-      next(parameters);
-
+    if (!req.params.repo_name) {
+      var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
     }
-  } else res.status(500).send({error: "Invalid body"})
-
+    //POST su /v1/repo/:repo_name
+    if (req.params.repo_name) {
+      var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
+      var import_flag = (!req.body.import ? "false" : req.body.import);
+      var schema = (!req.body.schema ? null : req.body.schema);
+    }
+    var name = req.body.name.toLowerCase();
+    if (import_flag) {
+      parameters = {
+        "name": name,
+        "path": path,
+        "location": location,
+        "coll_db": coll_db,
+        "import": import_flag,
+        "schema": schema
+      }
+    } else {
+      parameters = {
+        "name": name,
+        "path": path,
+        "location": location,
+        "coll_db": coll_db,
+      }
+    }
+    logger.debug("[setupParameters][parameters]:", parameters);
+    next(parameters);
+  })
 }
-  /* ----------------------------------------------------------- module exports -----------------------------------------------*/
+/* ----------------------------------------------------------- module exports -----------------------------------------------*/
 
-  eventEmitter.on('getDataSource', getDataSource);
-  eventEmitter.on('buildModel', buildModel);
-  eventEmitter.on('checkCache', checkCache);
-  eventEmitter.on('checkdb', checkTypeOfDB)
+eventEmitter.on('getDataSource', getDataSource);
+eventEmitter.on('buildModel', buildModel);
+eventEmitter.on('checkCache', checkCache);
+eventEmitter.on('checkdb', checkTypeOfDB)
 
-  module.exports = function (app) {
+module.exports = function (app) {
 
-    return {
+  return {
 
-      getRepository: function getRepository(req, res, next) {
-        loadRepository(app, req, res, function (cb) {
-          if (cb) {
-            next.module = cb;
-            logger.debug("[getRepository][next.module]= ", cb.definition.name);
-            logger.debug("------------end of getRepository---------------")
-            return next();
-          } else return res.sendStatus(404);
-        })
-      },
-      getCollection: function getCollection(req, res, next) {
-        //console.log("COLLECTION:------------->",req.params.collection_name);
-        logger.debug("-------------- START [getCOLLECTION] -----------------");
-        var modelName = setModelName(app, req.params);
-
-        eventEmitter.emit('checkCache', app, modelName);
-        if (app.buildedModel) {
-          logger.debug("[getCollection][Model Loaded From Cache]=", app.buildedModel.definition.name);
-          next.module = app.buildedModel;
-          app.next_module = next.module;
-          logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
-            " DB =", app.CollectionDataSource.settings.database);
-
+    getRepository: function getRepository(req, res, next) {
+      loadRepository(app, req, res, function (cb) {
+        if (cb) {
+          next.module = cb;
+          logger.debug("[getRepository][next.module]= ", cb.definition.name);
+          logger.debug("------------end of getRepository---------------")
           return next();
-        }
+        } else return res.sendStatus(404);
+      })
+    },
+    getCollection: function getCollection(req, res, next) {
+      //console.log("COLLECTION:------------->",req.params.collection_name);
+      logger.debug("-------------- START [getCOLLECTION] -----------------");
+      var modelName = setModelName(app, req.params);
 
-        else {
-          logger.debug("--------------[getCOLLECTION] loadRepository---------------");
-          loadRepository(app, req, res, function (repoModel) {
-            if (repoModel) {
-              var requestURL = req.params.repo_name + '/' + req.params.collection_name;
-              //console.log("REQUEST URL", requestURL);
-              // searchs for the collection_name requested path in repoModel
-              findDataFromModel(app, requestURL, repoModel, function (coll_data) {
-                if (coll_data) {
-                  // we have the info about collection_name. Check if we have a custom datasource to build
-                  if (!coll_data.coll_db || coll_data.coll_db == null) {
-                    //logger.debug("[getCollection][app.CollectionDataSource]=",RepoDataSource[req.params.repo_name].datasource.settings.host +
-                    //" DB =",RepoDataSource[req.params.repo_name].datasource.settings.database);
+      eventEmitter.emit('checkCache', app, modelName);
+      if (app.buildedModel) {
+        logger.debug("[getCollection][Model Loaded From Cache]=", app.buildedModel.definition.name);
+        next.module = app.buildedModel;
+        app.next_module = next.module;
+        logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
+          " DB =", app.CollectionDataSource.settings.database);
 
-                    app.CollectionDataSource = RepoDataSource[req.params.repo_name].datasource;
-                    var db_type = RepoDataSource[req.params.repo_name].datasource.settings.connector;
-                    var db_name = RepoDataSource[req.params.repo_name].datasource.settings.database;
+        return next();
+      }
+
+      else {
+        logger.debug("--------------[getCOLLECTION] loadRepository---------------");
+        loadRepository(app, req, res, function (repoModel) {
+          if (repoModel) {
+            var requestURL = req.params.repo_name + '/' + req.params.collection_name;
+            //console.log("REQUEST URL", requestURL);
+            // searchs for the collection_name requested path in repoModel
+            findDataFromModel(app, requestURL, repoModel, function (coll_data) {
+              if (coll_data) {
+                // we have the info about collection_name. Check if we have a custom datasource to build
+                if (!coll_data.coll_db || coll_data.coll_db == null) {
+                  //logger.debug("[getCollection][app.CollectionDataSource]=",RepoDataSource[req.params.repo_name].datasource.settings.host +
+                  //" DB =",RepoDataSource[req.params.repo_name].datasource.settings.database);
+
+                  app.CollectionDataSource = RepoDataSource[req.params.repo_name].datasource;
+                  var db_type = RepoDataSource[req.params.repo_name].datasource.settings.connector;
+                  var db_name = RepoDataSource[req.params.repo_name].datasource.settings.database;
 
 
 //                  app.CollectionDataSource = app.dataSources.repoDB;
 //                  var db_type = 'mongodb';
 //                  var db_name = app.dataSources.repoDB.database;
 
-                  } else {
-                    eventEmitter.emit('getDataSource', app, coll_data);
-                    var db_type = setDB_type(app, coll_data);
-                    var db_name = setDB_name(app, coll_data);
-                  }
-
-                  if (coll_data.import == "true") {
-                    logger.debug("-------[getCollection][Import Data]----------");
-                    var modelTable = coll_data.location;
-                    var modelName = modelTable;
-
-                  } else {
-                    var modelTable = setModelTable(app, req.params);
-                    var modelName = setModelName(app, req.params);
-
-                  }
-                  logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
-                    " DB =", app.CollectionDataSource.settings.database);
-                  logger.debug("[getCollection][modelTable]", modelTable);
-                  logger.debug("[getCollection][db_type]", db_type);
-                  logger.debug("[getCollection][db_name]", modelName);
-
-                  //al posto di modelName ci stava coll_data.name
-                  buildModelfromTable(app, db_type, db_name, modelTable, modelName, coll_data.path,
-                    app.CollectionDataSource, function (model) {
-                      if (model) {
-                        logger.debug("[getCollection][buildModelfromTable][OK]");
-                        if (coll_data.import == "true") {
-                          var modelName = setModelName(app, req.params);
-                          ModelTableMap[modelName] = {table: modelTable};
-                          logger.stream.write("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
-                          logger.debug("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}");
-
-                        }
-                        app.CollectionModelTable = modelTable;
-                        console.log("app.CollectionModelTable = modelName", app.CollectionModelTable)
-
-
-                        next.module = model;
-                        app.next_module = model;
-                        // sets relation btw Collection Model and Replica Model
-                        setReplicaRelation(app, model, function (callback) {
-                          if (callback) {
-                            return next();
-                          }
-                        })
-                        //return next();
-
-                      } else {
-                        return res.sendStatus(404);
-                      }
-
-                    })
                 } else {
-                  return res.sendStatus(404);
+                  eventEmitter.emit('getDataSource', app, coll_data);
+                  var db_type = setDB_type(app, coll_data);
+                  var db_name = setDB_name(app, coll_data);
+                }
+
+                if (coll_data.import == "true") {
+                  logger.debug("-------[getCollection][Import Data]----------");
+                  var modelTable = coll_data.location;
+                  var modelName = modelTable;
+
+                } else {
+                  var modelTable = setModelTable(app, req.params);
+                  var modelName = setModelName(app, req.params);
 
                 }
-              })
-            } else return res.sendStatus(404);
-          })
-        }
-      },
+                logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
+                  " DB =", app.CollectionDataSource.settings.database);
+                logger.debug("[getCollection][modelTable]", modelTable);
+                logger.debug("[getCollection][db_type]", db_type);
+                logger.debug("[getCollection][db_name]", modelName);
+
+                //al posto di modelName ci stava coll_data.name
+                buildModelfromTable(app, db_type, db_name, modelTable, modelName, coll_data.path,
+                  app.CollectionDataSource, function (model) {
+                    if (model) {
+                      logger.debug("[getCollection][buildModelfromTable][OK]");
+                      if (coll_data.import == "true") {
+                        var modelName = setModelName(app, req.params);
+                        ModelTableMap[modelName] = {table: modelTable};
+                        logger.stream.write("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
+                        logger.debug("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}");
+
+                      }
+                      app.CollectionModelTable = modelTable;
+                      console.log("app.CollectionModelTable = modelName", app.CollectionModelTable)
 
 
-      getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
-        setupParameters(req, res, function (json_body) {
-          next.body = json_body;
-          if (!next.body.coll_db) {
-            logger.debug("[getDatasourceToWrite][Nothing to do]");
-            next();
-          } else {
-            eventEmitter.emit('getDataSource', app, req.body);
-            logger.debug("[getDatasourceToWrite][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
-              " DB =", app.CollectionDataSource.settings.database);
+                      next.module = model;
+                      app.next_module = model;
+                      // sets relation btw Collection Model and Replica Model
+                      setReplicaRelation(app, model, function (callback) {
+                        if (callback) {
+                          return next();
+                        }
+                      })
+                      //return next();
 
-            next();
-          }
+                    } else {
+                      return res.sendStatus(404);
+                    }
+
+                  })
+              } else {
+                return res.sendStatus(404);
+
+              }
+            })
+          } else return res.sendStatus(404);
         })
-      },
-      /*
-
-       This FIX the id auto incement issue.
+      }
+    },
 
 
-
-
-       */
-      createPersistedModel: function createModel(req, res, next) {
-
-        if (app.CollectionDataSource.settings.connector != 'mongodb') {
-          var datasource = loopback.createDataSource(app.CollectionDataSource.settings);
-          console.log("datasource:", datasource.settings, app.CollectionModelTable);
-
-          datasource.discoverSchema(app.CollectionModelTable, {}, function (err, schema) {
-            console.log("schema", schema);
-            if (err) throw err;
-            delete schema.properties.id;
-            var collmodel = datasource.createModel(app.CollectionModelTable, schema.properties);
-            next.persistedModel = collmodel;
-            next()
-          })
-
-        } else {
-          logger.debug("[createPersistedModel][mongodb]");
-
-          next.persistedModel = next.module;
-          next()
-        }
-
-
-      },
-
-      removeModel: function removeModel(req, res, next) {
-
-
-        eventEmitter.emit('checkCache', app, req.params.pathToDelete);
-        if (app.buildedModel) {
-          logger.debug("TROVATA CACHE pathToDelete");
-          app.buildedModel = null;
-          return next();
-        } else {
-          console.log("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
-          app.buildedModel = null;
-          return next();
-        }
-
-      },
-
-      buildpayload: function buildpayload(req, res, next) {
-        setupParameters(req, res, function (json_body) {
-          logger.debug("[buildpayload][saved body in next.body]");
-          next.body = json_body;
+    getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
+      setupParameters(req, res, function (json_body) {
+        next.body = json_body;
+        if (!next.body.coll_db) {
+          logger.debug("[getDatasourceToWrite][Nothing to do]");
           next();
+        } else {
+          eventEmitter.emit('getDataSource', app, req.body);
+          logger.debug("[getDatasourceToWrite][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
+            " DB =", app.CollectionDataSource.settings.database);
+
+          next();
+        }
+      })
+    },
+    /*
+
+     This FIX the id auto incement issue.
+
+
+
+
+     */
+    createPersistedModel: function createModel(req, res, next) {
+
+      if (app.CollectionDataSource.settings.connector != 'mongodb') {
+        var datasource = loopback.createDataSource(app.CollectionDataSource.settings);
+        console.log("datasource:", datasource.settings, app.CollectionModelTable);
+
+        datasource.discoverSchema(app.CollectionModelTable, {}, function (err, schema) {
+          console.log("schema", schema);
+          if (err) throw err;
+          delete schema.properties.id;
+          var collmodel = datasource.createModel(app.CollectionModelTable, schema.properties);
+          next.persistedModel = collmodel;
+          next()
         })
 
-      },
+      } else {
+        logger.debug("[createPersistedModel][mongodb]");
 
-
-      validatebody: function validatebody(req, res, next) {
-        console.log("VALIDATE");
-        if (next && next.module) {
-          if (req.body && req.body.name) {
-            var qry = req.body.name;
-            if (qry.match(/[^a-z\d]+/i)) {
-              return res.status(500).send({error: "Invalid charachers"})
-
-            } else next();
-          } else res.status(500).send({error: "Unknown Model name"})
-
-        } else {
-          res.status(500).send({error: "Unknown Model"})
-        }
+        next.persistedModel = next.module;
+        next()
       }
 
+
+    },
+
+    removeModel: function removeModel(req, res, next) {
+
+
+      eventEmitter.emit('checkCache', app, req.params.pathToDelete);
+      if (app.buildedModel) {
+        logger.debug("TROVATA CACHE pathToDelete");
+        app.buildedModel = null;
+        return next();
+      } else {
+        console.log("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
+        app.buildedModel = null;
+        return next();
+      }
+
+    },
+
+    buildpayload: function buildpayload(req, res, next) {
+      setupParameters(req, res, function (json_body) {
+        logger.debug("[buildpayload][saved body in next.body]");
+        next.body = json_body;
+        next();
+      })
+
+    },
+
+
+    validatebody: function validatebody(req, res, next) {
+      console.log("VALIDATE");
+        validatereqbodyname(req.body, function (cb) {
+          if (cb) next()
+          else return res.status(400).send({error: "Invalid request"})
+        })
+    },
+
+    validateRelationBody : function validateRelationBody(req,res,next) {
+
+      console.log("validate Relation",req.body);
+      if ( !req.body.relatedCollection || !req.body.fk )
+      return res.status(400).send({error: "Invalid request"})
+      var relation_name = (!req.body.name ? req.body.relatedCollection : req.body.name).toLowerCase();
+      var relationbody ={
+          "relatedCollection": req.body.relatedCollection.toLowerCase(),
+          "fk": req.body.fk,
+          "name": relation_name
+
+      }
+      next.relationbody = relationbody
+      next();
     }
+
+
   }
+}
 

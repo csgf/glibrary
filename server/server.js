@@ -14,7 +14,7 @@ var options = {
 
 var limitQuery = function(req,res,next) {
   if( ! req.query.filter ) {
-    console.log("set query limit to 50 records");
+   // console.log("set query limit to 50 records");
     req.query.filter = {limit : 50 };
     next();
   } else next();

@@ -47,20 +47,34 @@ module.exports = function (app) {
                 return next();
               }
               var coll_name = req.params.collection_name
-              req.params.collection_name = req.params.related_coll_name;
-              tl.getCollection(req, res, function (cb) {
+              var itemfound=false;
+              var arrayFound = instance.relatedTo.filter(function(item) {
 
-                related_model = app.next_module;
-                fk = instance.relatedTo.fk;
-                name = instance.relatedTo.name;
-                first_model.hasMany(related_model, {foreignKey: fk, as: name});
-                related_model.belongsTo(first_model, {foreignKey: fk});
-                app.relationName = name;
-                RelationInfo[coll_name] = {relationName: name, relatedModel: req.params.related_coll_name};
-                return next();
+                if( item.relatedCollection == req.params.related_coll_name) {
+                  console.log("ITEM:",item)
+                  itemfound = true;
+                  req.params.collection_name = req.params.related_coll_name;
+                  tl.getCollection(req, res, function (cb) {
 
-              })
+                    // verificare stato della callback
+
+                    related_model = app.next_module;
+                    fk = item.fk;
+                    name = item.name;
+
+                    first_model.hasMany(related_model, {foreignKey: fk, as: name});
+                    related_model.belongsTo(first_model, {foreignKey: fk});
+                    app.relationName = name;
+                    RelationInfo[coll_name] = {relationName: name, relatedModel: req.params.related_coll_name};
+                    return next();
+
+                  })
+                }
+              });
+              if (!itemfound) return res.status(400).send({"error":"Relation not found"})
+
             })
+
         })
       }
 
