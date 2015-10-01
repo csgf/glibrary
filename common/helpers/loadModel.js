@@ -20,7 +20,7 @@ var validatereqbodyname = function (body, next) {
   if (body && body.name) {
     var qry = body.name;
     if (qry.match(/[^a-z\d]+/i)) {
-        next(false);
+      next(false);
     } else next(true);
 
   } else next(false)
@@ -233,8 +233,8 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
         // don't stop after a getaddrinfo ENOTFOUND error;
       }
       if (models) {
-        console.log("***[MODEL NAME]: ",Object.keys(models)[0]
-      )
+        console.log("***[MODEL NAME]: ", Object.keys(models)[0]
+        )
 
         try {
           logger.debug('[buildModelFromRDBMS][Model]:', camelize(options.name).trim().capitalize().value());
@@ -568,7 +568,7 @@ var setupParameters = function (req, res, next) {
 
   validatereqbodyname(req.body, function (cb) {
 
-    if(!cb) return res.status(400).send({error: "Invalid request"})
+    if (!cb) return res.status(400).send({error: "Invalid request"})
 
     // POST su /v1/repos
     var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
@@ -605,6 +605,21 @@ var setupParameters = function (req, res, next) {
     next(parameters);
   })
 }
+
+/**
+ * Chechs for relationship's name into collection's json
+ *
+ * @param collection
+ * @param field
+ * @param value
+ * @returns {boolean}
+ */
+var findrelatedCollection = function (collection, field, value) {
+  var _ = require("underscore");
+  var filtered = _.where(collection, {relatedCollection: value});
+  if (filtered.length > 0) return true;
+  else return false;
+};
 /* ----------------------------------------------------------- module exports -----------------------------------------------*/
 
 eventEmitter.on('getDataSource', getDataSource);
@@ -697,12 +712,9 @@ module.exports = function (app) {
                         ModelTableMap[modelName] = {table: modelTable};
                         logger.stream.write("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
                         logger.debug("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}");
-
                       }
                       app.CollectionModelTable = modelTable;
                       console.log("app.CollectionModelTable = modelName", app.CollectionModelTable)
-
-
                       next.module = model;
                       app.next_module = model;
                       // sets relation btw Collection Model and Replica Model
@@ -805,29 +817,34 @@ module.exports = function (app) {
 
     validatebody: function validatebody(req, res, next) {
       console.log("VALIDATE");
-        validatereqbodyname(req.body, function (cb) {
-          if (cb) next()
-          else return res.status(400).send({error: "Invalid request"})
-        })
+      validatereqbodyname(req.body, function (cb) {
+        if (cb) next()
+        else return res.status(400).send({error: "Invalid request"})
+      })
     },
 
-    validateRelationBody : function validateRelationBody(req,res,next) {
+    validateRelationBody: function validateRelationBody(req, res, next) {
 
-      console.log("validate Relation",req.body);
-      if ( !req.body.relatedCollection || !req.body.fk )
-      return res.status(400).send({error: "Invalid request"})
+      console.log("validate Relation", req.body);
+      if (!req.body.relatedCollection || !req.body.fk)
+        return res.status(400).send({error: "Invalid request"})
       var relation_name = (!req.body.name ? req.body.relatedCollection : req.body.name).toLowerCase();
-      var relationbody ={
-          "relatedCollection": req.body.relatedCollection.toLowerCase(),
-          "fk": req.body.fk,
-          "name": relation_name
+      var relationbody = {
+        "relatedCollection": req.body.relatedCollection.toLowerCase(),
+        "fk": req.body.fk,
+        "name": relation_name
 
       }
       next.relationbody = relationbody
       next();
+    },
+
+    checkduplicate: function checkduplicate(json, relationbody, next) {
+      if (json.length == 0) return next();
+      if (findrelatedCollection(json, 'relatedCollection', relationbody.relatedCollection)) {
+          return next(true)
+      } else return next(false);
     }
-
-
   }
 }
 

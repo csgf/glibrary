@@ -293,47 +293,31 @@ module.exports = function mountRestApi(server) {
    Adds informations to repo_name about the related Collection Model
    */
 
-  server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, tl.validateRelationBody,tl.validateRelationBody,
-    function (req, res, next) {
+  server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, tl.validateRelationBody,
+    tl.validateRelationBody, function (req, res, next) {
 
-    next.module.findOne({where: {name: req.params.collection_name}},
-      function (err, instance) {
-        if (err) res.sendStatus(500);
-        if (!instance) return res.sendStatus(404);
-/*
-        var body = {
-          "relatedTo": {
-            "relatedCollection": req.body.relatedCollection,
-            "fk": req.body.fk,
-            "name": req.body.name
-          }
+      next.module.findOne({where: {name: req.params.collection_name}},
+        function (err, instance) {
+          if (err) res.sendStatus(500);
+          if (!instance) return res.sendStatus(404);
+          var relation_array = (!instance.relatedTo ? [] : instance.relatedTo)
+          tl.checkduplicate(relation_array,next.relationbody,function(duplicate){
+            if(duplicate) return res.status(409).send({"error": "Relation " + next.relationbody.relatedCollection + " is already defined"})
+            else {
+              relation_array.push(next.relationbody)
+              var relatedTo = {"relatedTo": relation_array}
+              instance.updateAttributes(relatedTo, function (err) {
+                if (err) res.status(500).send({"error": "Error during updating attributes"})
+                else {
+                  logger.debug("[rest-api][updateAttribute on = ", instance.path + "of Repository Model " + next.module.definition.name);
+                  res.status(201).send({"message": "Relation Created"})
+                }
+              })
+            }
+          })
         }
-        */
-        console.log("*-------relatedTO :",instance.relatedTo);
-
-
-        console.log("*-------RELATION BODY:",next.relationbody);
-
-        var relation_array = (!instance.relatedTo ? [] : instance.relatedTo)
-        relation_array.push(next.relationbody)
-        console.log("MODIFICA:",relation_array);
-
-          var relatedTo = {"relatedTo": relation_array}
-          console.log("relatedTo:",relatedTo);
-
-        instance.updateAttributes(relatedTo , function (err) {
-          if (err) console.log("ERR:", err);
-          else {
-            logger.debug("[rest-api][updateAttribute on = ", instance.path + "of Repository Model " + next.module.definition.name);
-            res.sendStatus(200, 'relatedTo has been inserted')
-
-          }
-
-        })
-
-      }
-    )
-  })
+      )
+    })
 
   /*
    retrives collection_name by item_id and its related collection module
