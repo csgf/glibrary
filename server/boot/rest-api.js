@@ -316,7 +316,7 @@ module.exports = function mountRestApi(server) {
    */
 
   server.post('/v1/repos/:repo_name/:collection_name/relation', tl.getRepository, tl.validateRelationBody,
-    tl.validateRelationBody, function (req, res, next) {
+     function (req, res, next) {
 
       next.module.findOne({where: {name: req.params.collection_name}},
         function (err, instance) {

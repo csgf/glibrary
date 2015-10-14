@@ -14,31 +14,13 @@ module.exports = function(app) {
   var modelACL = require('../../common/helpers/modelACL');
   var rp = new modelACL(app);
 
-
+/*
   User.login({email: 'misterno@gmail.com', password: 'test'}, function (err, accesstoken) {
     console.log("This is the token: ", accesstoken);
     accesstoken.validate(function (err, isValid) {
       if (err) throw err;
       console.log("isValid", isValid);
     })
-      /*
-       {
-
-       "accessType": "*",
-       "principalType": "ROLE",
-       "principalId": "$everyone",
-       "permission": "DENY"
-
-       },
-       {
-       "accessType": "READ",
-       "principalType": "ROLE",
-       "principalId": "$authenticated",
-       "permission": "ALLOW"
-       }
-       */
-
-
       var acl_allow_read = {
         "model": "Repository",
         "accessType": "READ",
@@ -52,7 +34,7 @@ module.exports = function(app) {
         "principalId": "$everyone",
         "permission": "DENY"
       }
-
+*/
 //      repository.settings.acls.push(acl_deny_all);
 //    repository.settings.acls.push(acl_allow_read);
 
@@ -70,7 +52,7 @@ module.exports = function(app) {
 
        })
        */
-    });
+  //  });
 
 
     /*

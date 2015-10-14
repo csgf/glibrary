@@ -839,11 +839,15 @@ module.exports = function (app) {
         "name": relation_name
 
       }
+      logger.debug("[validateRelationBody][relationbody]",relationbody);
+
       next.relationbody = relationbody
-      next();
+      app.relationbody = relationbody
+      next(true);
     },
 
     checkduplicate: function checkduplicate(json, relationbody, next) {
+     console.log("JSON LENG",json.length);
       if (json.length == 0) return next();
       if (findrelatedCollection(json, 'relatedCollection', relationbody.relatedCollection)) {
           return next(true)

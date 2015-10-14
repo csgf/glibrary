@@ -6,6 +6,10 @@
 module.exports = function (Repository) {
 
 
+
+  var isStatic = true;
+  Repository.disableRemoteMethod('findById', isStatic);
+
   userId = null;
 
   var fs = require('fs');
@@ -13,6 +17,7 @@ module.exports = function (Repository) {
   var path = require('path');
   var request = require('request');
   var service = require('../service/persist');
+  var logger = require("../helpers/logger");
 
 
   var sendError = function (code, msg) {
@@ -174,31 +179,48 @@ module.exports = function (Repository) {
   /* --- Repository -----*/
 
   Repository.createRepository = function (req, res, next) {
-    console.log("CREATE REPO");
+    console.log("[Repository.createRepository]");
   }
 
+  Repository.getRepository = function (req, res, next) {
+    console.log("[Repository.getRepository]")
 
-  /* ---- Collection ----*/
-
-  Repository.getCollection = function (req, res, next) {
     Repository.getApp(function (err, app) {
       var testLib = require('../helpers/loadModel');
       var tl = new testLib(app);
-      console.log("GET collection_name", req.body.publisherId);
-      console.log("GET collection_name", userId);
+      tl.getRepository(req, res, function (next) {
+        if (next) {
+          console.log("Repository Model", app.repositoryModel.definition.name)
+          app.repositoryModel.find(req.query.filter, function (err, instance) {
+            if (err) {
+              res.sendStatus(500)
+            }
+            if (!instance) {
+              res.status(400).send({error: "Repository not Found"})
+            }
+            res.send(instance);
+          })
+        } else res.sendStatus(500)
+      })
+    })
+  }
 
+  /* ---- GET Collection ----*/
+
+  Repository.getCollection = function (req, res, next) {
+
+    console.log("[Repository.getCollection]", req.query.filter)
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
       tl.getCollection(req, res, function (next) {
-        console.log("GET collection_name", req.query.filter);
         app.next_module.find(req.query.filter, function (err, instance) {
           if (err) res.sendStatus(500);
           if (!instance) return res.sendStatus(404);
           res.json(instance);
         })
       })
-
     })
-
-
   }
 
   Repository.getCollectionSchema = function (req, res, next) {
@@ -224,8 +246,53 @@ module.exports = function (Repository) {
   }
 
 
-  /*----- beforeRemote Hooks ------*/
 
+  /*----- Model Relations -----*/
+
+  Repository.createRelation = function (req, res, next) {
+
+
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      app.repositoryModel.findOne({where: {name: req.params.collection_name}},
+        function (err, instance) {
+
+          if (err) res.sendStatus(500);
+          if (!instance) return res.status(404).send({"error": "Collection not found"});
+          var relation_array = (!instance.relatedTo ? [] : instance.relatedTo)
+          console.log("relation_array", relation_array);
+
+          tl.checkduplicate(relation_array, app.relationbody, function (duplicate) {
+            if (duplicate) return res.status(409).send({"error": "Relation " + app.relationbody.relatedCollection + " is already defined"})
+            else {
+              relation_array.push(app.relationbody)
+              var relatedTo = {"relatedTo": relation_array}
+              instance.updateAttributes(relatedTo, function (err) {
+                if (err) res.status(500).send({"error": "Error during updating attributes"})
+                else {
+                  logger.debug("[rest-api][updateAttribute on = ", instance.path + "of Repository Model " + app.repositoryModel.definition.name);
+                  res.status(201).send({"message": "Relation Created"})
+                }
+              })
+            }
+          })
+        })
+    })
+
+  }
+
+
+  Repository.getRelation = function(req,res,next) {
+
+
+
+
+  }
+
+
+
+  /*----- beforeRemote Hooks ------*/
 
   Repository.beforeRemote('getColletionItem', function (context, user, final) {
     Repository.getApp(function (err, app) {
@@ -247,7 +314,6 @@ module.exports = function (Repository) {
     })
   })
 
-
   Repository.beforeRemote('populateCollection', function (context, user, final) {
     Repository.getApp(function (err, app) {
       var testLib = require('../helpers/loadModel');
@@ -268,7 +334,6 @@ module.exports = function (Repository) {
     })
   })
 
-
   Repository.beforeRemote('createCollection', function (context, user, final) {
     Repository.getApp(function (err, app) {
       var testLib = require('../helpers/loadModel');
@@ -284,6 +349,7 @@ module.exports = function (Repository) {
             if (next) {
               console.log("repocb", app.repositoryModel.definition.name)
               app.repositoryModel.findOne({where: {"name": req.body.name}}, function (err, value) {
+                // GENERA ERRORE NNESISTE IL RES
                 if (err) return res.send(JSON.stringify(err));
                 if (value) return res.status(409).send({error: "A collection named " + req.body.name + " is already defined"})
                 tl.getDatasourceToWrite(req, res, function (next) {
@@ -306,11 +372,67 @@ module.exports = function (Repository) {
   })
 
   Repository.beforeRemote('getCollection', function (context, user, next) {
-    var req = context.req;
-    req.body.publisherId = "CIAO";
-    userId = "PIPPOPAPPO";
+    /*var req = context.req;
+     req.body.publisherId = "CIAO";
+     userId = "PIPPOPAPPO";
+     */
     next();
   })
+
+  Repository.beforeRemote('createRelation',function(context,user,final) {
+
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = context.req;
+      var res = context.res;
+
+      tl.getRepository(req, res, function (next) {
+        if (next) {
+          tl.validateRelationBody(req, res, function (next) {
+            if (next) {
+              console.log("OK VALIDATE")
+              final()
+            } else res.sendStatus(412)
+          })
+        }
+      })
+    })
+  })
+
+  Repository.beforeRemote('createRelation',function(context,user,final) {
+
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = context.req;
+      var res = context.res;
+      tl.getCollection(req, res, function (next) {
+        if(next) {
+
+        }
+      })
+
+
+    })
+  })
+
+
+
+
+
+
+    /* ---------------------- remoteMethod ------------------------*/
+
+  Repository.remoteMethod('getRepository', {
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    http: {path: '/:repo_name/', verb: 'get'},
+    returns: {arg: 'data', type: 'object'}
+  });
+
 
   Repository.remoteMethod('getCollection', {
     accepts: [
@@ -351,12 +473,43 @@ module.exports = function (Repository) {
   Repository.remoteMethod('getColletionItem', {
     http: {path: '/:repo_name/:collection_name/:item_id', verb: 'get'},
     accepts: [
-      {arg: 'req', type: 'object', 'http': {source: 'body'}},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
     ],
     returns: {arg: 'data', type: 'object'}
   });
 
+
+  Repository.remoteMethod('createRelation', {
+    http: {path: '/:repo_name/:collection_name/relation', verb: 'post'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+  Repository.remoteMethod('getRelation', {
+    http: {path : '/:repo_name/:collection_name/:item_id/:related_coll_name', verb:'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+  /*-------------------------------------OBSERVE---------------------------------------------------*/
+
+  /*
+   Repository.observe('access', function(context,next){
+
+   console.log("CNTEXT",context.query)
+   if (context.query.where) {
+   context.query.where.id = "561e4f9b3a3ecaeb73e12b2c";
+   }
+   next();
+   })
+
+   */
 
   Repository.observe('before save', function (context, final) {
     console.log('Going to create Repository');
@@ -380,10 +533,19 @@ module.exports = function (Repository) {
             final(error);
           }
           if (value) {
-            msg = "A repository named " + req.body.name + " is already defined";
+            msg = "A repository named " + context.instance.name + " is already defined";
             error = sendError(409, msg)
             final(error);
-          } else final()
+          } else {
+
+            context.instance.path = payload.path;
+            context.instance.location = payload.location;
+            context.instance.coll_db = payload.coll_db;
+            console.log("*-Body-*:", context.instance);
+
+
+            final()
+          }
         })
       })
     })
@@ -394,13 +556,9 @@ module.exports = function (Repository) {
     console.log('Going to POST SAVE Repository');
     Repository.getApp(function (err, app) {
 
-     // var testLib = require('../helpers/loadModel');
-     // var tl = new testLib(app);
-     // var req = {body: context.instance};
-
       var repositoryDB = app.dataSources.repoDB;
 
-      service.createTable(repositoryDB, pp.bodyReadToWrite, function (callback) {
+      service.createTable(repositoryDB, app.bodyReadToWrite, function (callback) {
         if (callback) {
           var code = 201;
           var message = "The repository was successfully created";

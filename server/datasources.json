@@ -6,7 +6,7 @@
   "repoDB": {
     "host": "localhost",
     "port": "27017",
-    "database": "glibrary",
+    "database": "glibrary_test",
     "username": "",
     "password": "",
     "name": "mongoDB",
