@@ -20,6 +20,10 @@
     "loopback-connector-mysql": "^2.1.1",
     "loopback-connector-postgresql": "^2.1.0",
     "loopback-datasource-juggler": "^2.7.0",
+
+    "passport": "^0.2.2",
+    "passport-local": "^1.0.0",
+
     "method-override": "^2.3.3",
     "mocha": "^2.2.5",
     "mongoose": "^4.0.6",

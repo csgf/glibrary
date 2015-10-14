@@ -8,7 +8,7 @@ var logger = require("../helpers/logger");
 exports.createTable = function createTable(datasource, data, callback) {
 
   var repoDB = datasource;
-  var table_name = data.name;
+  var table_name = data.name.toLowerCase();
 
   checkIfDataHasToBeImported(data, function (cb) {
     if (cb) {

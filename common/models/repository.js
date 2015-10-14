@@ -3,7 +3,8 @@
  * email:antonio.dimariano@gmail.com
  * https://github.com/antoniodimariano/
  */
-module.exports = function(Repository) {
+module.exports = function (Repository) {
+
 
   userId = null;
 
@@ -11,10 +12,24 @@ module.exports = function(Repository) {
   var https = require('https');
   var path = require('path');
   var request = require('request');
+  var service = require('../service/persist');
+
+
+  var sendError = function (code, msg) {
+
+    var error = new Error();
+    error.statusCode = code;
+    error.message = msg
+    delete error.stack;
+    return error;
+  }
 
   /**
    * Event Observe
    */
+
+
+
 
   Repository.observe('before delete', function (ctx, next) {
     console.log('Going to delete %s matching %j',
@@ -156,4 +171,245 @@ module.exports = function(Repository) {
   }
 
 
+  /* --- Repository -----*/
+
+  Repository.createRepository = function (req, res, next) {
+    console.log("CREATE REPO");
+  }
+
+
+  /* ---- Collection ----*/
+
+  Repository.getCollection = function (req, res, next) {
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      console.log("GET collection_name", req.body.publisherId);
+      console.log("GET collection_name", userId);
+
+      tl.getCollection(req, res, function (next) {
+        console.log("GET collection_name", req.query.filter);
+        app.next_module.find(req.query.filter, function (err, instance) {
+          if (err) res.sendStatus(500);
+          if (!instance) return res.sendStatus(404);
+          res.json(instance);
+        })
+      })
+
+    })
+
+
+  }
+
+  Repository.getCollectionSchema = function (req, res, next) {
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      console.log("GET collection SCHEMA");
+      res.json(app.next_module.definition.properties);
+
+    })
+  }
+
+  Repository.createCollection = function (req, res, next) {
+    res.status(201).send({message: "The collection was successfully created "})
+
+  }
+
+  Repository.populateCollection = function (req, res, next) {
+    res.sendStatus(200, 'Items created');
+  }
+
+  Repository.getCollectionItem = function (req, res, next) {
+  }
+
+
+  /*----- beforeRemote Hooks ------*/
+
+
+  Repository.beforeRemote('getColletionItem', function (context, user, final) {
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = context.req;
+      var res = context.res;
+      tl.getCollection(req, res, function (next) {
+        app.next_module.findById(req.params.item_id, function (err, item) {
+          if (err) return res.sendStatus(500);
+          if (!item) return res.sendStatus(404);
+          else {
+            console.log("ITEM", item)
+            res.status(200).send(item);
+          }
+        })
+      })
+
+    })
+  })
+
+
+  Repository.beforeRemote('populateCollection', function (context, user, final) {
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = context.req;
+      var res = context.res;
+      tl.getCollection(req, res, function (next) {
+        tl.createPersistedModel(req, res, function (next) {
+          app.persistedModel.create(req.body, function (err, instance) {
+            if (err) {
+              res.send(err);
+            }
+            else final()
+
+          })
+        })
+      })
+    })
+  })
+
+
+  Repository.beforeRemote('createCollection', function (context, user, final) {
+    Repository.getApp(function (err, app) {
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = context.req;
+      var res = context.res;
+      console.log("BODY:", req.body)
+      tl.validatebody(req, res, function (cb) {
+        if (cb) {
+          console.log("CB", cb)
+
+          tl.getRepository(req, res, function (next) {
+            if (next) {
+              console.log("repocb", app.repositoryModel.definition.name)
+              app.repositoryModel.findOne({where: {"name": req.body.name}}, function (err, value) {
+                if (err) return res.send(JSON.stringify(err));
+                if (value) return res.status(409).send({error: "A collection named " + req.body.name + " is already defined"})
+                tl.getDatasourceToWrite(req, res, function (next) {
+                  console.log("NEXT", app.CollectionDataSource.settings.host)
+                  app.repositoryModel.create(app.bodyReadToWrite, function (err, instance) {
+                    if (err) return res.send(JSON.stringify(err));
+                    console.log("BODY", app.bodyReadToWrite)
+                    service.createTable(app.CollectionDataSource, app.bodyReadToWrite, function (callback) {
+                      if (callback) final()
+                      else res.sendStatus(500);
+                    })
+                  })
+                })
+              })
+            }
+          })
+        }
+      })
+    })
+  })
+
+  Repository.beforeRemote('getCollection', function (context, user, next) {
+    var req = context.req;
+    req.body.publisherId = "CIAO";
+    userId = "PIPPOPAPPO";
+    next();
+  })
+
+  Repository.remoteMethod('getCollection', {
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'instance', type: 'array'},
+    http: {path: '/:repo_name/:collection_name', verb: 'get'}
+  });
+
+  Repository.remoteMethod('getCollectionSchema', {
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'instance', type: 'array'},
+    http: {path: '/:repo_name/:collection_name/_schema', verb: 'get'}
+  });
+
+  Repository.remoteMethod('createCollection', {
+    http: {path: '/:repo_name/', verb: 'post'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'body'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  });
+
+  Repository.remoteMethod('populateCollection', {
+    http: {path: '/:repo_name/:collection_name/', verb: 'post'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'body'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  });
+
+  Repository.remoteMethod('getColletionItem', {
+    http: {path: '/:repo_name/:collection_name/:item_id', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'body'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  });
+
+
+  Repository.observe('before save', function (context, final) {
+    console.log('Going to create Repository');
+    console.log("Body:", context.instance);
+
+    Repository.getApp(function (err, app) {
+
+      var testLib = require('../helpers/loadModel');
+      var tl = new testLib(app);
+      var req = {body: context.instance};
+      var res = context.result;
+      console.log("Body:", req.body.name);
+      console.log("PAR:", req.params);
+
+      tl.buildpayload(req, res, function (next) {
+        console.log("payload", app.bodyReadToWrite);
+        var payload = app.bodyReadToWrite;
+        Repository.findOne({where: {"name": req.body.name}}, function (err, value) {
+          if (err) {
+            error = sendError(500, err);
+            final(error);
+          }
+          if (value) {
+            msg = "A repository named " + req.body.name + " is already defined";
+            error = sendError(409, msg)
+            final(error);
+          } else final()
+        })
+      })
+    })
+  })
+
+
+  Repository.observe('post save', function (context, final) {
+    console.log('Going to POST SAVE Repository');
+    Repository.getApp(function (err, app) {
+
+     // var testLib = require('../helpers/loadModel');
+     // var tl = new testLib(app);
+     // var req = {body: context.instance};
+
+      var repositoryDB = app.dataSources.repoDB;
+
+      service.createTable(repositoryDB, pp.bodyReadToWrite, function (callback) {
+        if (callback) {
+          var code = 201;
+          var message = "The repository was successfully created";
+          var response = {code: code, message: message}
+          final(response);
+        } else {
+          error = sendError(500, 'Error during service CreateTable')
+        }
+      })
+    })
+  })
 }

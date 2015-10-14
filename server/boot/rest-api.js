@@ -17,6 +17,15 @@ module.exports = function mountRestApi(server) {
   var relation = require("../../common/helpers/modelRelation");
   var rl = new relation(app);
 
+  var modelACL = require('../../common/helpers/modelACL');
+  var rp = new modelACL(app);
+
+
+
+  var AccessToken = server.models.AccessToken;
+
+
+
   app.use(bodyParser.json()); // for parsing application/json. Once we  disabled restApiRoot, we need to enable all bodyParser functionalities
   app.use(methodOverride());//Catch json error
   app.use(function (error, req, res, next) {
@@ -29,17 +38,22 @@ module.exports = function mountRestApi(server) {
   });
   app.use(restApiRoot, server.loopback.rest());
   app.use(function (req, res, next) {
-    //console.log("VERIFY TOKEN");
+
+
+      next();
+
+
+
     // check header or url parameters or post parameters for token
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+   // var token = req.body.token || req.query.token || req.headers['x-access-token'];
     // decode token
-    if (token) {
+    //if (token) {
       //  console.log("OK TOKEN", token);
-      next();
-    } else {
+     // next();
+    //} else {
       //  console.log("NO TOKEN");
-      next();
-    }
+      //res.sendStatus(401);
+   // }
   })
 
 
@@ -50,12 +64,13 @@ module.exports = function mountRestApi(server) {
    */
 
 
-    //Elenco di tutti i repositories hostati sul server
 
   server.get('/noauth', function (req, res, next) {
     console.log("NO", req.user);
     res.sendStatus(401);
   })
+  //Elenco di tutti i repositories hostati sul server
+
   server.get('/v1/repos', function (req, res, next) {
     repository.find(req.query.filter, function (err, instance) {
       if (err)  return res.send(JSON.stringify(err));
@@ -74,6 +89,13 @@ module.exports = function mountRestApi(server) {
       if (value) return res.status(409).send({error: "A repository named " + req.body.name + " is already defined"})
       repository.create(next.body, function (err, instance) {
         if (err) return res.send(JSON.stringify(err));
+
+        // event to create ACL
+        var RoleGroup = req.body.name+'RepoGroup';
+        rp.createRole(RoleGroup,function(rolecb){
+          if(rolecb) console.log(" Role has created succesufully");
+        })
+
         service.createTable(repositoryDB, next.body, function (callback) {
           if (callback) res.status(201).send({message: "The repository was successfully created "})
           else           return res.sendStatus(500);

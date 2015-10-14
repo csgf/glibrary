@@ -3,11 +3,6 @@
   "base": "User",
   "idInjection": true,
   "properties": {
-    "id" : {
-      "type": "number",
-      "id": true
-
-    },
     "username": {
       "type": "string"
     },
@@ -19,23 +14,7 @@
     }
   },
   "validations": [],
-  "relations": {
-    "projects": {
-      "type": "hasMany",
-      "model": "project",
-      "foreignKey": "ownerId"
-    },
-    "teams": {
-      "type": "hasMany",
-      "model": "team",
-      "foreignKey": "ownerId"
-    },
-    "repositories": {
-      "type": "hasMany",
-      "model": "repository",
-      "foreignKey": "ownerId"
-    }
-  },
+  "relations": {},
   "acls": [],
   "methods": []
 }

@@ -7,27 +7,10 @@
     "validateUpsert": true
   },
   "properties": {
-    "ownerId": {
-      "type": "number"
-    },
+
     "name": {
       "type": "string",
       "required": true
-    },
-    "location": {
-      "type": "string",
-      "required": true
-    },
-    "path": {
-      "type": "string",
-      "required": true
-    },
-    "storage": {
-      "type": "string",
-      "required": false
-    },
-    "import": {
-      "type": "string"
     }
   },
   "validations": [],
@@ -38,6 +21,9 @@
       "foreignKey": "ownerId"
     }
   },
-  "acls": [],
+  "acls": [
+
+
+  ],
   "methods": []
 }

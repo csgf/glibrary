@@ -574,11 +574,11 @@ var setupParameters = function (req, res, next) {
     var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
     var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
 
-    if (!req.params.repo_name) {
+   // if (!req.params && !req.params.repo_name) {
       var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
-    }
+   // }
     //POST su /v1/repo/:repo_name
-    if (req.params.repo_name) {
+    if (req.params && req.params.repo_name) {
       var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
       var import_flag = (!req.body.import ? "false" : req.body.import);
       var schema = (!req.body.schema ? null : req.body.schema);
@@ -637,7 +637,7 @@ module.exports = function (app) {
           next.module = cb;
           logger.debug("[getRepository][next.module]= ", cb.definition.name);
           logger.debug("------------end of getRepository---------------")
-          return next();
+          return next(cb);
         } else return res.sendStatus(404);
       })
     },
@@ -723,7 +723,7 @@ module.exports = function (app) {
                           return next();
                         }
                       })
-                      //return next();
+                   //   return next();
 
                     } else {
                       return res.sendStatus(404);
@@ -744,15 +744,16 @@ module.exports = function (app) {
     getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
       setupParameters(req, res, function (json_body) {
         next.body = json_body;
+        app.bodyReadToWrite = json_body;
         if (!next.body.coll_db) {
           logger.debug("[getDatasourceToWrite][Nothing to do]");
-          next();
+          return next(false);
         } else {
           eventEmitter.emit('getDataSource', app, req.body);
           logger.debug("[getDatasourceToWrite][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
             " DB =", app.CollectionDataSource.settings.database);
 
-          next();
+          return next(true);
         }
       })
     },
@@ -764,7 +765,7 @@ module.exports = function (app) {
 
 
      */
-    createPersistedModel: function createModel(req, res, next) {
+    createPersistedModel: function createPersistedModel(req, res, next) {
 
       if (app.CollectionDataSource.settings.connector != 'mongodb') {
         var datasource = loopback.createDataSource(app.CollectionDataSource.settings);
@@ -775,15 +776,16 @@ module.exports = function (app) {
           if (err) throw err;
           delete schema.properties.id;
           var collmodel = datasource.createModel(app.CollectionModelTable, schema.properties);
+          app.persistedModel = collmodel;
           next.persistedModel = collmodel;
-          next()
+           next()
         })
 
       } else {
         logger.debug("[createPersistedModel][mongodb]");
-
+        app.persistedModel =  app.next_module ;
         next.persistedModel = next.module;
-        next()
+         next()
       }
 
 
@@ -808,6 +810,8 @@ module.exports = function (app) {
     buildpayload: function buildpayload(req, res, next) {
       setupParameters(req, res, function (json_body) {
         logger.debug("[buildpayload][saved body in next.body]");
+        console.log("json_body",json_body);
+        app.bodyReadToWrite = json_body;
         next.body = json_body;
         next();
       })
@@ -816,9 +820,9 @@ module.exports = function (app) {
 
 
     validatebody: function validatebody(req, res, next) {
-      console.log("VALIDATE");
+      console.log("VALIDATE",req.body);
       validatereqbodyname(req.body, function (cb) {
-        if (cb) next()
+        if (cb) return next(true)
         else return res.status(400).send({error: "Invalid request"})
       })
     },
