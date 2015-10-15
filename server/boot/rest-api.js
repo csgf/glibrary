@@ -346,6 +346,7 @@ module.exports = function mountRestApi(server) {
    */
   server.get('/v1/repos/:repo_name/:collection_name/:item_id/:related_coll_name', tl.getCollection, rl.buildRelation, function (req, res, next) {
     logger.debug("[rest-api][app.relationName = ", app.relationName + "]");
+    console.log(" n************* ext.module", next.module.definition.name);
     next.module.findById(req.params.item_id,
       {include: app.relationName},
       function (err, instance) {
@@ -381,9 +382,11 @@ module.exports = function mountRestApi(server) {
 
   /* Sets replica for collection */
   server.post('/v1/repos/:repo_name/:collection_name/:item_id/replicas', tl.getCollection, function (req, res, next) {
+
     var Replica = app.models.Replica;
     req.body.collectionId = req.params.item_id;
     Replica.create(req.body, function (err, instance) {
+
       service.createTable(repositoryDB, req.body, function (callback) {
         if (callback) {
           return res.sendStatus(200, 'Repository Created');
@@ -391,6 +394,7 @@ module.exports = function mountRestApi(server) {
         else return res.sendStatus(500);
       })
     })
+
   })
 
   // GET replica per collection

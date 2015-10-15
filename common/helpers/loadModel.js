@@ -654,7 +654,7 @@ module.exports = function (app) {
         logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
           " DB =", app.CollectionDataSource.settings.database);
 
-        return next();
+         return  next();
       }
 
       else {
@@ -723,7 +723,7 @@ module.exports = function (app) {
                           return next();
                         }
                       })
-                   //   return next();
+                      //return next();
 
                     } else {
                       return res.sendStatus(404);
