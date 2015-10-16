@@ -572,10 +572,17 @@ module.exports = function (Repository) {
 
 
     tl.buildpayload(req, res, function (next) {
+      console.log("NEXT",next)
+      if(!next) {
+        error = sendError(400, 'Invalid request');
+        final(error);
+      }
+
       console.log("payload", app.bodyReadToWrite);
       var payload = app.bodyReadToWrite;
       Repository.findOne({where: {"name": req.body.name}}, function (err, value) {
         if (err) {
+          console.log("QUI")
           error = sendError(500, err);
           final(error);
         }

@@ -567,8 +567,11 @@ var setReplicaRelation = function (app, model, next) {
 var setupParameters = function (req, res, next) {
 
   validatereqbodyname(req.body, function (cb) {
-
-    if (!cb) return res.status(400).send({error: "Invalid request"})
+     if (!cb) {
+       if (!res)  next(false);
+       else
+       return res.status(400).send({error: "Invalid request"})
+     }
 
     // POST su /v1/repos
     var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
@@ -813,7 +816,9 @@ module.exports = function (app) {
         console.log("json_body",json_body);
         app.bodyReadToWrite = json_body;
         next.body = json_body;
-        next();
+        console.log("!!!!!NEXT",json_body)
+        if(!json_body) return next(false)
+        else next(true);
       })
 
     },

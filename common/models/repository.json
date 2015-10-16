@@ -1,6 +1,6 @@
 {
   "name": "repository",
-  "plural": "repositories",
+  "plural": "repos",
   "base": "PersistedModel",
   "idInjection": true,
   "options": {
