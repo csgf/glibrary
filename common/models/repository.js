@@ -15,8 +15,10 @@ module.exports = function (Repository) {
   var app = require('../../server/server.js');
   var testLib = require('../helpers/loadModel');
   var relation = require("../helpers/modelRelation");
+  var roleLib = require("../helpers/modelACL")
   var rl = new relation(app);
   var tl = new testLib(app);
+  var rm = new roleLib(app);
   var isStatic = true;
 
 
@@ -181,12 +183,33 @@ module.exports = function (Repository) {
 
   Repository.createRepository = function (req, res, next) {
     console.log("[Repository.createRepository]");
+
   }
 
   Repository.getRepository = function (req, res, next) {
     tl.getRepository(req, res, function (next) {
       if (next) {
         console.log("[Repository.getRepository]", app.repositoryModel.definition.name)
+        Repository.settings.acls.push(
+          {
+            "accessType": "*",
+            "principalType": "ROLE",
+            "principalId": "repoA",
+            "permission": "ALLOW"
+          }
+        );
+        /*
+        ACL.create(
+          {
+            "accessType": "*",
+            "principalType": "ROLE",
+            "principalId": "repoA",
+            "permission": "ALLOW"
+          }, function (err, result) {
+            console.log('[setACLtoModel] ACL entry created: %j', result);
+            next();
+          })
+          */
         app.repositoryModel.find(req.query.filter, function (err, instance) {
           if (err) {
             res.sendStatus(500)
