@@ -50,6 +50,13 @@ var coll_data_1 = {
 describe('Creating local Collection with local Repository  ', function () {
   lt.beforeEach.withApp(app);
 
+  lt.describe.whenCalledRemotely('POST', url, local_repo, function () {
+    lt.it.shouldBeAllowed()
+  })
+
+  lt.describe.whenCalledRemotely('GET', url+local_repo.name, function () {
+    lt.it.shouldBeAllowed()
+  })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection, function () {
     lt.it.shouldBeAllowed()
@@ -68,39 +75,45 @@ describe('Creating local Collection with local Repository  ', function () {
 
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection3, function () {
-    lt.it.shouldBeAllowed()
+    it('should have statusCode 400', function () {
+      assert.equal(this.res.statusCode, 400);
+    });
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection3.name, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection4, function () {
-    lt.it.shouldBeAllowed()
-  })
+    it('should have statusCode 400', function () {
+      assert.equal(this.res.statusCode, 400);
+    });  })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection4.name, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection5, function () {
-    lt.it.shouldBeAllowed()
-  })
+    it('should have statusCode 400', function () {
+      assert.equal(this.res.statusCode, 400);
+    });  })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection5.name, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection6, function () {
-    lt.it.shouldBeAllowed()
-  })
+    it('should have statusCode 400', function () {
+      assert.equal(this.res.statusCode, 400);
+    });  })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection6.name, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name, local_collection7, function () {
-    lt.it.shouldBeAllowed()
-  })
+    it('should have statusCode 400', function () {
+      assert.equal(this.res.statusCode, 400);
+    });  })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection7.name, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
 })
@@ -125,39 +138,39 @@ describe('Insert items to local Collection  ', function () {
 
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name + '/' + local_collection3.name, coll_data_1, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection3.name + '?filter[where][title]=' + coll_data_1.title, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name + '/' + local_collection4.name, coll_data_1, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection4.name + '?filter[where][title]=' + coll_data_1.title, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name + '/' + local_collection5.name, coll_data_1, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection5.name + '?filter[where][title]=' + coll_data_1.title, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name + '/' + local_collection6.name, coll_data_1, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection6.name + '?filter[where][title]=' + coll_data_1.title, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
   lt.describe.whenCalledRemotely('POST', url + local_repo.name + '/' + local_collection7.name, coll_data_1, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
   lt.describe.whenCalledRemotely('GET', url + local_repo.name + '/' + local_collection7.name + '?filter[where][title]=' + coll_data_1.title, function () {
-    lt.it.shouldBeAllowed()
+    lt.it.shouldNotBeFound()
   })
 
 
@@ -186,7 +199,7 @@ postgresql_repo_wrong5 = {
 
 
 var postgresql_repo = {
-  "name": "problems",
+  "name": "spiders",
   "coll_db": {
     "host": "fiqurinia.com",
     "port": "5432",
@@ -399,7 +412,7 @@ describe('Insert items to allowed postgresql Collections  ', function () {
   })
 })
 
-
+/*
 describe('Insert items with a wrong property to allowed postgresql Collections  ', function () {
   lt.beforeEach.withApp(app);
 
@@ -411,7 +424,7 @@ describe('Insert items with a wrong property to allowed postgresql Collections  
   })
 
 })
-
+*/
 
 describe('Insert items to no existing Collections  ', function () {
   lt.beforeEach.withApp(app);
