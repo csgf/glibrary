@@ -225,7 +225,7 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
       if (err) {
         console.trace();
         console.error(err);
-        console.log("ERR", err.code)
+        logger.debug("ERR", err.code)
         if (err.code == 'ER_ACCESS_DENIED_ERROR') {
           callback.code_error = 412;
           return callback(null);
@@ -233,7 +233,7 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
         // don't stop after a getaddrinfo ENOTFOUND error;
       }
       if (models) {
-        console.log("***[MODEL NAME]: ", Object.keys(models)[0]
+          logger.debug("***[MODEL NAME]: ", Object.keys(models)[0]
         )
 
         try {
@@ -483,7 +483,7 @@ var loadRepository = function (app, req, res, callback) {
  * @returns {string|string|string}
  */
 var setDB_type = function (app, coll_data) {
-//  console.log("SETDBTYPE:",coll_data);
+//  logger.debug("SETDBTYPE:",coll_data);
 
   if (coll_data.coll_db && coll_data.coll_db.type != '') {
 
@@ -503,7 +503,7 @@ var setDB_type = function (app, coll_data) {
 var setDB_name = function (app, coll_data) {
 
 
-//  console.log("REPO",app.repo_data);
+//  logger.debug("REPO",app.repo_data);
   if (!app.repo_data.coll_db) {
     var db_name = 'repository';
   }
@@ -642,7 +642,7 @@ module.exports = function (app) {
       })
     },
     getCollection: function getCollection(req, res, next) {
-      //console.log("COLLECTION:------------->",req.params.collection_name);
+      //logger.debug("COLLECTION:------------->",req.params.collection_name);
       logger.debug("-------------- START [getCOLLECTION] -----------------");
       var modelName = setModelName(app, req.params);
 
@@ -662,7 +662,7 @@ module.exports = function (app) {
         loadRepository(app, req, res, function (repoModel) {
           if (repoModel) {
             var requestURL = req.params.repo_name + '/' + req.params.collection_name;
-            //console.log("REQUEST URL", requestURL);
+            //logger.debug("REQUEST URL", requestURL);
             // searchs for the collection_name requested path in repoModel
             findDataFromModel(app, requestURL, repoModel, function (coll_data) {
               if (coll_data) {
@@ -686,7 +686,7 @@ module.exports = function (app) {
                   var db_name = setDB_name(app, coll_data);
                 }
 
-                if (coll_data.import == "true") {
+                if (coll_data.import == "true" || coll_data.import ) {
                   logger.debug("-------[getCollection][Import Data]----------");
                   var modelTable = coll_data.location;
                   var modelName = modelTable;
@@ -714,7 +714,7 @@ module.exports = function (app) {
                         logger.debug("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}");
                       }
                       app.CollectionModelTable = modelTable;
-                      console.log("app.CollectionModelTable = modelName", app.CollectionModelTable)
+                      logger.debug("app.CollectionModelTable = modelName", app.CollectionModelTable)
                       next.module = model;
                       app.next_module = model;
                       // sets relation btw Collection Model and Replica Model
@@ -768,10 +768,10 @@ module.exports = function (app) {
 
       if (app.CollectionDataSource.settings.connector != 'mongodb') {
         var datasource = loopback.createDataSource(app.CollectionDataSource.settings);
-        console.log("datasource:", datasource.settings, app.CollectionModelTable);
+        logger.debug("datasource:", datasource.settings, app.CollectionModelTable);
 
         datasource.discoverSchema(app.CollectionModelTable, {}, function (err, schema) {
-          console.log("schema", schema);
+          logger.debug("schema", schema);
           if (err) throw err;
           delete schema.properties.id;
           var collmodel = datasource.createModel(app.CollectionModelTable, schema.properties);
@@ -798,7 +798,7 @@ module.exports = function (app) {
         app.buildedModel = null;
         return next();
       } else {
-        console.log("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
+        logger.debug("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
         app.buildedModel = null;
         return next();
       }
@@ -816,16 +816,19 @@ module.exports = function (app) {
 
 
     validatebody: function validatebody(req, res, next) {
-      console.log("VALIDATE");
+      logger.debug("VALIDATE");
       validatereqbodyname(req.body, function (cb) {
-        if (cb) next()
+        if (cb) {
+          logger.debug("[validatereqbodyname]",cb)
+          return next()
+        }
         else return res.status(400).send({error: "Invalid request"})
       })
     },
 
     validateRelationBody: function validateRelationBody(req, res, next) {
 
-      console.log("validate Relation", req.body);
+      logger.debug("validate Relation", req.body);
       if (!req.body.relatedCollection || !req.body.fk)
         return res.status(400).send({error: "Invalid request"})
       var relation_name = (!req.body.name ? req.body.relatedCollection : req.body.name).toLowerCase();
