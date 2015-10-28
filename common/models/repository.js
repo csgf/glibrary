@@ -183,6 +183,7 @@ module.exports = function (Repository) {
 
   Repository.createRepository = function (req, res, next) {
     console.log("[Repository.createRepository]");
+    //inserire qui la creazione del Role
 
   }
 
@@ -190,17 +191,23 @@ module.exports = function (Repository) {
     tl.getRepository(req, res, function (next) {
       if (next) {
         console.log("[Repository.getRepository]", app.repositoryModel.definition.name)
-        Repository.settings.acls.push(
-          {
-            "accessType": "*",
-            "principalType": "ROLE",
-            "principalId": "repoA",
-            "permission": "ALLOW"
-          }
-        );
+
         /*
+         Repository.settings.acls.push(
+         {
+         "accessType": "*",
+         "principalType": "ROLE",
+         "principalId": "repoA",
+         "permission": "ALLOW"
+         }
+         );
+         */
+
+        var ACL = app.models.ACL;
+
         ACL.create(
           {
+            "model": "contea",
             "accessType": "*",
             "principalType": "ROLE",
             "principalId": "repoA",
@@ -209,7 +216,7 @@ module.exports = function (Repository) {
             console.log('[setACLtoModel] ACL entry created: %j', result);
             next();
           })
-          */
+
         app.repositoryModel.find(req.query.filter, function (err, instance) {
           if (err) {
             res.sendStatus(500)
@@ -285,8 +292,8 @@ module.exports = function (Repository) {
   }
   Repository.getRelation = function (req, res, next) {
 
-  //  logger.info("----------[Repository.getRelation][app.relationName = ", app.relationName + "]");
-   console.log(" GET RELATION  app.first_model",  app.first_model.definition.name)
+    //  logger.info("----------[Repository.getRelation][app.relationName = ", app.relationName + "]");
+    console.log(" GET RELATION  app.first_model", app.first_model.definition.name)
     app.first_model.findById(req.params.item_id,
       {include: app.relationName},
       function (err, instance) {
@@ -297,9 +304,9 @@ module.exports = function (Repository) {
         res.json(instance);
       })
   }
-   /*------------ Replicas---------------*/
+  /*------------ Replicas---------------*/
 
-  Repository.createReplica = function(req,res,next) {
+  Repository.createReplica = function (req, res, next) {
 
     var Replica = app.models.Replica;
     var repositoryDB = app.dataSources.repoDB;
@@ -316,7 +323,7 @@ module.exports = function (Repository) {
       })
     })
   }
-  Repository.getReplicas = function(req,res,next) {
+  Repository.getReplicas = function (req, res, next) {
     app.next_module.findById(
       req.params.item_id,
       {include: 'replicas'},
@@ -330,7 +337,7 @@ module.exports = function (Repository) {
         res.json(instance);
       })
   }
-  Repository.getReplicaById = function(req,res,next) {
+  Repository.getReplicaById = function (req, res, next) {
 
     var Replica = app.models.Replica;
     Replica.findById(req.params.replica_id,
@@ -348,9 +355,23 @@ module.exports = function (Repository) {
   }
 
 
-
   /*----- beforeRemote Hooks ------*/
 
+  Repository.afterRemote('createRepository', function (context, user, final) {
+    console.log("After createRepository")
+  })
+
+  Repository.beforeRemote('getRepository', function (context, user, final) {
+
+    var Role = app.models.Role;
+    var RoleMapping = app.models.RoleMapping;
+    var req = context.req;
+    var res = context.res;
+
+    return final();
+
+
+  })
   Repository.beforeRemote('getColletionItem', function (context, user, final) {
 
     var req = context.req;
@@ -447,18 +468,18 @@ module.exports = function (Repository) {
     })
   })
 
-  Repository.beforeRemote('getReplicas',function(context,user,final){
+  Repository.beforeRemote('getReplicas', function (context, user, final) {
     var req = context.req;
     var res = context.res;
     tl.getCollection(req, res, function (next) {
       final()
     })
   })
-  Repository.beforeRemote('getReplicaById',function(context, user, final){
+  Repository.beforeRemote('getReplicaById', function (context, user, final) {
 
     var req = context.req;
     var res = context.res;
-    tl.getCollection(req,res,function(next){
+    tl.getCollection(req, res, function (next) {
       console.log("app.next_module:", app.next_module.definition.name);
       final()
     })
@@ -548,12 +569,12 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   })
 
-  Repository.remoteMethod('getReplicas',{
-  http: {path: '/:repo_name/:collection_name/:item_id/replicas/list', verb: 'get'},
-  accepts: [
-    {arg: 'req', type: 'object', 'http': {source: 'req'}},
-    {arg: 'res', type: 'object', 'http': {source: 'res'}}
-  ],
+  Repository.remoteMethod('getReplicas', {
+    http: {path: '/:repo_name/:collection_name/:item_id/replicas/list', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
     returns: {arg: 'data', type: 'object'}
   })
 
@@ -567,17 +588,48 @@ module.exports = function (Repository) {
   })
   /*-------------------------------------OBSERVE---------------------------------------------------*/
 
-  /*
-   Repository.observe('access', function(context,next){
 
-   console.log("CNTEXT",context.query)
-   if (context.query.where) {
-   context.query.where.id = "561e4f9b3a3ecaeb73e12b2c";
-   }
-   next();
-   })
+  Repository.observe('access', function (context, next) {
 
-   */
+    var Role = app.models.Role;
+    var RoleMapping = app.models.RoleMapping;
+    var loopback = require('loopback');
+    var ctx = loopback.getCurrentContext();
+    // Get the current access token
+    var accessToken = ctx.get('accessToken');
+    //var currentUser = ctx && ctx.get('currentUser');
+    //console.log('currentUser.username: ', currentUser.username); // voila!
+    // do not allow anonymous users
+    console.log("******************************CONTEXT", accessToken)
+    var userId = accessToken.userId;
+    var adminID = "56252fb7cf10a513b2620e81"
+    if (!userId) {
+      error = sendError(401, "NOT ALLOWED");
+      return next(error)
+    } else {
+
+      Role.findOne({where: {"name": "admin"}}, function (err, role) {
+        console.log("Role:", role)
+        RoleMapping.findOne({where: {"roleId": role.id, "principalId": userId}}, function (err, mapping) {
+          console.log("MAPPING", mapping)
+          if (mapping) {
+            console.log("SEI NATHAN", mapping)
+            return next()
+          }
+          if (!mapping) {
+            console.log("NON SEI NATHAN", mapping);
+            if (context.query.where) {
+              return next()
+            }
+            error = sendError(401, "NOT ALLOWED");
+            return next(error)
+          }
+        })
+      })
+
+
+    }
+  })
 
 
   Repository.observe('before delete', function (ctx, next) {
@@ -595,8 +647,8 @@ module.exports = function (Repository) {
 
 
     tl.buildpayload(req, res, function (next) {
-      console.log("NEXT",next)
-      if(!next) {
+      console.log("NEXT", next)
+      if (!next) {
         error = sendError(400, 'Invalid request');
         final(error);
       }
@@ -626,9 +678,17 @@ module.exports = function (Repository) {
 
 
   Repository.observe('after save', function (context, final) {
-    console.log('Going to POST SAVE Repository');
+    console.log('Going to POST SAVE Repository', context.instance);
 
     var repositoryDB = app.dataSources.repoDB;
+
+    var roleName = context.instance.name+'Repo';
+    /*
+    emettere un evento
+    rm.createRole(roleName,function(next){
+      console.log("[createRole]",next);
+    })
+    */
 
     service.createTable(repositoryDB, app.bodyReadToWrite, function (callback) {
       if (callback) {

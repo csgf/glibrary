@@ -14,12 +14,19 @@
     "errorhandler": "^1.1.1",
     "fs": "0.0.2",
     "https": "^1.0.0",
-    "loopback": "^2.8.0",
-    "loopback-boot": "^2.4.0",
+
+    "loopback": "^2.22.0",
+    "loopback-boot": "^2.6.5",
+    "loopback-component-explorer": "^2.1.0",
+
+
+
     "loopback-connector-mongodb": "^1.11.2",
     "loopback-connector-mysql": "^2.1.1",
     "loopback-connector-postgresql": "^2.1.0",
     "loopback-datasource-juggler": "^2.7.0",
+
+
 
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",

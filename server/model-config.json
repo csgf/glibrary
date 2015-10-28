@@ -12,19 +12,19 @@
     "public": false
   },
   "AccessToken": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "ACL": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "RoleMapping": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "Role": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "user": {
