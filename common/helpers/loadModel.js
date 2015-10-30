@@ -686,7 +686,7 @@ module.exports = function (app) {
                   var db_name = setDB_name(app, coll_data);
                 }
 
-                if (coll_data.import == "true" || coll_data.import ) {
+                if (coll_data.import == "true" || coll_data.import == true ) {
                   logger.debug("-------[getCollection][Import Data]----------");
                   var modelTable = coll_data.location;
                   var modelName = modelTable;
@@ -707,7 +707,7 @@ module.exports = function (app) {
                   app.CollectionDataSource, function (model) {
                     if (model) {
                       logger.debug("[getCollection][buildModelfromTable][OK]");
-                      if (coll_data.import == "true") {
+                      if (coll_data.import == "true" || coll_data.import == true ) {
                         var modelName = setModelName(app, req.params);
                         ModelTableMap[modelName] = {table: modelTable};
                         logger.stream.write("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
