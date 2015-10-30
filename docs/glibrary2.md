@@ -213,7 +213,7 @@ GET /v1/repos/<repo_name>/ HTTP/1.1
 
 This API will return a JSON array with all the collections of `<repo_name>`.
 Each collection will have a `schema` attribute, describing the schema of the underlying DB table.
-If the `schema` attribute is `null` it means it's a non-relational collection, schema-less (ex. MongoDB collection)
+If the `schema` attribute is `null` it means the collection has been imported and it inherits the schema of the underlying DB table. An additional API is available to retrieve the schema of a given collection (see [next API](#retrieve-the-schema-of-a-collection)).
 
 **Example**
 
@@ -339,14 +339,15 @@ Items can be listed and queried via the filtering system, created/added, updated
 ### Item creation
 
 ```http
-POST /v1/repos/<repo_name>/<collection_name>/ HTTP/1.1
+POST /v1/repos/<repo_name>/<collection_name> HTTP/1.1
 ```
 
 This API add a new item into the given `collection_name`. Item content have to be provided as a JSON object. In case of the relational collection it should conform to the collection schema. In the case of attributes that have no corresponding column table, their values will be ignored silently. If the API will be successfull a new record or document will be added to the underlying table or NoSQL collection.
 
 **Example**
+
 ```http
-POST /v1/repos/infn/articles
+POST /v1/repos/infn/articles HTTP/1.1
 
 {
 	"title": "e-Infrastructures for Cultural Heritage Applications",
@@ -355,79 +356,96 @@ POST /v1/repos/infn/articles
 }
 ```
 
-
-
 ### Item listing
 
 ```http
 GET /v1/repos/<repo_name>/<collection_name>/ HTTP/1.1
 ```
+Retrieve the items inside the `collection_name` as a JSON array of objects. Each object is a record of the underlying table (in case of relational DB) or document (in case of NoSQL collection). By default the first 50 items are returned. See below the description of filtering system in the [query section](#queries-with-filters) to change this behaviour.
 
-
-Elenco di tutti gli item contenuti nella collection
-&lt;collection\_name&gt;
+**Example**
 
 ```http
-HEAD /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
+GET /v1/repos/gridcore/tracciati	HTTP/1.1
 ```
 
-Restituisce i metadati dell'item con id &lt;item\_id&gt;, incluse le sue
-eventuali repliche
+### Item detail
+
+```json
+GET /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
+```
+
+Retrieve the detail of an item with a `given_id`. It will return a JSON object with the attributes mapping the schema of the given `collection_name`.
+
+**Example**
+
+```json
+GET /v1/repos/infn/articles/22
+```
 
 
-### Item deletion
+### TODO: Item deletion
 
 ```http
 DELETE  /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 ```
 
-Cancella l'item indicato
+Delete the given `item_id` of the the collection `collection_name`.
+
+
+### Item update
 
 ```http
 PUT /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 ```
+Update one of more attributes of the given `item_id`. The request body has to contain a JSON object with the attribute-value pair to be updated with the new values.
 
-### Item update
-
-Modifica i metadati dell'item indicato
-
-{da discutere} supporto multilingua ai metadati
-
-```http
-HEAD /v1/repos/<repo_name>/<collection_name>/<item_id>/i18n/<lang_code> HTTP/1.1
-```
-
-Restituisce i metadati nella lingua specificata
 
 ### Queries with filters
 
+```http
+GET /v1/repos/<repo_name>/<collection_name>?filter[<filterType>]=<spec>&filter[...]=<spec>... HTTP/1.1
+```
 
+where `filterType` is one of the following:
+
+* `where`
+* `include`
+* `order`
+* `limit`
+* `skip`
+* `fields`
+
+and `spec` is the specification of the used filter.
+
+Additional info on the full query syntax can be found [here](https://docs.strongloop.com/display/public/LB/Querying+data#Queryingdata-RESTsyntax)
+
+**Example**
 
 ### Replicas
 
 ```http
-POST /v1/repos/<repo_name>/<collection_name>/<item_id>/replicas/ HTTP/1.1
+POST /v1/repos/<repo_name>/<collection_name>/<item_id>/replicas/list HTTP/1.1
 ```
 
-Crea una replica per l'item\_id indicato. Restituisce la URL dello
-storage su cui effettuare un direct upload con operazione di POST o PUT
-entro pochi secondi
+Retrieve all the replicas of the given `item_id`.
 
 ```http
 GET /v1/repos/<repo_name>/<collection_name>/<item_id>/replicas/<rep_id> HTTP/1.1
 ```
 
-Restituisce la URL dello storage da cui effettuare un direct download
-della replica indicata del item con &lt;item\_id&gt;
+Retrive a specific replica with the given `rep_id` for the `item_id`
+
+**Example**
 
 ### Relations
 
-{da discutere} Related items - next release
+One to many relations can be created between collections of the same repository, setting properly a foreign key.
+
 
 ```http
 GET /v1/repos/<repo_name>/<collection_name>/<item_id>/<related_collection_name> HTTP/1.1
 ```
 
-Restituisce tutti gli item relativi all'idem\_id indicato nella
-&lt;related\_collection\_name&gt;
+Retrieve all the items from `related_collection_name` of the given `item_id`.
 
