@@ -1,4 +1,4 @@
-# gLibrary 2.0
+# gLibrary 2.0 API
 
 ## Overview
 
