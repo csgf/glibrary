@@ -18,7 +18,7 @@ Each item can have one or more *attachment*, that we call **replica**. Replicas 
 
 ## API
 
-You can find the documentation for the API [here](https://github.com/csgf/glibrary/blob/master/docs/glibrary2.md)
+You can find the documentation of the APIs [here](https://github.com/csgf/glibrary/blob/master/docs/glibrary2.md)
 
 
 
