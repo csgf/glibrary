@@ -1,0 +1,6 @@
+./idea/workspace.xml
+node_modules
+server/private
+server/test
+server/logs
+client

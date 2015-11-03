@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # glibrary 2.0 
 
 ## Overview
@@ -22,4 +23,13 @@ You can find the documentation of the APIs [here](https://github.com/csgf/glibra
 
 
 
+=======
+[![Build Status](https://travis-ci.org/antoniodimariano/gLibrary2.0.svg?branch=master)](https://travis-ci.org/antoniodimariano/gLibrary2.0)
+
+**Run the beta**
+
+* 1) install LoopBack framework npm install -g strongloop
+* 2) run npm install
+* 3) node .
+>>>>>>> b07baf90a9fb1693c3fb1cfb85b11ad729d8f0ed
 

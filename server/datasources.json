@@ -1,0 +1,16 @@
+{
+  "db": {
+    "name": "db",
+    "connector": "memory"
+  },
+  "repoDB": {
+    "host": "localhost",
+    "port": "27017",
+    "database": "glibrary",
+    "username": "",
+    "password": "",
+    "name": "mongoDB",
+    "connector": "mongodb"
+  }
+
+}
