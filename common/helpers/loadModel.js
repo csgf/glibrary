@@ -571,7 +571,9 @@ var setupParameters = function (req, res, next) {
     if (!cb) return res.status(400).send({error: "Invalid request"})
 
     // POST su /v1/repos
-    var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
+   // var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
+    var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
+
     var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
 
     if (!req.params.repo_name) {
