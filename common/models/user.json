@@ -5,22 +5,30 @@
   "properties": {
     "username": {
       "type": "string",
-      "required":true
+      "required": true
     },
     "email": {
       "type": "string",
-      "required" :true
+      "required": true
     },
     "password": {
       "type": "string",
-      "required":true
+      "required": true
     }
   },
-  "validations": [
-
-
-  ],
-  "relations": {},
+  "validations": [],
+  "relations": {
+    "accessTokens": {
+      "type": "hasMany",
+      "model": "accessToken",
+      "foreignKey": "userId"
+    },
+    "accesses": {
+      "type": "hasMany",
+      "model": "access",
+      "foreignKey": "userId"
+    }
+  },
   "acls": [],
-  "methods": []
+  "methods": {}
 }

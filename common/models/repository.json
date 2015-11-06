@@ -7,10 +7,29 @@
     "validateUpsert": true
   },
   "properties": {
-
     "name": {
       "type": "string",
       "required": true
+    },
+    "path": {
+      "type": "string",
+      "required": false
+    },
+    "location": {
+      "type": "string",
+      "required": false
+    },
+    "coll_db": {
+      "type": "string",
+      "required": false
+    },
+    "import": {
+      "type": "string",
+      "required": false
+    },
+    "schema": {
+      "type": "string",
+      "required": false
     }
   },
   "validations": [],
@@ -29,19 +48,18 @@
       "permission": "DENY"
     },
     {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "find"
+    },
+    {
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW"
-    },
-    {
-      "accessType": "READ",
-      "principalType": "ROLE",
-      "principalId": "repoA",
-      "permission": "ALLOW"
     }
-
-
   ],
-  "methods": []
+  "methods": {}
 }

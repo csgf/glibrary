@@ -20,6 +20,8 @@ module.exports = function (Repository) {
   var tl = new testLib(app);
   var rm = new roleLib(app);
   var isStatic = true;
+  var loopback = require('loopback');
+  var async = require('async');
 
 
   /*
@@ -180,52 +182,33 @@ module.exports = function (Repository) {
 
 
   /* --- Repository -----*/
+  /*
+   Repository.createRepository = function (req, res, next) {
+   console.log("[Repository.createRepository]");
 
-  Repository.createRepository = function (req, res, next) {
-    console.log("[Repository.createRepository]");
-    //inserire qui la creazione del Role
-
-  }
-
+   }
+   */
   Repository.getRepository = function (req, res, next) {
     tl.getRepository(req, res, function (next) {
       if (next) {
         console.log("[Repository.getRepository]", app.repositoryModel.definition.name)
-
-        /*
-         Repository.settings.acls.push(
-         {
-         "accessType": "*",
-         "principalType": "ROLE",
-         "principalId": "repoA",
-         "permission": "ALLOW"
-         }
-         );
-         */
-
-        var ACL = app.models.ACL;
-
-        ACL.create(
-          {
-            "model": "contea",
-            "accessType": "*",
-            "principalType": "ROLE",
-            "principalId": "repoA",
-            "permission": "ALLOW"
-          }, function (err, result) {
-            console.log('[setACLtoModel] ACL entry created: %j', result);
-            next();
-          })
-
-        app.repositoryModel.find(req.query.filter, function (err, instance) {
+        var fields = {
+          fields: {name: true, location: true, path: true}
+        }
+        var query_filters = JSON.parse((JSON.stringify(fields) + JSON.stringify(req.query.filter)).replace(/}{/g, ","));
+        app.repositoryModel.find(query_filters, function (err, instance) {
           if (err) {
             res.sendStatus(500)
           }
           if (!instance) {
             res.status(404).send({error: "Repository not Found"})
           }
-          res.send(instance);
+          if (instance) {
+            res.send(instance);
+          }
         })
+
+
       } else res.sendStatus(500)
     })
   }
@@ -355,89 +338,153 @@ module.exports = function (Repository) {
   }
 
 
-  /*----- beforeRemote Hooks ------*/
-
-  Repository.afterRemote('createRepository', function (context, user, final) {
-    console.log("After createRepository")
-  })
+  /**
+   *----- beforeRemote Hooks ------
+   *
+   *
+   *
+   * */
 
   Repository.beforeRemote('getRepository', function (context, user, final) {
 
-    var Role = app.models.Role;
-    var RoleMapping = app.models.RoleMapping;
-    var req = context.req;
     var res = context.res;
-
-    return final();
-
-
-  })
-  Repository.beforeRemote('getColletionItem', function (context, user, final) {
-
-    var req = context.req;
-    var res = context.res;
-    tl.getCollection(req, res, function (next) {
-      app.next_module.findById(req.params.item_id, function (err, item) {
-        if (err) return res.sendStatus(500);
-        if (!item) return res.sendStatus(404);
-        else {
-          console.log("ITEM", item)
-          res.status(200).send(item);
-        }
-      })
+    rm.isAllowed(context, function (allowed) {
+      if (allowed == 401) {
+        console.log("[getRepository][Status 401 Unauthorized]")
+        res.status(401).send({"error": "You are not allowed to access this collection"})
+      }
+      if (allowed == 500) {
+        res.status(500).send({"error": "Server Error"})
+      }
+      if (allowed == 200) {
+        return final()
+      }
     })
   })
-
-  Repository.beforeRemote('populateCollection', function (context, user, final) {
-
-    var req = context.req;
-    var res = context.res;
-    tl.getCollection(req, res, function (next) {
-      tl.createPersistedModel(req, res, function (next) {
-        app.persistedModel.create(req.body, function (err, instance) {
-          if (err) {
-            res.send(err);
-          }
-          else final()
-
-        })
-      })
-    })
-  })
-
   Repository.beforeRemote('createCollection', function (context, user, final) {
 
     var req = context.req;
     var res = context.res;
-    tl.validatebody(req, res, function (cb) {
-      if (cb) {
-        tl.getRepository(req, res, function (next) {
-          if (next) {
-            console.log("repocb", app.repositoryModel.definition.name)
-            app.repositoryModel.findOne({where: {"name": req.body.name}}, function (err, value) {
-              if (err) return res.send(JSON.stringify(err));
-              if (value) return res.status(409).send({error: "A collection named " + req.body.name + " is already defined"})
-              tl.getDatasourceToWrite(req, res, function (next) {
-                console.log("NEXT", app.CollectionDataSource.settings.host)
-                app.repositoryModel.create(app.bodyReadToWrite, function (err, instance) {
+
+    var loopback = require('loopback');
+    var ctx = loopback.getCurrentContext();
+    // Get the current access token
+    var accessToken = ctx.get('accessToken');
+
+
+    rm.isAllowed(context, function (allowed) {
+      if (allowed == 401) {
+        console.log("[createCollection][Status 401 Unauthorized]")
+        res.status(401).send({"error": "You are not allowed to access this collection"})
+      }
+      if (allowed == 500) {
+        console.log("[createCollection][Status 500]")
+        res.status(500).send({"error": "Server Error"})
+      }
+      if (allowed == 200) {
+        // validate Body
+        tl.validatebody(req, res, function (cb) {
+          if (cb) {
+            // getRepository Model
+            tl.getRepository(req, res, function (next) {
+              if (next) {
+                // check for duplicate
+                app.repositoryModel.findOne({where: {"name": req.body.name}}, function (err, value) {
                   if (err) return res.send(JSON.stringify(err));
-                  console.log("BODY", app.bodyReadToWrite)
-                  service.createTable(app.CollectionDataSource, app.bodyReadToWrite, function (callback) {
-                    if (callback) final()
-                    else res.sendStatus(500);
+                  if (value) return res.status(409).send({error: "A collection named " + req.body.name + " is already defined"})
+                  // get DataSource
+                  tl.getDatasourceToWrite(req, res, function (next) {
+                    // create Model and save to localdb
+                    app.repositoryModel.create(app.bodyReadToWrite, function (err, instance) {
+                      if (err) return res.send(JSON.stringify(err));
+                      // create collection table reponame_collection
+                      service.createTable(app.CollectionDataSource, app.bodyReadToWrite, function (callback) {
+                        if (callback) return final()
+                        else res.sendStatus(500);
+                      })
+                    })
                   })
                 })
-              })
+              }
             })
           }
         })
       }
     })
+
+
   })
+  Repository.beforeRemote('getCollection', function (context, user, final) {
 
-  Repository.beforeRemote('getCollection', function (context, user, next) {
+    var res = context.res;
 
-    next();
+    rm.isAllowed(context, function (allowed) {
+      if (allowed == 401) {
+        console.log("[getCollection][Status 401 Unauthorized]")
+        res.status(401).send({"error": "You are not allowed to access this collection"})
+      }
+      if (allowed == 500) {
+        console.log("[getCollection][Status 500]")
+        res.status(500).send({"error": "Server Error"})
+      }
+      if (allowed == 200) {
+        return final()
+      }
+    })
+  })
+  Repository.beforeRemote('getCollectionItem', function (context, user, final) {
+
+    var req = context.req;
+    var res = context.res;
+    rm.isAllowed(context, function (allowed) {
+      if (allowed == 401) {
+        console.log("[getCollection][Status 401 Unauthorized]")
+        res.status(401).send({"error": "You are not allowed to access this collection"})
+      }
+      if (allowed == 500) {
+        console.log("[getCollection][Status 500]")
+        res.status(500).send({"error": "Server Error"})
+      }
+      if (allowed == 200) {
+        tl.getCollection(req, res, function (next) {
+          app.next_module.findById(req.params.item_id, function (err, item) {
+            if (err) return res.sendStatus(500);
+            if (!item) return res.sendStatus(404);
+            else {
+              console.log("ITEM", item)
+              res.status(200).send(item);
+            }
+          })
+        })
+      }
+    })
+  })
+  Repository.beforeRemote('populateCollection', function (context, user, final) {
+
+    var req = context.req;
+    var res = context.res;
+
+    rm.isAllowed(context, function (allowed) {
+      if (allowed == 401) {
+        console.log("[populateCollection][Status 401 Unauthorized]")
+        res.status(401).send({"error": "You are not allowed to access this collection"})
+      }
+      if (allowed == 500) {
+        res.status(500).send({"error": "Server Error"})
+      }
+      if (allowed == 200) {
+        tl.getCollection(req, res, function (next) {
+          tl.createPersistedModel(req, res, function (next) {
+            app.persistedModel.create(req.body, function (err, instance) {
+              if (err) {
+                return res.send(err);
+              }
+              else return final()
+            })
+          })
+        })
+      }
+    })
   })
 
   Repository.beforeRemote('createRelation', function (context, user, final) {
@@ -455,7 +502,6 @@ module.exports = function (Repository) {
       }
     })
   })
-
   Repository.beforeRemote('getRelation', function (context, user, final) {
 
     var req = context.req;
@@ -467,7 +513,6 @@ module.exports = function (Repository) {
       })
     })
   })
-
   Repository.beforeRemote('getReplicas', function (context, user, final) {
     var req = context.req;
     var res = context.res;
@@ -484,6 +529,8 @@ module.exports = function (Repository) {
       final()
     })
   })
+
+
   /* ---------------------- remoteMethod ------------------------*/
 
   Repository.remoteMethod('getRepository', {
@@ -492,6 +539,7 @@ module.exports = function (Repository) {
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
     ],
     http: {path: '/:repo_name/', verb: 'get'},
+
     returns: {arg: 'data', type: 'object'}
   });
 
@@ -532,7 +580,7 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   });
 
-  Repository.remoteMethod('getColletionItem', {
+  Repository.remoteMethod('getCollectionItem', {
     http: {path: '/:repo_name/:collection_name/:item_id', verb: 'get'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
@@ -589,54 +637,113 @@ module.exports = function (Repository) {
   /*-------------------------------------OBSERVE---------------------------------------------------*/
 
 
-  Repository.observe('access', function (context, next) {
+  /* /!**
+   *
+   * @param accessToken
+   * @param next
+   * @returns {*}
+   *!/
+   var isAdmin = function (accessToken, next) {
 
-    var Role = app.models.Role;
-    var RoleMapping = app.models.RoleMapping;
-    var loopback = require('loopback');
-    var ctx = loopback.getCurrentContext();
-    // Get the current access token
-    var accessToken = ctx.get('accessToken');
-    //var currentUser = ctx && ctx.get('currentUser');
-    //console.log('currentUser.username: ', currentUser.username); // voila!
-    // do not allow anonymous users
-    console.log("******************************CONTEXT", accessToken)
-    var userId = accessToken.userId;
-    var adminID = "56252fb7cf10a513b2620e81"
-    if (!userId) {
-      error = sendError(401, "NOT ALLOWED");
-      return next(error)
-    } else {
+   var Role = app.models.Role;
+   var RoleMapping = app.models.RoleMapping;
+   var userId = accessToken.userId;
 
-      Role.findOne({where: {"name": "admin"}}, function (err, role) {
-        console.log("Role:", role)
-        RoleMapping.findOne({where: {"roleId": role.id, "principalId": userId}}, function (err, mapping) {
-          console.log("MAPPING", mapping)
-          if (mapping) {
-            console.log("SEI NATHAN", mapping)
-            return next()
-          }
-          if (!mapping) {
-            console.log("NON SEI NATHAN", mapping);
-            if (context.query.where) {
-              return next()
-            }
-            error = sendError(401, "NOT ALLOWED");
-            return next(error)
-          }
-        })
-      })
+   if (!userId) {
+   return next(401)
+   } else {
+
+   Role.findOne({where: {"name": "admin"}}, function (err, role) {
+   console.log("Role:", role)
+   RoleMapping.findOne({where: {"roleId": role.id, "principalId": userId}}, function (err, mapping) {
+   console.log("MAPPING", mapping)
+   if (mapping) {
+   console.log("SEI NATHAN", mapping)
+   return next(true)
+   }
+   if (!mapping) {
+   console.log("NON SEI NATHAN", mapping);
+
+   return next(401)
+   }
+   })
+   })
+   }
+   }*/
+
+  /**
+   *
+   * @param context
+   * @param next
+   * @returns {*}
+   */
+  /*
+   var isAllowed = function (context, next) {
+
+   var ctx = loopback.getCurrentContext();
+   var accessToken = ctx.get('accessToken');
+   var req = context.req;
+   if (!req.params) return next(500);
+
+   var collection_name = (!req.params.collection_name ? null : req.params.collection_name )
+   var repository_name = req.params.repo_name
+   var userId = accessToken.userId
+   if (!userId) {
+   return next(401)
+   }
+   if (collection_name != null) {
+   var where = {
+   where: {
+   and: [
+   {"repositoryName": repository_name},
+   {"collectionName": collection_name},
+   {"userId": userId}
+   ]
+   }
+   }
+   } else {
+   console.log("collection_name NULL")
+   var where = {
+   where: {
+   and: [
+   {"userId": userId},
+   {"repositoryName": repository_name},
+   ]
+   }
+   }
+   }
+   console.log("WHERE:", where);
+   app.models.access.findOne(where, function (er, access) {
+   console.log("ACCESS:", access)
+
+   if (access) {
+   if ( collection_name == null && access.collectionName) {
+   return next(401);
+   }
+   else
+   return next(200)
+   } else {
+   return next(401)
+   }
+   })
+   }
 
 
-    }
+   */
+
+
+  Repository.observe('access', function (context, final) {
+    //context.query.where = { name : 'animals'};
+    context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
+    return final();
   })
 
 
-  Repository.observe('before delete', function (ctx, next) {
+  Repository.observe('before delete', function (ctx, final) {
     console.log('Going to delete %s matching %j',
       ctx.Model.pluralModelName,
       ctx.where, ctx.app);
-    next();
+    final();
   });
 
   Repository.observe('before save', function (context, final) {
@@ -681,14 +788,6 @@ module.exports = function (Repository) {
     console.log('Going to POST SAVE Repository', context.instance);
 
     var repositoryDB = app.dataSources.repoDB;
-
-    var roleName = context.instance.name+'Repo';
-    /*
-    emettere un evento
-    rm.createRole(roleName,function(next){
-      console.log("[createRole]",next);
-    })
-    */
 
     service.createTable(repositoryDB, app.bodyReadToWrite, function (callback) {
       if (callback) {
