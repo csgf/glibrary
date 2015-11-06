@@ -12,29 +12,22 @@
     "compression": "^1.0.3",
     "connect-ensure-login": "^0.1.1",
     "errorhandler": "^1.1.1",
+    "events": "^1.1.0",
     "fs": "0.0.2",
     "https": "^1.0.0",
-
     "loopback": "^2.22.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^2.1.0",
-
-
-
     "loopback-connector-mongodb": "^1.11.2",
     "loopback-connector-mysql": "^2.1.1",
     "loopback-connector-postgresql": "^2.1.0",
     "loopback-datasource-juggler": "^2.7.0",
-
-
-
-    "passport": "^0.2.2",
-    "passport-local": "^1.0.0",
-
     "method-override": "^2.3.3",
     "mocha": "^2.2.5",
     "mongoose": "^4.0.6",
     "morgan": "^1.6.1",
+    "passport": "^0.2.2",
+    "passport-local": "^1.0.0",
     "path": "^0.11.14",
     "pkgcloud": "^1.2.0-alpha.0",
     "querystring": "^0.2.0",

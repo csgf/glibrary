@@ -12,12 +12,12 @@
     "public": false
   },
   "AccessToken": {
-    "dataSource": "repoDB",
+    "dataSource": "db",
     "public": false
   },
   "ACL": {
     "dataSource": "repoDB",
-    "public": false
+    "public": true
   },
   "RoleMapping": {
     "dataSource": "repoDB",
@@ -36,6 +36,14 @@
     "public": true
   },
   "replica": {
+    "dataSource": "repoDB",
+    "public": true
+  },
+  "access": {
+    "dataSource": "repoDB",
+    "public": true
+  },
+  "accessToken": {
     "dataSource": "repoDB",
     "public": true
   }

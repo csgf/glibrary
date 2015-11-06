@@ -10,9 +10,65 @@ module.exports = function (app) {
   var Role = app.models.Role;
   var RoleMapping = app.models.RoleMapping;
   var ACL = app.models.ACL;
+  var loopback = require('loopback');
 
 
   return {
+
+
+     isAllowed : function (context, next) {
+
+      var ctx = loopback.getCurrentContext();
+      var accessToken = ctx.get('accessToken');
+      var req = context.req;
+      if (!req.params) return next(500);
+
+      var collection_name = (!req.params.collection_name ? null : req.params.collection_name )
+      var repository_name = req.params.repo_name
+      var userId = accessToken.userId
+      if (!userId) {
+        return next(401)
+      }
+      if (collection_name != null) {
+        var where = {
+          where: {
+            and: [
+              {"repositoryName": repository_name},
+              {"collectionName": collection_name},
+              {"userId": userId}
+            ]
+          }
+        }
+      } else {
+        console.log("collection_name NULL")
+        var where = {
+          where: {
+            and: [
+              {"userId": userId},
+              {"repositoryName": repository_name},
+              {"collectionName": null }
+
+            ]
+          }
+        }
+      }
+      console.log("WHERE:", where);
+      app.models.access.findOne(where, function (er, access) {
+        console.log("ACCESS:", access)
+
+        if (access) {
+          if ( collection_name == null && access.collectionName) {
+            return next(401);
+          }
+          else
+            return next(200)
+        } else {
+          return next(401)
+        }
+      })
+    },
+
+
 
     createRole: function createRole(roleName, next) {
 

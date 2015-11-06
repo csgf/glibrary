@@ -9,8 +9,7 @@
     "database": "glibrary_test",
     "username": "",
     "password": "",
-    "name": "mongoDB",
+    "name": "repoDB",
     "connector": "mongodb"
   }
-
 }
