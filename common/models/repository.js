@@ -220,9 +220,9 @@ module.exports = function (Repository) {
     console.log("[Repository.getCollection]", req.query.filter)
     tl.getCollection(req, res, function (next) {
       app.next_module.find(req.query.filter, function (err, instance) {
-        if (err) res.sendStatus(500);
+        if (err) return res.status(500).send({"error":err});
         if (!instance) return res.sendStatus(404);
-        res.json(instance);
+        return res.json(instance);
       })
     })
   }
@@ -289,6 +289,8 @@ module.exports = function (Repository) {
   }
   /*------------ Replicas---------------*/
 
+ /*** DA SISTEMARE ***/
+
   Repository.createReplica = function (req, res, next) {
 
     var Replica = app.models.Replica;
@@ -306,6 +308,9 @@ module.exports = function (Repository) {
       })
     })
   }
+
+
+
   Repository.getReplicas = function (req, res, next) {
     app.next_module.findById(
       req.params.item_id,

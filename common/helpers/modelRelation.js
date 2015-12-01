@@ -51,6 +51,8 @@ module.exports = function (app) {
               }
               var coll_name = req.params.collection_name
               var itemfound=false;
+              console.log("INSTANCE:",instance);
+              console.log("req.params.collection_name",req.params.collection_name);
               var arrayFound = instance.relatedTo.filter(function(item) {
 
                 if( item.relatedCollection == req.params.related_coll_name) {

@@ -410,9 +410,10 @@ var loadRepository = function (app, req, res, callback) {
   // checks if Model is ready in the system's cache
   if (app.buildedModel) {
     // assigns the Model obj to callback.module that will be use in rest-api to run query on the Model required
+    console.log("----->app.buildedModel",app.buildedModel.definition.name)
     callback.module = app.buildedModel;
     // !-----!
-    app.repositoryModel = callback.module;
+    app.repositoryModel = app.buildedModel;
     // returns in case the function is invoked not as middleware
     return callback(callback.module);
   }
@@ -584,7 +585,8 @@ var setupParameters = function (req, res, next) {
      }
 
     // POST su /v1/repos
-    var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
+    //var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
+    var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
     var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
 
    // if (!req.params && !req.params.repo_name) {
