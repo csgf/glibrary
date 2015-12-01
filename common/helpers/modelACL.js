@@ -13,10 +13,30 @@ module.exports = function (app) {
   var loopback = require('loopback');
 
 
+  var isAdmin = function (userId, next) {
+
+    app.models.Role.findOne({where: {name: 'admin'}}, function (err, role) {
+
+      if (role) {
+        app.models.RoleMapping.findOne({
+          where: {
+            principalId: userId,
+            roleId: role.id
+          }
+        }, function (e, mapping) {
+          if (mapping) {
+            next(true)
+          } else next(false)
+        })
+      } else {
+        next(false)
+      }
+    })
+  }
   return {
 
 
-     isAllowed : function (context, next) {
+    isAllowed: function (context, next) {
 
       var ctx = loopback.getCurrentContext();
       var accessToken = ctx.get('accessToken');
@@ -26,59 +46,65 @@ module.exports = function (app) {
       var collection_name = (!req.params.collection_name ? null : req.params.collection_name )
       var repository_name = req.params.repo_name
       var userId = accessToken.userId
+
+
       if (!userId) {
         return next(401)
       }
-      if (collection_name != null) {
-        var where = {
-          where: {
-            and: [
-              {"repositoryName": repository_name},
-              {"collectionName": collection_name},
-              {"userId": userId}
-            ]
-          }
-        }
-      } else {
-        console.log("collection_name NULL")
-        var where = {
-          where: {
-            and: [
-              {"userId": userId},
-              {"repositoryName": repository_name},
-              {"collectionName": null }
 
-            ]
-          }
-        }
-      }
-      console.log("WHERE:", where);
-      app.models.access.findOne(where, function (er, access) {
-        console.log("ACCESS:", access)
+      isAdmin(userId, function (hasAdminRole) {
+        console.log("NEXT ADMIN", hasAdminRole)
+        if (hasAdminRole) return next(200)
+        else {
+          if (collection_name != null) {
+            var where = {
+              where: {
+                and: [
+                  {"repositoryName": repository_name},
+                  {"collectionName": collection_name},
+                  {"userId": userId}
+                ]
+              }
+            }
+          } else {
+            console.log("collection_name NULL")
+            var where = {
+              where: {
+                and: [
+                  {"userId": userId},
+                  {"repositoryName": repository_name},
+                  {"collectionName": null}
 
-        if (access) {
-          if ( collection_name == null && access.collectionName) {
-            return next(401);
+                ]
+              }
+            }
           }
-          else
-            return next(200)
-        } else {
-          return next(401)
+          console.log("WHERE:", where);
+          app.models.access.findOne(where, function (er, access) {
+            console.log("ACCESS:", access)
+
+            if (access) {
+              if (collection_name == null && access.collectionName) {
+                return next(401);
+              }
+              else
+                return next(200)
+            } else {
+              return next(401)
+            }
+          })
         }
       })
     },
-
-
-
     createRole: function createRole(roleName, next) {
 
-      console.log("roleName",roleName);
+      console.log("roleName", roleName);
       Role.findOne({'name': roleName}, function (err, role) {
         if (err) {
           console.log('Role.findOne Error', err);
           next(false);
         }
-        console.log("Role",role);
+        console.log("Role", role);
         if (role) {
           console.log("[createRole] Role is already created")
           next(false)

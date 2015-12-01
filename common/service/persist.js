@@ -18,11 +18,11 @@ exports.createTable = function createTable(datasource, data, callback) {
     else {
       var result = data.path;
       if (result && result.lastIndexOf('/') != -1) {
-        modelName = result.split('/')[1] + "_" + result.split('/')[2];
+        modelName = result.split('/')[1] + "+" + result.split('/')[2];
       } else {
         modelName = table_name;
       }
-
+      console.log("modelName:",modelName);
       if (data.schema) {
         var schema_collection = {
           "name": modelName,

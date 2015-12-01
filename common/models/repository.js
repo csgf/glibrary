@@ -734,7 +734,7 @@ module.exports = function (Repository) {
 
   Repository.observe('access', function (context, final) {
     //context.query.where = { name : 'animals'};
-    context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
+    //context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
     return final();
   })
 
@@ -754,7 +754,6 @@ module.exports = function (Repository) {
 
 
     tl.buildpayload(req, res, function (next) {
-      console.log("NEXT", next)
       if (!next) {
         error = sendError(400, 'Invalid request');
         final(error);
@@ -764,7 +763,6 @@ module.exports = function (Repository) {
       var payload = app.bodyReadToWrite;
       Repository.findOne({where: {"name": req.body.name}}, function (err, value) {
         if (err) {
-          console.log("QUI")
           error = sendError(500, err);
           final(error);
         }

@@ -17,12 +17,14 @@ var RoleMapper = require('./rolemapping');
 
 
 var validatereqbodyname = function (body, next) {
+
   if (body && body.name) {
     var qry = body.name;
-    if (qry.match(/[^a-z\d]+/i)) {
-      next(false);
-    } else next(true);
+    var regx = /^[a-z\d]+[a-z\d_]*[a-z\d]$/;
 
+    if  ( regx.test(qry)) {
+      next(true);
+    } else next(false);
   } else next(false)
 
 }
@@ -50,6 +52,9 @@ var findDataFromModel = function (app, path, model, callback) {
       return callback(false);
     }
     else {
+      console.log("PATH",path)
+
+      console.log("DATA_",data)
       return callback(data)
     }
   })
@@ -64,6 +69,8 @@ var findDataFromModel = function (app, path, model, callback) {
 var validateCollDBData = function (data) {
   var colldb = data.coll_db;
   //&& colldb.connector && colldb.location
+  console.log("---------------DATA------------------:",colldb)
+
   if (colldb && colldb.host && colldb.port && colldb.database && colldb.type) {
     return true;
   } else return false;
@@ -534,7 +541,10 @@ var setModelName = function (app, req_params) {
  * @returns {string}
  */
 var setModelTable = function (app, req_params) {
-  var modelTable = req_params.repo_name + "_" + req_params.collection_name;
+  //var modelTable = req_params.repo_name + "_" + req_params.collection_name;
+  var modelTable = req_params.repo_name + "+" + req_params.collection_name;
+
+
   return modelTable;
 }
 /**
@@ -565,7 +575,7 @@ var setReplicaRelation = function (app, model, next) {
  * @param next
  */
 var setupParameters = function (req, res, next) {
-
+  console.log("----------------------------setupParameters",req);
   validatereqbodyname(req.body, function (cb) {
      if (!cb) {
        if (!res)  next(false);

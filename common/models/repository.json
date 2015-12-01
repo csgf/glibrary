@@ -20,7 +20,7 @@
       "required": false
     },
     "coll_db": {
-      "type": "string",
+      "type": "object",
       "required": false
     },
     "import": {
