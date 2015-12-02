@@ -220,7 +220,7 @@ module.exports = function (Repository) {
     console.log("[Repository.getCollection]", req.query.filter)
     tl.getCollection(req, res, function (next) {
       app.next_module.find(req.query.filter, function (err, instance) {
-        if (err) return res.status(500).send({"error":err});
+        if (err) return res.status(500).send({"error": err});
         if (!instance) return res.sendStatus(404);
         return res.json(instance);
       })
@@ -289,55 +289,189 @@ module.exports = function (Repository) {
   }
   /*------------ Replicas---------------*/
 
- /*** DA SISTEMARE ***/
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   * @returns {*}
+   */
   Repository.createReplica = function (req, res, next) {
 
     var Replica = app.models.Replica;
     var repositoryDB = app.dataSources.repoDB;
 
-    req.body.collectionId = req.params.item_id;
-    console.log(" body:", req.body)
-    Replica.create(req.body, function (err, instance) {
 
-      service.createTable(repositoryDB, req.body, function (callback) {
-        if (callback) {
-          return res.sendStatus(200, 'Repository Created');
-        }
-        else return res.sendStatus(500);
-      })
+    if (!req.params) {
+      console.log("qui")
+      return res.sendStatus(400);
+    }
+    if (!req.body.uri || !req.body.type || !req.body.filename) {
+      console.log("QUI 2")
+      return res.sendStatus(400);
+    }
+
+    var payload = {
+
+      "uri": req.body.uri,
+      "type": req.body.type,
+      "filename": req.body.filename,
+      "repository": req.params.repo_name,
+      "collection": req.params.collection_name,
+      "itemId": req.params.item_id,
+      "name": "replica"
+    }
+    console.log("payload:", payload);
+    console.log("repositoryDB", repositoryDB.settings.host +
+      " DB =", repositoryDB.settings.database)
+
+
+    Replica.create(payload, function (err, instance) {
+      if (err) return res.status(500).send({message: err});
+      console.log("instance", instance);
+      return res.sendStatus(200);
     })
   }
 
-
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.getReplicas = function (req, res, next) {
-    app.next_module.findById(
-      req.params.item_id,
-      {include: 'replicas'},
 
-      function (err, instance) {
-        if (err) {
-          console.log("Replica Relation Error:", err);
-          res.sendStatus(500);
-        }
-        if (!instance) return res.sendStatus(404);
-        res.json(instance);
-      })
+    app.models.Replica.find({
+      where: {
+        "repository": req.params.repo_name,
+        "collection": req.params.collection_name,
+        "itemId": req.params.item_id
+      }, fields: {
+        uri: true, filename: true, type: true, id: true
+      }
+    }, function (err, replicas) {
+      if (err) return res.status(500).send({message: err});
+      if (!replicas) return res.sendStatus(404);
+      return res.json(replicas);
+    })
   }
+
+  /**
+   *
+   * @param uri
+   * @param method
+   * @returns {*}
+   */
+
+  var getTempURL = function (uri,method) {
+    var url = require('url');
+    var crypto = require('crypto');
+
+    var keys = {
+      "AUTH_51b2f4e508144fa5b0c28f02b1618bfd": "correcthorsebatterystaple",
+      "AUTH_3729798f1d494dcba22abe9763c22258": "4paxXm3tar94T62oGrlQSi5bE4o5mcA1",
+      "glibrary": ""
+    };
+    var expirationTimeInSeconds = 60;
+
+
+    var storage_parts = url.parse(uri);
+    var host = storage_parts.host;
+    var path = storage_parts.pathname;
+
+    console.log("HOST",host);
+    console.log(path);
+    //console.log(req.params);
+    //console.log(req.method);
+    //console.log(req.route);
+
+    var expires = Math.floor(Date.now() / 1000) + expirationTimeInSeconds;
+    if (path[0] != '/') {
+      path = '/' + path;
+    }
+    var pathParts = path.split('/', 5);
+    //console.log(pathParts);
+    if (pathParts.length != 5 || pathParts[0] || pathParts[1] != 'v1' || !pathParts[2] || !pathParts[3] || pathParts[4] == '/') {
+      res.json(400, {
+        error: "WARNING: " + path + " does not refer to a Swift Object (e.g. /v1/account/container/object)"
+      });
+    }
+
+    var account = pathParts[2];
+    if (keys[account]) {
+      var body = method + '\n' + expires + '\n' + path;
+
+      var hash = crypto.createHmac('sha1', keys[account]).update(body).digest('hex');
+      var tmp_uri = 'http://' + host  + path + '?temp_url_sig=' + hash + '&temp_url_expires=' + expires;
+      return {
+        url:tmp_uri,
+        error:0
+      };
+    } else {
+      return {
+        error:404,
+        url:''
+      };
+    }
+  }
+
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.getReplicaById = function (req, res, next) {
 
     var Replica = app.models.Replica;
+
+
+
     Replica.findById(req.params.replica_id,
       {
-        fields: {"collectionId": false, "id": false},
-        where: {Collectionid: req.params.item_id}
+        fields: {uri: true, filename: true, type: true}
       },
-      function (err, instance) {
-        if (err)
-          res.sendStatus(500);
-        if (!instance) return res.sendStatus(404);
-        res.json(instance);
+      function (err, replica) {
+        if (err) return res.status(500).send({message: err});
+        if (!replica) return res.sendStatus(404);
+
+        var uri = replica.uri;
+        console.log("URI:",uri);
+        var url = getTempURL(uri,'GET');
+
+        if(!url.error) {
+          return res.redirect(url.url);
+        } else return res.status(404).send({message: 'Account or Object not found'});
+
+      })
+  }
+
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
+  Repository.uploadReplicaById = function(req,res,next) {
+    var Replica = app.models.Replica;
+
+
+    Replica.findById(req.params.replica_id,
+      {
+        fields: {uri: true, filename: true, type: true}
+      },
+      function (err, replica) {
+        if (err) return res.status(500).send({message: err});
+        if (!replica) return res.sendStatus(404);
+
+        var uri = replica.uri;
+        console.log("URI:",uri);
+        var url = getTempURL(uri,'PUT');
+
+        if(!url.error) {
+          return res.status(200).send({uploadURI: url.url})
+        } else return res.status(404).send({message: 'Account or Object not found'});
+
       })
 
   }
@@ -614,7 +748,7 @@ module.exports = function (Repository) {
   })
 
   Repository.remoteMethod('createReplica', {
-    http: {path: '/:repo_name/:collection_name/:item_id/replicas', verb: 'post'},
+    http: {path: '/:repo_name/:collection_name/:item_id/_replicas', verb: 'post'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -623,7 +757,7 @@ module.exports = function (Repository) {
   })
 
   Repository.remoteMethod('getReplicas', {
-    http: {path: '/:repo_name/:collection_name/:item_id/replicas/list', verb: 'get'},
+    http: {path: '/:repo_name/:collection_name/:item_id/_replicas', verb: 'get'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -632,13 +766,25 @@ module.exports = function (Repository) {
   })
 
   Repository.remoteMethod('getReplicaById', {
-    http: {path: '/:repo_name/:collection_name/:item_id/replicas/:replica_id', verb: 'get'},
+    http: {path: '/:repo_name/:collection_name/:item_id/_replicas/:replica_id', verb: 'get'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
     ],
     returns: {arg: 'data', type: 'object'}
   })
+
+  Repository.remoteMethod('uploadReplicaById', {
+    http: {path: '/:repo_name/:collection_name/:item_id/_replicas/:replica_id', verb: 'put'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+
+
   /*-------------------------------------OBSERVE---------------------------------------------------*/
 
 
