@@ -576,7 +576,6 @@ var setReplicaRelation = function (app, model, next) {
  * @param next
  */
 var setupParameters = function (req, res, next) {
-  console.log("----------------------------setupParameters",req);
   validatereqbodyname(req.body, function (cb) {
      if (!cb) {
        if (!res)  next(false);

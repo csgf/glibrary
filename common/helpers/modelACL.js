@@ -24,6 +24,7 @@ module.exports = function (app) {
             roleId: role.id
           }
         }, function (e, mapping) {
+          console.log("ADMIN MAPPING",mapping)
           if (mapping) {
             next(true)
           } else next(false)
@@ -36,7 +37,8 @@ module.exports = function (app) {
   return {
 
 
-    isAllowed: function (context, next) {
+
+  isAllowed: function (context, next) {
 
       var ctx = loopback.getCurrentContext();
       var accessToken = ctx.get('accessToken');
@@ -51,6 +53,7 @@ module.exports = function (app) {
       if (!userId) {
         return next(401)
       }
+    console.log("USERID",userId);
 
       isAdmin(userId, function (hasAdminRole) {
         console.log("NEXT ADMIN", hasAdminRole)
@@ -79,7 +82,7 @@ module.exports = function (app) {
               }
             }
           }
-          console.log("WHERE:", where);
+          console.log("WHERE:", JSON.stringify(where));
           app.models.access.findOne(where, function (er, access) {
             console.log("ACCESS:", access)
 
@@ -99,7 +102,7 @@ module.exports = function (app) {
     createRole: function createRole(roleName, next) {
 
       console.log("roleName", roleName);
-      Role.findOne({'name': roleName}, function (err, role) {
+      app.models.Role.findOne({'name': roleName}, function (err, role) {
         if (err) {
           console.log('Role.findOne Error', err);
           next(false);
@@ -109,7 +112,7 @@ module.exports = function (app) {
           console.log("[createRole] Role is already created")
           next(false)
         } else {
-          Role.create({
+          app.models.Role.create({
             name: roleName
           }, function (err, role) {
             if (err) throw err;
@@ -122,8 +125,12 @@ module.exports = function (app) {
 
     addPrincipalIdToRole: function addPrincipalIdToRole(roleName, principalType, principalId, next) {
 
+      var Role = app.models.Role;
+      var RoleMapping = app.models.RoleMapping;
+
+      console.log("[addPrincipalIdToRole]",roleName + " " + principalId + " " + principalType)
       //cerco il ruolo ed estraggo id
-      Role.findOne({'name': roleName}, function (err, role) {
+      app.models.Role.findOne({ where: {'name': roleName}}, function (err, role) {
         if (err) {
           console.log('Role.findOne Error', err);
           next(false);
@@ -132,9 +139,12 @@ module.exports = function (app) {
         if (role) {
           console.log("------------------------------------ ")
           console.log("[Role.id]:", role.id)
+          console.log("[Role.name]:", role.name)
+
           console.log("[principalType]:", principalType)
           console.log("[principalId]:", principalId)
           console.log("------------------------------------ ")
+
           /*
            ISSUE
            The principleId field in
@@ -144,7 +154,7 @@ module.exports = function (app) {
 
           principalId = (principalId).toString()
 
-          RoleMapping.find({where: {principalId: principalId}}, function (err, rolemapping) {
+          RoleMapping.find({where:  {"and" :[{principalId: principalId},{roleId:role.id}]}}, function (err, rolemapping) {
             if (err) {
               console.log('RoleMapping.find', err);
               next(false);

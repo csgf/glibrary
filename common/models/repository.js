@@ -303,33 +303,36 @@ module.exports = function (Repository) {
 
 
     if (!req.params) {
-      console.log("qui")
-      return res.sendStatus(400);
-    }
-    if (!req.body.uri || !req.body.type || !req.body.filename) {
-      console.log("QUI 2")
       return res.sendStatus(400);
     }
 
-    var payload = {
 
-      "uri": req.body.uri,
-      "type": req.body.type,
-      "filename": req.body.filename,
-      "repository": req.params.repo_name,
-      "collection": req.params.collection_name,
-      "itemId": req.params.item_id,
-      "name": "replica"
-    }
-    console.log("payload:", payload);
-    console.log("repositoryDB", repositoryDB.settings.host +
-      " DB =", repositoryDB.settings.database)
+    app.models.Repository.findOne({where: {"name": req.params.repo_name}}, function (err, repodata) {
 
+      if (err) throw err;
+      var uri = (repodata.default_storage.baseURL ? repodata.default_storage.baseURL+'/'+req.body.filename : req.body.uri)
+      var type = (repodata.default_storage.type ? repodata.default_storage.type : req.body.type)
 
-    Replica.create(payload, function (err, instance) {
-      if (err) return res.status(500).send({message: err});
-      console.log("instance", instance);
-      return res.sendStatus(200);
+      if (!uri || !type || !req.body.filename) {
+        return res.sendStatus(400);
+      }
+      var payload = {
+        "uri": uri,
+        "type": type,
+        "filename": req.body.filename,
+        "repository": req.params.repo_name,
+        "collection": req.params.collection_name,
+        "itemId": req.params.item_id,
+        "name": "replica"
+      }
+      console.log("payload:", payload);
+      console.log("repositoryDB", repositoryDB.settings.host +
+        " DB =", repositoryDB.settings.database)
+      Replica.create(payload, function (err, instance) {
+        if (err) return res.status(500).send({message: err});
+        console.log("instance", instance);
+        return res.sendStatus(200);
+      })
     })
   }
 
@@ -363,7 +366,7 @@ module.exports = function (Repository) {
    * @returns {*}
    */
 
-  var getTempURL = function (uri,method) {
+  var getTempURL = function (uri, method) {
     var url = require('url');
     var crypto = require('crypto');
 
@@ -379,7 +382,7 @@ module.exports = function (Repository) {
     var host = storage_parts.host;
     var path = storage_parts.pathname;
 
-    console.log("HOST",host);
+    console.log("HOST", host);
     console.log(path);
     //console.log(req.params);
     //console.log(req.method);
@@ -402,15 +405,15 @@ module.exports = function (Repository) {
       var body = method + '\n' + expires + '\n' + path;
 
       var hash = crypto.createHmac('sha1', keys[account]).update(body).digest('hex');
-      var tmp_uri = 'http://' + host  + path + '?temp_url_sig=' + hash + '&temp_url_expires=' + expires;
+      var tmp_uri = 'http://' + host + path + '?temp_url_sig=' + hash + '&temp_url_expires=' + expires;
       return {
-        url:tmp_uri,
-        error:0
+        url: tmp_uri,
+        error: 0
       };
     } else {
       return {
-        error:404,
-        url:''
+        error: 404,
+        url: ''
       };
     }
   }
@@ -426,7 +429,6 @@ module.exports = function (Repository) {
     var Replica = app.models.Replica;
 
 
-
     Replica.findById(req.params.replica_id,
       {
         fields: {uri: true, filename: true, type: true}
@@ -436,10 +438,10 @@ module.exports = function (Repository) {
         if (!replica) return res.sendStatus(404);
 
         var uri = replica.uri;
-        console.log("URI:",uri);
-        var url = getTempURL(uri,'GET');
+        console.log("URI:", uri);
+        var url = getTempURL(uri, 'GET');
 
-        if(!url.error) {
+        if (!url.error) {
           return res.redirect(url.url);
         } else return res.status(404).send({message: 'Account or Object not found'});
 
@@ -452,7 +454,7 @@ module.exports = function (Repository) {
    * @param res
    * @param next
    */
-  Repository.uploadReplicaById = function(req,res,next) {
+  Repository.uploadReplicaById = function (req, res, next) {
     var Replica = app.models.Replica;
 
 
@@ -465,15 +467,153 @@ module.exports = function (Repository) {
         if (!replica) return res.sendStatus(404);
 
         var uri = replica.uri;
-        console.log("URI:",uri);
-        var url = getTempURL(uri,'PUT');
+        console.log("URI:", uri);
+        var url = getTempURL(uri, 'PUT');
 
-        if(!url.error) {
+        if (!url.error) {
           return res.status(200).send({uploadURI: url.url})
         } else return res.status(404).send({message: 'Account or Object not found'});
 
       })
 
+  }
+
+  var validateGrantAccessBody = function (body, next) {
+    console.log("body", body);
+    return next(true)
+  }
+
+  var grantPermissionsToUser = function (source, label, next) {
+    var Role = app.models.Role;
+    var RoleMapping = app.models.RoleMapping;
+
+
+    console.log("SOURCE:", source)
+    console.log("LABEL:", label)
+
+    var permission = source.grant
+    //console.log("REPO_GRANT", app.PropertiesMap)
+    console.log("PERMISSION", permission)
+    if (source.grant.length > 1) {
+      console.log("ENTRO")
+      async.parallel([
+        function (callback) {
+
+          rm.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[0]].property,
+            RoleMapping.USER, '5630e21d481cf6072a68b57c', function (cb) {
+              console.log("[1]Callback from addPrincipalIdToRole", cb);
+              callback()
+            })
+        },
+        function (callback) {
+          rm.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[1]].property,
+            RoleMapping.USER, '5630e21d481cf6072a68b57c', function (cb) {
+              console.log("[2]Callback from addPrincipalIdToRole", cb);
+              callback()
+            })
+        }
+      ], function (err) {
+        console.log("-----------FINE-------------")
+        if (!err) return next(true)
+        else return next(false);
+
+      });
+    }
+    else {
+      console.log("SINGOLA RULE", source)
+      rm.addPrincipalIdToRole(app.PropertiesMap[label + permission].property,
+        RoleMapping.USER, '5630e21d481cf6072a68b57c', function (callback) {
+          console.log("[3]Callback from addPrincipalIdToRole", callback);
+          return next(true)
+        })
+    }
+  }
+
+
+  Repository.grantAccess = function (req, res, next) {
+    console.log("grantAccess", req.body);
+    console.log("PropertyMap", app.PropertiesMap)
+
+    validateGrantAccessBody(req.body, function (validate) {
+      if (!validate) return res.status(400).send({message: 'Bad payload'})
+      /*if (req.body.repositoryPermission.grant.length >1) {
+       var repo_grant = req.body.repositoryPermission.grant
+       console.log("REPO_GRANT",app.PropertiesMap)
+       //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property)
+       //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property)
+       async.parallel([
+       function(callback) {
+
+       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property,
+       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
+       console.log("Callback from addPrincipalIdToRole", cb);
+       callback
+       })
+       },
+       function(callback) {
+       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property,
+       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
+       console.log("Callback from addPrincipalIdToRole", cb);
+       callback
+       })
+       }
+       ], function(err) {
+       console.log('Repository ACL done');
+       var payload = {
+       "repositoryName":req.body.repositoryPermission.name,
+       "collectionName":req.body.collectionsPermission.name,
+       "userId":"5630e21d481cf6072a68b57c"
+       }
+       app.models.access.create(payload,function(err,entry){
+       if(err) throw err;
+       console.log("Entry",entry);
+       res.sendStatus(200);
+       })
+       });
+
+       }
+       else
+       {
+       console.log("------------->RUOLO:",app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property)
+       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property,
+       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(callback) {
+       console.log("Callback from addPrincipalIdToRole", callback);
+       callback
+       })
+       }*/
+
+      grantPermissionsToUser(req.body.repositoryPermission, 'Repo', function (callback) {
+        if (callback) {
+          console.log("Ritorno 1")
+
+          grantPermissionsToUser(req.body.collectionsPermission, 'Coll', function (callback) {
+            if (callback) {
+              console.log("Ritorno 2")
+
+              grantPermissionsToUser(req.body.itemsPermission, 'Item', function (callback) {
+                if (callback) {
+                  console.log("Ritorno 3")
+
+                  console.log('Repository ACL done');
+                  var payload = {
+                    "repositoryName": req.body.repositoryPermission.name,
+                    "collectionName": req.body.collectionsPermission.name,
+                    "userId": "5630e21d481cf6072a68b57c"
+                  }
+                  app.models.access.create(payload, function (err, entry) {
+                    if (err) throw err;
+                    console.log("Entry", entry);
+                    res.sendStatus(200);
+                  })
+                }
+              })
+            }
+          })
+        }
+      })
+
+
+    })
   }
 
 
@@ -669,6 +809,16 @@ module.exports = function (Repository) {
     })
   })
 
+  Repository.afterRemote('find',function(context,user,final){
+
+    for (var i=0; i< context.result.length; i++) {
+      if(context.result[i].coll_db) {
+        context.result[i].coll_db.password="********"
+      }
+    }
+    final()
+
+  })
 
   /* ---------------------- remoteMethod ------------------------*/
 
@@ -784,111 +934,24 @@ module.exports = function (Repository) {
   })
 
 
+  Repository.remoteMethod('grantAccess', {
+    http: {path: '/grantAccess', verb: 'post'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
 
   /*-------------------------------------OBSERVE---------------------------------------------------*/
 
 
-  /* /!**
-   *
-   * @param accessToken
-   * @param next
-   * @returns {*}
-   *!/
-   var isAdmin = function (accessToken, next) {
-
-   var Role = app.models.Role;
-   var RoleMapping = app.models.RoleMapping;
-   var userId = accessToken.userId;
-
-   if (!userId) {
-   return next(401)
-   } else {
-
-   Role.findOne({where: {"name": "admin"}}, function (err, role) {
-   console.log("Role:", role)
-   RoleMapping.findOne({where: {"roleId": role.id, "principalId": userId}}, function (err, mapping) {
-   console.log("MAPPING", mapping)
-   if (mapping) {
-   console.log("SEI NATHAN", mapping)
-   return next(true)
-   }
-   if (!mapping) {
-   console.log("NON SEI NATHAN", mapping);
-
-   return next(401)
-   }
-   })
-   })
-   }
-   }*/
-
-  /**
-   *
-   * @param context
-   * @param next
-   * @returns {*}
-   */
-  /*
-   var isAllowed = function (context, next) {
-
-   var ctx = loopback.getCurrentContext();
-   var accessToken = ctx.get('accessToken');
-   var req = context.req;
-   if (!req.params) return next(500);
-
-   var collection_name = (!req.params.collection_name ? null : req.params.collection_name )
-   var repository_name = req.params.repo_name
-   var userId = accessToken.userId
-   if (!userId) {
-   return next(401)
-   }
-   if (collection_name != null) {
-   var where = {
-   where: {
-   and: [
-   {"repositoryName": repository_name},
-   {"collectionName": collection_name},
-   {"userId": userId}
-   ]
-   }
-   }
-   } else {
-   console.log("collection_name NULL")
-   var where = {
-   where: {
-   and: [
-   {"userId": userId},
-   {"repositoryName": repository_name},
-   ]
-   }
-   }
-   }
-   console.log("WHERE:", where);
-   app.models.access.findOne(where, function (er, access) {
-   console.log("ACCESS:", access)
-
-   if (access) {
-   if ( collection_name == null && access.collectionName) {
-   return next(401);
-   }
-   else
-   return next(200)
-   } else {
-   return next(401)
-   }
-   })
-   }
-
-
-   */
-
-
   Repository.observe('access', function (context, final) {
+
     //context.query.where = { name : 'animals'};
     //context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
     return final();
   })
-
 
   Repository.observe('before delete', function (ctx, final) {
     console.log('Going to delete %s matching %j',
@@ -902,7 +965,6 @@ module.exports = function (Repository) {
     console.log("Body:", context.instance);
     var req = {body: context.instance};
     var res = context.result; // undefined
-
 
     tl.buildpayload(req, res, function (next) {
       if (!next) {

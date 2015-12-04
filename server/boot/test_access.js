@@ -3,7 +3,7 @@
  * email:antonio.dimariano@gmail.com
  * https://github.com/antoniodimariano/
  */
-module.exports = function(app) {
+  module.exports = function(app) {
 
   var User = app.models.user;
   var Role = app.models.Role;
@@ -26,8 +26,8 @@ module.exports = function(app) {
 
 
 
-
-  User.findOne({where :{ email:'nathan@gmail.com'}},function(err,user) {
+/*
+  User.findOne({where :{ email:'admin@gmail.com'}},function(err,user) {
     if (err) throw err;
     if (user) {
       console.log("User:", user)
@@ -49,6 +49,8 @@ module.exports = function(app) {
     }
   })
 
+
+/*
   User.findOne({where :{ email:'bob@projects.com'}},function(err,user) {
     if (err) throw err;
     if (user) {
@@ -71,5 +73,5 @@ module.exports = function(app) {
     }
   })
 
-
+*/
 }
