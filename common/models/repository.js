@@ -310,7 +310,7 @@ module.exports = function (Repository) {
     app.models.Repository.findOne({where: {"name": req.params.repo_name}}, function (err, repodata) {
 
       if (err) throw err;
-      var uri = (repodata.default_storage.baseURL ? repodata.default_storage.baseURL+'/'+req.body.filename : req.body.uri)
+      var uri = (repodata.default_storage.baseURL ? repodata.default_storage.baseURL + '/' + req.body.filename : req.body.uri)
       var type = (repodata.default_storage.type ? repodata.default_storage.type : req.body.type)
 
       if (!uri || !type || !req.body.filename) {
@@ -480,21 +480,21 @@ module.exports = function (Repository) {
 
   var validateGrantAccessBody = function (body, next) {
     console.log("body", body);
-    app.models.User.findOne({where:{"email":body.user}},function(err,user){
-      console.log("User",user);
-      if(err) {
+    app.models.User.findOne({where: {"email": body.user}}, function (err, user) {
+      console.log("User", user);
+      if (err) {
         return next({
-          "validate":false
+          "validate": false
         })
       }
-      if(user) {
+      if (user) {
         return next({
-          "validate":true,
+          "validate": true,
           userId: user.id
         })
       } else {
         return next({
-          "validate":false
+          "validate": false
         })
       }
     })
@@ -554,18 +554,18 @@ module.exports = function (Repository) {
    * @param next
    * @constructor
    */
-  Repository.ACLtoRepository = function(req,res,next) {
+  Repository.ACLtoRepository = function (req, res, next) {
     console.log("grantAccess", req.body);
-    validateGrantAccessBody(req.body,function(isvalidate){
-      if(!isvalidate) return res.status(400).send({message: 'Bad payload'})
-      console.log("Validate:",isvalidate);
+    validateGrantAccessBody(req.body, function (isvalidate) {
+      if (!isvalidate) return res.status(400).send({message: 'Bad payload'})
+      console.log("Validate:", isvalidate);
       // it assign permissions to repository
       var payload = {
         "userId": isvalidate.userId,
         "grant": req.body.grant
       }
-      grantPermissionsToUser(payload,'Repo',function(permission){
-        if(permission) {
+      grantPermissionsToUser(payload, 'Repo', function (permission) {
+        if (permission) {
           var payload = {
             "repositoryName": req.params.repo_name,
             "collectionName": null,
@@ -573,16 +573,13 @@ module.exports = function (Repository) {
           }
           app.models.access.create(payload, function (err, entry) {
             if (err) throw err;
-            logger.debug("ACLs are successufully assigned to user. ACLs ID: ",entry);
+            logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
             res.sendStatus(200);
           })
         }
       })
     })
   }
-
-
-
 
 
   /**
@@ -592,25 +589,25 @@ module.exports = function (Repository) {
    * @param next
    * @constructor
    */
-  Repository.ACLtoCollection = function(req,res,next) {
+  Repository.ACLtoCollection = function (req, res, next) {
     console.log("grantAccess", req.body);
-    validateGrantAccessBody(req.body,function(isvalidate){
-      if(!isvalidate) return res.status(400).send({message: 'Bad payload'})
-      console.log("Validate:",isvalidate);
+    validateGrantAccessBody(req.body, function (isvalidate) {
+      if (!isvalidate) return res.status(400).send({message: 'Bad payload'})
+      console.log("Validate:", isvalidate);
       var payload = {
         "userId": isvalidate.userId,
         "grant": req.body.grant
       }
-      grantPermissionsToUser(payload,'Coll',function(permission){
-        if(permission) {
-          if(req.body.item_grant) {
-            console.log("ITEM_GRANT",req.body.item_grant);
+      grantPermissionsToUser(payload, 'Coll', function (permission) {
+        if (permission) {
+          if (req.body.item_grant) {
+            console.log("ITEM_GRANT", req.body.item_grant);
             var payload = {
               "userId": isvalidate.userId,
               "grant": req.body.item_grant
             }
-            grantPermissionsToUser(payload,'Item',function(permission){
-              if(permission) {
+            grantPermissionsToUser(payload, 'Item', function (permission) {
+              if (permission) {
                 var payload = {
                   "repositoryName": req.params.repo_name,
                   "collectionName": req.params.collection_name,
@@ -618,7 +615,7 @@ module.exports = function (Repository) {
                 }
                 app.models.access.create(payload, function (err, entry) {
                   if (err) throw err;
-                  logger.debug("ACLs are successufully assigned to user. ACLs ID: ",entry);
+                  logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
                   res.sendStatus(200);
                 })
               }
@@ -631,7 +628,7 @@ module.exports = function (Repository) {
             }
             app.models.access.create(payload, function (err, entry) {
               if (err) throw err;
-              logger.debug("ACLs are successufully assigned to user. ACLs ID: ",entry);
+              logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
               res.sendStatus(200);
             })
           }
@@ -640,94 +637,146 @@ module.exports = function (Repository) {
     })
   }
 
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
+  Repository.getACLforRepository = function (req, res, next) {
+    app.models.User.find({where: {"email": req.params.acls_for_user}, include: 'accesses'}, function (err, access) {
+      //app.models.access.find({where: {"repositoryName": req.params.repo_name}},{include:'users'}, function (err, access) {
+      if (err) {
+        console.log("ERR:", err)
+        return res.sendStatus(500)
+      }
+      if (access.length == 0) {
+        return res.sendStatus(404)
+      }
+      app.models.RoleMapping.find({where: {"principalId": access[0].id}}, function (err, mapping) {
+        if (err) {
+          console.log("ERR:", err)
+          return res.sendStatus(500)
+        }
+        var roleMappedTo = []
+        /*
+         mapping.forEach(function (map) {
+         app.models.Role.findById(map.roleId, function (err, role) {
+         console.log("RoleName:", role)
+         roleMappedTo.push({"RoleName": role.name, "MappingId": map.id})
+         })
+         } //return res.status(200).send({"acls": access, "mapping": roleMappedTo})
+         )
+         */
+        var l = mapping.length
+        var count = 0;
+        async.forEach(mapping, function (map, callback) {
+          app.models.Role.findById(map.roleId, function (err, role) {
+            roleMappedTo.push({"RoleName": role.name, "MappingId": map.id})
+            count = count + 1;
+            if (count == l) {
+              console.log("callabck");
+              return res.status(200).send({"acls": access, "mapping": roleMappedTo})
+            }
+            else {
+              console.log("Count:", count + ' L:', l);
+            }
+          })
+        }, function () {
+          console.log('iterating done');
+          return res.status(200).send({"acls": access, "mapping": roleMappedTo})
+        });
 
+      })
+    })
+  }
 
   Repository.grantAccess = function (req, res, next) {
     console.log("grantAccess", req.body);
     console.log("PropertyMap", app.PropertiesMap)
-    return res.status(200).send({message:'Disabled'})
-/*
-    validateGrantAccessBody(req.body, function (validate) {
-      if (!validate) return res.status(400).send({message: 'Bad payload'})
-      /!*if (req.body.repositoryPermission.grant.length >1) {
-       var repo_grant = req.body.repositoryPermission.grant
-       console.log("REPO_GRANT",app.PropertiesMap)
-       //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property)
-       //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property)
-       async.parallel([
-       function(callback) {
+    return res.status(200).send({message: 'Disabled'})
+    /*
+     validateGrantAccessBody(req.body, function (validate) {
+     if (!validate) return res.status(400).send({message: 'Bad payload'})
+     /!*if (req.body.repositoryPermission.grant.length >1) {
+     var repo_grant = req.body.repositoryPermission.grant
+     console.log("REPO_GRANT",app.PropertiesMap)
+     //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property)
+     //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property)
+     async.parallel([
+     function(callback) {
 
-       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property,
-       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
-       console.log("Callback from addPrincipalIdToRole", cb);
-       callback
-       })
-       },
-       function(callback) {
-       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property,
-       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
-       console.log("Callback from addPrincipalIdToRole", cb);
-       callback
-       })
-       }
-       ], function(err) {
-       console.log('Repository ACL done');
-       var payload = {
-       "repositoryName":req.body.repositoryPermission.name,
-       "collectionName":req.body.collectionsPermission.name,
-       "userId":"5630e21d481cf6072a68b57c"
-       }
-       app.models.access.create(payload,function(err,entry){
-       if(err) throw err;
-       console.log("Entry",entry);
-       res.sendStatus(200);
-       })
-       });
+     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property,
+     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
+     console.log("Callback from addPrincipalIdToRole", cb);
+     callback
+     })
+     },
+     function(callback) {
+     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property,
+     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
+     console.log("Callback from addPrincipalIdToRole", cb);
+     callback
+     })
+     }
+     ], function(err) {
+     console.log('Repository ACL done');
+     var payload = {
+     "repositoryName":req.body.repositoryPermission.name,
+     "collectionName":req.body.collectionsPermission.name,
+     "userId":"5630e21d481cf6072a68b57c"
+     }
+     app.models.access.create(payload,function(err,entry){
+     if(err) throw err;
+     console.log("Entry",entry);
+     res.sendStatus(200);
+     })
+     });
 
-       }
-       else
-       {
-       console.log("------------->RUOLO:",app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property)
-       rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property,
-       RoleMapping.USER,'5630e21d481cf6072a68b57c',function(callback) {
-       console.log("Callback from addPrincipalIdToRole", callback);
-       callback
-       })
-       }*!/
+     }
+     else
+     {
+     console.log("------------->RUOLO:",app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property)
+     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property,
+     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(callback) {
+     console.log("Callback from addPrincipalIdToRole", callback);
+     callback
+     })
+     }*!/
 
-      grantPermissionsToUser(req.body.repositoryPermission, 'Repo', function (callback) {
-        if (callback) {
-          console.log("Ritorno 1")
+     grantPermissionsToUser(req.body.repositoryPermission, 'Repo', function (callback) {
+     if (callback) {
+     console.log("Ritorno 1")
 
-          grantPermissionsToUser(req.body.collectionsPermission, 'Coll', function (callback) {
-            if (callback) {
-              console.log("Ritorno 2")
+     grantPermissionsToUser(req.body.collectionsPermission, 'Coll', function (callback) {
+     if (callback) {
+     console.log("Ritorno 2")
 
-              grantPermissionsToUser(req.body.itemsPermission, 'Item', function (callback) {
-                if (callback) {
-                  console.log("Ritorno 3")
+     grantPermissionsToUser(req.body.itemsPermission, 'Item', function (callback) {
+     if (callback) {
+     console.log("Ritorno 3")
 
-                  console.log('Repository ACL done');
-                  var payload = {
-                    "repositoryName": req.body.repositoryPermission.name,
-                    "collectionName": req.body.collectionsPermission.name,
-                    "userId": "5630e21d481cf6072a68b57c"
-                  }
-                  app.models.access.create(payload, function (err, entry) {
-                    if (err) throw err;
-                    console.log("Entry", entry);
-                    res.sendStatus(200);
-                  })
-                }
-              })
-            }
-          })
-        }
-      })
+     console.log('Repository ACL done');
+     var payload = {
+     "repositoryName": req.body.repositoryPermission.name,
+     "collectionName": req.body.collectionsPermission.name,
+     "userId": "5630e21d481cf6072a68b57c"
+     }
+     app.models.access.create(payload, function (err, entry) {
+     if (err) throw err;
+     console.log("Entry", entry);
+     res.sendStatus(200);
+     })
+     }
+     })
+     }
+     })
+     }
+     })
 
 
-    })
-*/
+     })
+     */
   }
 
 
@@ -923,11 +972,11 @@ module.exports = function (Repository) {
     })
   })
 
-  Repository.afterRemote('find',function(context,user,final){
+  Repository.afterRemote('find', function (context, user, final) {
 
-    for (var i=0; i< context.result.length; i++) {
-      if(context.result[i].coll_db) {
-        context.result[i].coll_db.password="********"
+    for (var i = 0; i < context.result.length; i++) {
+      if (context.result[i].coll_db) {
+        context.result[i].coll_db.password = "********"
       }
     }
     final()
@@ -1048,14 +1097,25 @@ module.exports = function (Repository) {
   })
 
 
-   Repository.remoteMethod('ACLtoRepository', {
-     http: {path: '/:repo_name/_acls', verb: 'post'},
-     accepts: [
-       {arg: 'req', type: 'object', 'http': {source: 'req'}},
-       {arg: 'res', type: 'object', 'http': {source: 'res'}}
-     ],
-     returns: {arg: 'data', type: 'object'}
-   })
+  Repository.remoteMethod('ACLtoRepository', {
+    http: {path: '/:repo_name/_acls', verb: 'post'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+
+  Repository.remoteMethod('getACLforRepository', {
+    http: {path: '/:repo_name/_acls/:acls_for_user', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
 
   Repository.remoteMethod('ACLtoCollection', {
     http: {path: '/:repo_name/:collection_name/_acls', verb: 'post'},

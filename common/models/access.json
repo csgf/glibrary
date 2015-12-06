@@ -11,10 +11,19 @@
     },
     "collectionName": {
       "type": "string"
+    },
+    "userId": {
+      "type":"string"
     }
   },
   "validations": [],
-  "relations": {},
+  "relations": {
+    "user": {
+      "type": "belongsTo",
+      "model": "user",
+      "foreignKey": "userId"
+    }
+   },
   "acls": [
     {
       "accessType": "*",
