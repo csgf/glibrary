@@ -174,7 +174,7 @@ module.exports = function (app) {
                   console.log('[addPrincipalIdToRole][role.principals.create] Error', err);
                   next(false);
                 } else {
-                  console.log("[addPrincipalIdToRole] OK", principal)
+                  console.log("[addPrincipalIdToRole] OK", '')
                   next(true);
                 }
               })
