@@ -1,8 +1,5 @@
-gLibrary 2.0 API
-================
-
-.. toctree::
-
+gLibrary 2.0
+============
 
 Overview
 --------
@@ -29,7 +26,7 @@ collection's records, that in gLibrary lingo are called **items**.
 Moreover a powerful filtering system is available to make queries on
 collections. All the criteria are specified using the query string of
 the API GET call. (ex
-``/v1/repos/fantasy_company/orders?filter[where][userId]=acaland&filter[where][orderQuantity][gt]=200&filter[where][limit]=100``
+``/v2/repos/fantasy_company/orders?filter[where][userId]=acaland&filter[where][orderQuantity][gt]=200&filter[where][limit]=100``
 will search for 100 orders issued by the user ``acaland`` with a
 quantity of 100)
 
@@ -46,7 +43,53 @@ Testing endpoint
 
 ::
 
-    http://glibrary.ct.infn.it:5000
+    http://glibrary.ct.infn.it:3500
+
+Authentication
+--------------
+
+Before to send any request, users should be authenticated. Currenly
+authentication is based on username/password couple. This will return a
+**session token id** that needs to be used with any following request.
+There are two options to send the **access\_token**:
+
+-  via a query parameter:
+
+::
+
+        curl -X GET http://glibrary.ct.infn.it:3500/v2/repos?access_token=6Nb2ti5QEXIoDBS5FQGWIz4poRFiBCMMYJbYXSGHWuulOuy0GTEuGx2VCEVvbpBK
+
+-  via HTTP headers:
+
+::
+
+    ACCESS_TOKEN=6Nb2ti5QEXIoDBS5FQGWIz4poRFiBCMMYJbYXSGHWuulOuy0GTEuGx2VCEVvbpBK
+
+    curl -X GET -H "Authorization: $ACCESS_TOKEN" \
+    http://glibrary.ct.infn.it:3500/v2/repos
+
+Login
+~~~~~
+
+To obtain a session id, you need to pass a valid ``username`` and
+``password`` to the following endpoint:
+
+.. code:: http
+
+    POST /v2/users/login HTTP/1.1
+
+.. code:: json
+
+    {
+     "username":"admin",
+     "password":"opensesame2015"
+    }
+
+Alternatively you can use the ``email`` addess instead of the
+``username``.
+
+User creation
+~~~~~~~~~~~~~
 
 Repositories
 ------------
@@ -68,7 +111,7 @@ List of all the repositories hosted on the server
 
 .. code:: http
 
-    GET /v1/repos/ HTTP/1.1
+    GET /v2/repos/ HTTP/1.1
 
 Returns a list of all the repositories managed by the given gLibrary
 server. Each repository has the following properties:
@@ -101,7 +144,7 @@ Example:
 
     {
         "name": "infn",
-        "path": "http://glibrary.ct.infn.it:5000/v1/infn",
+        "path": "http://glibrary.ct.infn.it:5000/v2/infn",
         "coll_db": {
             "host": "giular.trigrid.it",
             "port": 3306,
@@ -124,7 +167,7 @@ Create a new repository
 
 .. code:: http
 
-    POST /v1/repos/ HTTP/1.1
+    POST /v2/repos/ HTTP/1.1
 
 Create a new repository. A default ``coll_db`` (*TODO*:
 ``default\_collection\_db``) can be specified. It will store all the
@@ -139,7 +182,7 @@ optional. If missing it will use the local MongoDB server.
 +==============================================+==========+=======================================================================================================+
 | name                                         | string   | Name of the repository (will be the API path)                                                         |
 +----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| coll\_db (*TODO*: default\_collection\_db)   | string   | (Optional) Default database where collection data should be stored. Can be overriden per collection   |
+| coll\_db (*TODO*: default\_collection\_db)   | object   | (Optional) Default database where collection data should be stored. Can be overriden per collection   |
 +----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
 | host                                         | string   | FQDN of the default collection DB                                                                     |
 +----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
@@ -153,15 +196,21 @@ optional. If missing it will use the local MongoDB server.
 +----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
 | type                                         | string   | type of the default collection db (mysql, postgresql, mongodb)                                        |
 +----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
+| default\_storage                             | object   | (Optional) specifies the default storage for replicas                                                 |
++----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
+| baseURL                                      | string   | it's full path of Swift Container or Grid SURL for replica uploads                                    |
++----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
+| type                                         | string   | "swift" or "grid" storage                                                                             |
++----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
 
-Note: ``name`` is a lowercase string. Numbers are allowed. No special
-characters are allowed
+Note: ``name`` is a lowercase string. Numbers and underscores are
+allowed. No oyjrt special characters are permitted
 
 Example:
 
 .. code:: json
 
-    POST /v1/repos/ HTTP/1.1
+    POST /v2/repos/ HTTP/1.1
     Content-Type: application/json
 
     {
@@ -173,6 +222,10 @@ Example:
             "password": "******",
             "database": "infn_db",
             "type": "postgresql"
+        },
+        "default_storage": {
+            "baseURL": "http://stack-server-01.ct.infn.it:8080/v2/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore",
+            "type": "swift"
         }
     }
 
@@ -199,7 +252,7 @@ Create a new collection
 
 .. code:: http
 
-    POST /v1/repos/<repo_name>/ HTTP/1.1
+    POST /v2/repos/<repo_name>/ HTTP/1.1
 
 **Parameters**
 
@@ -250,7 +303,7 @@ https://docs.strongloop.com/display/public/LB/Model+definition+JSON+file#Modelde
 
 .. code:: json
 
-    POST /v1/repos/infn/ HTTP/1.1
+    POST /v2/repos/infn/ HTTP/1.1
     Content-Type: application/json
 
     {
@@ -267,12 +320,26 @@ the ``infn`` repository. The collection data will be stored into the
 default ``coll_db`` specified for the ``infn`` repository (that
 according to the previous example is a postgreSQL db named ``infn_db``)
 
+Import data from an existing relational database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to create a collection that maps an existing db table, two
+additional properties are available:
+
++------------+-------------------------------------------------------------+
+| name       | description                                                 |
++============+=============================================================+
+| import     | it should set to ``true``                                   |
++------------+-------------------------------------------------------------+
+| location   | name of the database table of the database to be imported   |
++------------+-------------------------------------------------------------+
+
 **Example** (creation of a new collection with data coming from an
 existing relational db):
 
 .. code:: json
 
-    POST /v1/repos/infn/ HTTP/1.1
+    POST /v2/repos/infn/ HTTP/1.1
     Content-Type: application/json
 
     {
@@ -297,7 +364,7 @@ List all the collections of a repository
 
 .. code:: http
 
-    GET /v1/repos/<repo_name>/ HTTP/1.1
+    GET /v2/repos/<repo_name>/ HTTP/1.1
 
 This API will return a JSON array with all the collections of
 ``<repo_name>``. Each collection will have a ``schema`` attribute,
@@ -311,7 +378,7 @@ API <#retrieve-the-schema-of-a-collection>`__).
 
 .. code:: http
 
-    GET /v1/repos/sports HTTP/1.1
+    GET /v2/repos/sports HTTP/1.1
 
 .. code:: json
 
@@ -359,7 +426,7 @@ Retrieve the schema of a collection
 
 .. code:: http
 
-    GET /v1/repos/<repo_name>/<collection_name>/_schema HTTP/1.1
+    GET /v2/repos/<repo_name>/<collection_name>/_schema HTTP/1.1
 
 If the given ``collection_name`` is hosted in a relation database table,
 this API will return a JSON object with the schema of the undelying
@@ -369,7 +436,7 @@ table.
 
 .. code:: http
 
-    GET /v1/repos/comics/dylandog/_schema HTTP/1.1
+    GET /v2/repos/comics/dylandog/_schema HTTP/1.1
 
 .. code:: json
 
@@ -424,7 +491,7 @@ TODO: Delete a collection
 
 .. code:: http
 
-    DELETE /v1/repos/<repo_name>/<collection_name>  HTTP/1.1
+    DELETE /v2/repos/<repo_name>/<collection_name>  HTTP/1.1
 
 This API will delete the given ``collection_name`` from ``repo_name``.
 Actual data on the backend table should not be deleted. It's a sort of
@@ -445,7 +512,7 @@ Item creation
 
 .. code:: http
 
-    POST /v1/repos/<repo_name>/<collection_name> HTTP/1.1
+    POST /v2/repos/<repo_name>/<collection_name> HTTP/1.1
 
 This API add a new item into the given ``collection_name``. Item content
 have to be provided as a JSON object. In case of the relational
@@ -458,7 +525,7 @@ document will be added to the underlying table or NoSQL collection.
 
 .. code:: http
 
-    POST /v1/repos/infn/articles HTTP/1.1
+    POST /v2/repos/infn/articles HTTP/1.1
 
     {
         "title": "e-Infrastructures for Cultural Heritage Applications",
@@ -471,7 +538,7 @@ Item listing
 
 .. code:: http
 
-    GET /v1/repos/<repo_name>/<collection_name>/ HTTP/1.1
+    GET /v2/repos/<repo_name>/<collection_name>/ HTTP/1.1
 
 Retrieve the items inside the ``collection_name`` as a JSON array of
 objects. Each object is a record of the underlying table (in case of
@@ -484,14 +551,14 @@ behaviour.
 
 .. code:: http
 
-    GET /v1/repos/gridcore/tracciati    HTTP/1.1
+    GET /v2/repos/gridcore/tracciati    HTTP/1.1
 
 Item detail
 ~~~~~~~~~~~
 
 .. code:: json
 
-    GET /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
+    GET /v2/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 
 Retrieve the detail of an item with a ``given_id``. It will return a
 JSON object with the attributes mapping the schema of the given
@@ -501,14 +568,14 @@ JSON object with the attributes mapping the schema of the given
 
 .. code:: json
 
-    GET /v1/repos/infn/articles/22
+    GET /v2/repos/infn/articles/22
 
 TODO: Item deletion
 ~~~~~~~~~~~~~~~~~~~
 
 .. code:: http
 
-    DELETE  /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
+    DELETE  /v2/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 
 Delete the given ``item_id`` of the the collection ``collection_name``.
 
@@ -517,7 +584,7 @@ Item update
 
 .. code:: http
 
-    PUT /v1/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
+    PUT /v2/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 
 Update one of more attributes of the given ``item_id``. The request body
 has to contain a JSON object with the attribute-value pair to be updated
@@ -528,7 +595,7 @@ Queries with filters
 
 .. code:: http
 
-    GET /v1/repos/<repo_name>/<collection_name>?filter[<filterType>]=<spec>&filter[...]=<spec>... HTTP/1.1
+    GET /v2/repos/<repo_name>/<collection_name>?filter[<filterType>]=<spec>&filter[...]=<spec>... HTTP/1.1
 
 where ``filterType`` is one of the following:
 
@@ -549,17 +616,77 @@ Additional info on the full query syntax can be found
 Replicas
 ~~~~~~~~
 
+Each item can have one or more attachments, generally the same file
+stored in different locations, such as Cloud storage servers (Swift
+based) or Grid Storage Elements (DPM based). So we call them also
+replicas.
+
+**Replica creation**
+
 .. code:: http
 
-    POST /v1/repos/<repo_name>/<collection_name>/<item_id>/replicas/list HTTP/1.1
+    POST /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/ HTTP/1.1
 
-Retrieve all the replicas of the given ``item_id``.
++------------+---------------------------------------------------------------------------------+
+| name       | description                                                                     |
++============+=================================================================================+
+| uri        | (optional) provides the full storage path of where the replica will be saved    |
++------------+---------------------------------------------------------------------------------+
+| type       | (optional) specifies the type of storage backend. Currently "swift" or "grid"   |
++------------+---------------------------------------------------------------------------------+
+| filename   | The filename of the given replica                                               |
++------------+---------------------------------------------------------------------------------+
+
+The first two parameters (``uri`` and ``type``) are optionals if a
+``default_storage`` attribute has been set for the given repository. If
+not, they need to be specified, otherwise the request to the API will
+fail.
+
+Please note that this API will just create a replica entry for the item,
+but no actual file will be uploaded from the client. Once the replica
+has been created you need to use the **Upload** API to transfer the
+actual file payload.
+
+**Retrieve all the replicas of the given ``item_id``**
 
 .. code:: http
 
-    GET /v1/repos/<repo_name>/<collection_name>/<item_id>/replicas/<rep_id> HTTP/1.1
+    GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/ HTTP/1.1
 
-Retrive a specific replica with the given ``rep_id`` for the ``item_id``
+**Download a given replica**
+
+.. code:: http
+
+    GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
+
+**Upload a replica**
+
+Upload the file payload to the destinaton storage. This requires two
+subsequent API request.
+
+First, ask for the destination endpoint for the upload with:
+
+.. code:: http
+
+    PUT /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection_name> HTTP/1.1
+
+This will return a **temporaryURL** valid a few seconds (example):
+
+.. code:: json
+
+    {
+      "uploadURI": "http://stack-server-01.ct.infn.it:8080/v2/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg?temp_url_sig=6cd7dbdc2f9e429a1b89689dc4e77f1d2aadbfc8&temp_url_expires=1449481594"
+    }
+
+Then use the URL returned by the previous API to upload the actual file,
+using the PUT verb again (example):
+
+.. code:: http
+
+    PUT http://stack-server-01.ct.infn.it:8080/v2/AUTH_51b2f4e508144fa5b0c28f02b1618bfd/gridcore/ananas.jpg?temp_url_sig=6cd7dbdc2f9e429a1b89689dc4e77f1d2aadbfc8&temp_url_expires=1449481594 HTTP/1.1
+
+It will return a 201 status code, if the upload will complete
+successfully
 
 **Example**
 
@@ -568,10 +695,6 @@ Relations
 
 One to many relations can be created between collections of the same
 repository, setting properly a foreign key.
-
-.. code:: http
-
-    GET /v1/repos/<repo_name>/<collection_name>/<item_id>/<related_collection_name> HTTP/1.1
 
 Retrieve all the items from ``related_collection_name`` of the given
 ``item_id``.
