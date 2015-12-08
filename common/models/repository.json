@@ -55,6 +55,15 @@
       "property": "find"
     },
     {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "ACLtoCollection"
+
+
+    },
+    {
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "admin",

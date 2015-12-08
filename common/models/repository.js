@@ -29,6 +29,7 @@ module.exports = function (Repository) {
    GET /api/repositories/myrepo/collection
    */
   Repository.disableRemoteMethod('findById', isStatic);
+  Repository.disableRemoteMethod('updateAttributes', false); // PUT /Studios/{id} *What is this supposed to be?*
 
   /**
    *
@@ -213,6 +214,20 @@ module.exports = function (Repository) {
     })
   }
 
+
+  Repository.editRepository = function (req, res, next) {
+
+    console.log("EDIT REPO")
+    app.models.Repository.findOne({where: {name: req.params.repo_name}}, function (err, repo) {
+      if (err) res.sendStatus(500);
+      if (!repo) return res.sendStatus(404);
+      repo.updateAttributes(req.body, function (err) {
+        return res.status(200).send({message: 'repository updated'})
+      })
+    })
+  }
+
+
   /* ---- GET Collection ----*/
 
   Repository.getCollection = function (req, res, next) {
@@ -226,6 +241,7 @@ module.exports = function (Repository) {
       })
     })
   }
+
 
   Repository.getCollectionSchema = function (req, res, next) {
     console.log("[Repository.getCollectionSchema]");
@@ -310,8 +326,8 @@ module.exports = function (Repository) {
     app.models.Repository.findOne({where: {"name": req.params.repo_name}}, function (err, repodata) {
 
       if (err) throw err;
-      var uri = (repodata.default_storage.baseURL ? repodata.default_storage.baseURL + '/' + req.body.filename : req.body.uri)
-      var type = (repodata.default_storage.type ? repodata.default_storage.type : req.body.type)
+      var uri = ((repodata.default_storage && repodata.default_storage.baseURL) ? repodata.default_storage.baseURL + '/' + req.body.filename : req.body.uri)
+      var type = ((repodata.default_storage && repodata.default_storage.type) ? repodata.default_storage.type : req.body.type)
 
       if (!uri || !type || !req.body.filename) {
         return res.sendStatus(400);
@@ -477,9 +493,19 @@ module.exports = function (Repository) {
       })
 
   }
-
+  /**
+   *
+   * @param body
+   * @param next
+   * @returns {*}
+   */
   var validateGrantAccessBody = function (body, next) {
     console.log("body", body);
+    if(!body.grant || !body.user) {
+      return next({
+        "validate": false
+      })
+    }
     app.models.User.findOne({where: {"email": body.user}}, function (err, user) {
       console.log("User", user);
       if (err) {
@@ -492,47 +518,51 @@ module.exports = function (Repository) {
           "validate": true,
           userId: user.id
         })
-      } else {
+      }
+      if(!user)
+      {
         return next({
           "validate": false
         })
       }
     })
   }
+  /**
+   *
+   * @param source
+   * @param label
+   * @param next
+   */
 
   var grantPermissionsToUser = function (source, label, next) {
-    var Role = app.models.Role;
     var RoleMapping = app.models.RoleMapping;
-
 
     console.log("SOURCE:", source)
     console.log("LABEL:", label)
-
     var permission = source.grant
     //console.log("REPO_GRANT", app.PropertiesMap)
     console.log("PERMISSION", permission)
-
     if (source.grant.length > 1) {
       console.log("ENTRO")
       async.parallel([
         function (callback) {
 
           rm.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[0]].property,
-            RoleMapping.USER, source.userId, function (cb) {
+            RoleMapping.USER, source.userId, source.access, function (cb) {
               console.log("[1]Callback from addPrincipalIdToRole", cb);
-              callback()
+              callback(null, cb)
             })
         },
         function (callback) {
           rm.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[1]].property,
-            RoleMapping.USER, source.userId, function (cb) {
-              console.log("[2]Callback from addPrincipalIdToRole", cb);
-              callback()
+            RoleMapping.USER, source.userId, source.access, function (cb2) {
+              console.log("[2]Callback from addPrincipalIdToRole", cb2);
+              callback(null, cb2)
             })
         }
-      ], function (err) {
-        console.log("-----------FINE-------------")
-        if (!err) return next(true)
+      ], function (err, cb) {
+        console.log("-----------FINE-------------", cb)
+        if (!err && cb[0] != false || cb[1] != false) return next(true)
         else return next(false);
 
       });
@@ -540,9 +570,9 @@ module.exports = function (Repository) {
     else {
       console.log("SINGOLA RULE", source)
       rm.addPrincipalIdToRole(app.PropertiesMap[label + permission].property,
-        RoleMapping.USER, source.userId, function (callback) {
+        RoleMapping.USER, source.userId, source.access, function (callback) {
           console.log("[3]Callback from addPrincipalIdToRole", callback);
-          return next(true)
+          return next(callback)
         })
     }
 
@@ -555,29 +585,26 @@ module.exports = function (Repository) {
    * @constructor
    */
   Repository.ACLtoRepository = function (req, res, next) {
-    console.log("grantAccess", req.body);
+    console.log("[ACLtoRepository]", req.body);
     validateGrantAccessBody(req.body, function (isvalidate) {
-      if (!isvalidate) return res.status(400).send({message: 'Bad payload'})
-      console.log("Validate:", isvalidate);
-      // it assign permissions to repository
-      var payload = {
-        "userId": isvalidate.userId,
-        "grant": req.body.grant
-      }
-      grantPermissionsToUser(payload, 'Repo', function (permission) {
-        if (permission) {
-          var payload = {
-            "repositoryName": req.params.repo_name,
-            "collectionName": null,
-            "userId": isvalidate.userId
+      if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
+      {
+        var payload = {
+          "userId": isvalidate.userId,
+          "grant": req.body.grant,
+          "access": {
+            "repositoryName": req.params.repo_name
           }
-          app.models.access.create(payload, function (err, entry) {
-            if (err) throw err;
-            logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
-            res.sendStatus(200);
-          })
         }
-      })
+        grantPermissionsToUser(payload, 'Repo', function (permission) {
+          if (permission) {
+            console.log("PERMISSION:", permission);
+            res.status(200).send({message: "ACL has been added"});
+          } else {
+            res.status(409).send({message: "ACL is already exists"});
+          }
+        })
+      }
     })
   }
 
@@ -592,11 +619,15 @@ module.exports = function (Repository) {
   Repository.ACLtoCollection = function (req, res, next) {
     console.log("grantAccess", req.body);
     validateGrantAccessBody(req.body, function (isvalidate) {
-      if (!isvalidate) return res.status(400).send({message: 'Bad payload'})
+      if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
       console.log("Validate:", isvalidate);
       var payload = {
         "userId": isvalidate.userId,
-        "grant": req.body.grant
+        "grant": req.body.grant,
+        "access": {
+          "repositoryName": req.params.repo_name,
+          "collectionName": req.params.collection_name
+        }
       }
       grantPermissionsToUser(payload, 'Coll', function (permission) {
         if (permission) {
@@ -604,34 +635,25 @@ module.exports = function (Repository) {
             console.log("ITEM_GRANT", req.body.item_grant);
             var payload = {
               "userId": isvalidate.userId,
-              "grant": req.body.item_grant
+              "grant": req.body.item_grant,
+              "access": {
+                "repositoryName": req.params.repo_name,
+                "collectionName": req.params.collection_name
+              }
             }
             grantPermissionsToUser(payload, 'Item', function (permission) {
               if (permission) {
-                var payload = {
-                  "repositoryName": req.params.repo_name,
-                  "collectionName": req.params.collection_name,
-                  "userId": isvalidate.userId
-                }
-                app.models.access.create(payload, function (err, entry) {
-                  if (err) throw err;
-                  logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
-                  res.sendStatus(200);
-                })
+                res.status(200).send({message: "ACL has been added"});
+              } else {
+                res.status(409).send({message: "ACL is already exists"});
               }
             })
           } else {
-            var payload = {
-              "repositoryName": req.params.repo_name,
-              "collectionName": req.params.collection_name,
-              "userId": isvalidate.userId
-            }
-            app.models.access.create(payload, function (err, entry) {
-              if (err) throw err;
-              logger.debug("ACLs are successufully assigned to user. ACLs ID: ", entry);
-              res.sendStatus(200);
-            })
+            res.status(200).send({message: "ACL has been added"});
           }
+        }
+        else {
+          res.status(409).send({message: "ACL is already exists"});
         }
       })
     })
@@ -644,7 +666,7 @@ module.exports = function (Repository) {
    * @param next
    */
   Repository.getACLforRepository = function (req, res, next) {
-    app.models.User.find({where: {"email": req.params.acls_for_user}, include: 'accesses'}, function (err, access) {
+    app.models.User.find({where: {"email": req.params.acls_for_user}}, function (err, access) {
       //app.models.access.find({where: {"repositoryName": req.params.repo_name}},{include:'users'}, function (err, access) {
       if (err) {
         console.log("ERR:", err)
@@ -659,124 +681,27 @@ module.exports = function (Repository) {
           return res.sendStatus(500)
         }
         var roleMappedTo = []
-        /*
-         mapping.forEach(function (map) {
-         app.models.Role.findById(map.roleId, function (err, role) {
-         console.log("RoleName:", role)
-         roleMappedTo.push({"RoleName": role.name, "MappingId": map.id})
-         })
-         } //return res.status(200).send({"acls": access, "mapping": roleMappedTo})
-         )
-         */
         var l = mapping.length
         var count = 0;
         async.forEach(mapping, function (map, callback) {
           app.models.Role.findById(map.roleId, function (err, role) {
-            roleMappedTo.push({"RoleName": role.name, "MappingId": map.id})
+            roleMappedTo.push({
+              "RoleName": role.name,
+              "MappingId": map.id,
+              "Repositories": map.repositoryName,
+              "Collections": map.collectionName
+            })
             count = count + 1;
             if (count == l) {
-              console.log("callabck");
               return res.status(200).send({"acls": access, "mapping": roleMappedTo})
-            }
-            else {
-              console.log("Count:", count + ' L:', l);
             }
           })
         }, function () {
           console.log('iterating done');
           return res.status(200).send({"acls": access, "mapping": roleMappedTo})
         });
-
       })
     })
-  }
-
-  Repository.grantAccess = function (req, res, next) {
-    console.log("grantAccess", req.body);
-    console.log("PropertyMap", app.PropertiesMap)
-    return res.status(200).send({message: 'Disabled'})
-    /*
-     validateGrantAccessBody(req.body, function (validate) {
-     if (!validate) return res.status(400).send({message: 'Bad payload'})
-     /!*if (req.body.repositoryPermission.grant.length >1) {
-     var repo_grant = req.body.repositoryPermission.grant
-     console.log("REPO_GRANT",app.PropertiesMap)
-     //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property)
-     //console.log("------------->RUOLO:",app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property)
-     async.parallel([
-     function(callback) {
-
-     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[0]].property,
-     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
-     console.log("Callback from addPrincipalIdToRole", cb);
-     callback
-     })
-     },
-     function(callback) {
-     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+repo_grant.split('-')[1]].property,
-     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(cb) {
-     console.log("Callback from addPrincipalIdToRole", cb);
-     callback
-     })
-     }
-     ], function(err) {
-     console.log('Repository ACL done');
-     var payload = {
-     "repositoryName":req.body.repositoryPermission.name,
-     "collectionName":req.body.collectionsPermission.name,
-     "userId":"5630e21d481cf6072a68b57c"
-     }
-     app.models.access.create(payload,function(err,entry){
-     if(err) throw err;
-     console.log("Entry",entry);
-     res.sendStatus(200);
-     })
-     });
-
-     }
-     else
-     {
-     console.log("------------->RUOLO:",app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property)
-     rm.addPrincipalIdToRole(app.PropertiesMap['Repo'+req.body.repositoryPermission.grant].property,
-     RoleMapping.USER,'5630e21d481cf6072a68b57c',function(callback) {
-     console.log("Callback from addPrincipalIdToRole", callback);
-     callback
-     })
-     }*!/
-
-     grantPermissionsToUser(req.body.repositoryPermission, 'Repo', function (callback) {
-     if (callback) {
-     console.log("Ritorno 1")
-
-     grantPermissionsToUser(req.body.collectionsPermission, 'Coll', function (callback) {
-     if (callback) {
-     console.log("Ritorno 2")
-
-     grantPermissionsToUser(req.body.itemsPermission, 'Item', function (callback) {
-     if (callback) {
-     console.log("Ritorno 3")
-
-     console.log('Repository ACL done');
-     var payload = {
-     "repositoryName": req.body.repositoryPermission.name,
-     "collectionName": req.body.collectionsPermission.name,
-     "userId": "5630e21d481cf6072a68b57c"
-     }
-     app.models.access.create(payload, function (err, entry) {
-     if (err) throw err;
-     console.log("Entry", entry);
-     res.sendStatus(200);
-     })
-     }
-     })
-     }
-     })
-     }
-     })
-
-
-     })
-     */
   }
 
 
@@ -786,6 +711,9 @@ module.exports = function (Repository) {
    *
    *
    * */
+
+
+
 
   Repository.beforeRemote('getRepository', function (context, user, final) {
 
@@ -995,6 +923,16 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   });
 
+  Repository.remoteMethod('editRepository', {
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    http: {path: '/:repo_name/', verb: 'put'},
+
+    returns: {arg: 'data', type: 'object'}
+  });
+
 
   Repository.remoteMethod('getCollection', {
     accepts: [
@@ -1004,6 +942,16 @@ module.exports = function (Repository) {
     returns: {arg: 'instance', type: 'array'},
     http: {path: '/:repo_name/:collection_name', verb: 'get'}
   });
+
+  Repository.remoteMethod('editCollection', {
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'instance', type: 'array'},
+    http: {path: '/:repo_name/:collection_name', verb: 'put'}
+  });
+
 
   Repository.remoteMethod('getCollectionSchema', {
     accepts: [
@@ -1126,9 +1074,8 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   })
 
-
-  Repository.remoteMethod('grantAccess', {
-    http: {path: '/grantAccess', verb: 'post'},
+  Repository.remoteMethod('ACLtoCollection', {
+    http: {path: '/:repo_name/:collection_name/_acls', verb: 'put'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -1136,24 +1083,52 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   })
 
+
   /*-------------------------------------OBSERVE---------------------------------------------------*/
 
 
-  Repository.observe('access', function (context, final) {
+  /*Repository.observe('access', function (context, final) {
 
-    //context.query.where = { name : 'animals'};
-    //context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
-    return final();
-  })
+   //context.query.where = { name : 'animals'};
+   //context.query.fields = {'location':false,'coll_db.password': false, 'coll_db.username': false, 'coll_db.port': false, 'id': false}
+   return final();
+   })*/
 
   Repository.observe('before delete', function (ctx, final) {
-    console.log('Going to delete %s matching %j',
-      ctx.Model.pluralModelName,
-      ctx.where, ctx.app);
-    final();
+
+    var req = {
+      params: {
+        repo_name: ctx.where.id
+      }
+    };
+    tl.getRepository(req, null, function (next) {
+      if (next) {
+        app.repositoryModel.find(function (err, value) {
+          if (err) throw err;
+          console.log("Value", value);
+
+          if (value && value.length > 0) {
+            error = sendError(403, err);
+            return final(error);
+
+          } else {
+            app.models.Repository.findOne({where: {"name": ctx.where.id}}, function (err, repo) {
+              if (err) throw err;
+              ctx.where.id = repo.id
+              console.log('Going to delete %s matching %j',
+                ctx.Model.pluralModelName,
+                ctx.where, ctx.app);
+              return final();
+            })
+          }
+
+        })
+      }
+    })
   });
 
   Repository.observe('before save', function (context, final) {
+    if (context.currentInstance) return final()
     console.log('Going to create Repository');
     console.log("Body:", context.instance);
     var req = {body: context.instance};
@@ -1189,8 +1164,8 @@ module.exports = function (Repository) {
 
 
   Repository.observe('after save', function (context, final) {
-    console.log('Going to POST SAVE Repository', context.instance);
-
+    console.log('Going to POST SAVE Repository');
+    if (context.isNewInstance == false) return final()
     var repositoryDB = app.dataSources.repoDB;
 
     service.createTable(repositoryDB, app.bodyReadToWrite, function (callback) {

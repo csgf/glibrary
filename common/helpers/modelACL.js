@@ -24,7 +24,7 @@ module.exports = function (app) {
             roleId: role.id
           }
         }, function (e, mapping) {
-          console.log("ADMIN MAPPING",mapping)
+          console.log("ADMIN MAPPING", mapping)
           if (mapping) {
             next(true)
           } else next(false)
@@ -34,11 +34,148 @@ module.exports = function (app) {
       }
     })
   }
+
+
+  var searchStringInArray = function searchStringInArray(str, strArray) {
+    console.log("strArray", strArray[0].name)
+    for (var j = 0; j < strArray.length; j++) {
+      if (strArray[j].name == str) return true;
+    }
+    return false;
+  }
+  var addRoleMappingForRepositoryAndCollection = function (access, principalId, principalType, roleName, kindOfMapping, next) {
+
+    var Role = app.models.Role;
+    var RoleMapping = app.models.RoleMapping;
+    console.log("[addMappingForCollection]")
+    app.models.Role.findOne({where: {'name': roleName}}, function (err, role) {
+      if (err) {
+        console.log('Role.findOne Error', err);
+        next(false);
+      }
+      if (role) {
+        console.log("------------------------------------ ")
+        console.log("[Role.id]:", role.id)
+        console.log("[Role.name]:", role.name)
+        console.log("[principalType]:", principalType)
+        console.log("[principalId]:", principalId)
+        console.log("------------------------------------ ")
+
+
+        RoleMapping.findOne({
+          where: {
+            "and": [{principalType: principalType},
+              {principalId: principalId},
+              {roleId: role.id}]
+          }
+        }, function (e, mapping) {
+          if (mapping) {
+
+            console.log("kindOfMapping: ", kindOfMapping)
+
+
+            console.log("******************Mapping trovato per ", mapping);
+            if (kindOfMapping == 'collectionName') {
+              var arrayToScan = mapping.collectionName
+              var valueToPush = access.collectionName
+            }
+            if (kindOfMapping == 'repositoryName') {
+              var arrayToScan = mapping.repositoryName
+              var valueToPush = access.repositoryName
+            }
+            console.log("******************valueToPush ", valueToPush);
+
+            var result = searchStringInArray(valueToPush, arrayToScan)
+            console.log("RESULT", result);
+            if (result) {
+              console.log("***DUPLICATO***", valueToPush)
+              return next(false)
+            }
+           else {
+              console.log(kindOfMapping, " da AGGIUNGERE");
+              arrayToScan.push({"name": valueToPush})
+              RoleMapping.update(
+                {
+                  "id": mapping.id
+                },
+                {
+                  principalType: principalType,
+                  principalId: principalId,
+                  roleId: role.id,
+                  roleName: roleName,
+                  repositoryName: mapping.repositoryName,
+                  collectionName: mapping.collectionName
+
+                }, function (err, map) {
+                  if (err) {
+                    console.log('[addPrincipalIdToRole][Error while Adding collection to existing array] Error', err);
+                    return next(false);
+                  }
+                  console.log("[addPrincipalIdToRole][Added collection to existing array]")
+                  return next(true);
+                })
+            }
+
+          } else {
+
+            console.log("NESSUN MAPPING TRA UTENTE E RUOLO", roleName)
+            repositoryName = []
+            collectionName = []
+            if (kindOfMapping == 'collectionName') {
+              console.log("kindOfMapping == 'collectionName")
+
+              repositoryName.push({"name": access.repositoryName})
+              collectionName.push({"name": access.collectionName})
+              var payloadToCreate = {
+                principalType: principalType,
+                principalId: principalId,
+                roleId: role.id,
+                roleName: roleName,
+                repositoryName: repositoryName,
+                collectionName: collectionName
+              }
+
+            }
+            if (kindOfMapping == 'repositoryName') {
+              repositoryName.push({"name": access.repositoryName})
+              console.log("kindOfMapping == 'repositoryName")
+              var payloadToCreate = {
+                principalType: principalType,
+                principalId: principalId,
+                roleId: role.id,
+                roleName: roleName,
+                repositoryName: repositoryName
+              }
+            }
+            console.log("repositoryName", repositoryName)
+            console.log("collectionName", collectionName)
+
+            role.principals.create(
+              payloadToCreate, function (err, principal) {
+
+                if (err) {
+                  console.log('[addPrincipalIdToRole][role.principals.create] Error', err);
+                  return next(false);
+                } else {
+                  console.log("[addPrincipalIdToRole][Add new RoleMapping]", '')
+                  return next(true);
+                }
+              })
+          }
+        })
+      }
+      else {
+        console.log("[addPrincipalIdToRole]!Role");
+        return next(false);
+      }
+    })
+  }
+
+
   return {
 
 
-
-  isAllowed: function (context, next) {
+    isAllowed: function (context, next) {
 
       var ctx = loopback.getCurrentContext();
       var accessToken = ctx.get('accessToken');
@@ -46,6 +183,7 @@ module.exports = function (app) {
       if (!req.params) return next(500);
 
       var collection_name = (!req.params.collection_name ? null : req.params.collection_name )
+      var item_id = (!req.params.item_id ? null : req.params.item_id);
       var repository_name = req.params.repo_name
       var userId = accessToken.userId
 
@@ -53,50 +191,118 @@ module.exports = function (app) {
       if (!userId) {
         return next(401)
       }
-    console.log("USERID",userId);
-
+      console.log("USERID", userId);
+      console.log("REQ", context.req.method)
+      var method = context.req.method
       isAdmin(userId, function (hasAdminRole) {
         console.log("NEXT ADMIN", hasAdminRole)
         if (hasAdminRole) return next(200)
         else {
-          if (collection_name != null) {
-            var where = {
-              where: {
-                and: [
-                  {"repositoryName": repository_name},
-                  {"collectionName": collection_name},
-                  {"userId": userId}
-                ]
-              }
+          if (method == 'GET') {
+            if (collection_name != null) {
+              console.log("app.RoleMap", app.RoleMap)
+              console.log("Role getCollection", app.RoleMap['getCollection'])
+              if (item_id != null) {
+                roleId = app.RoleMap['getCollectionItem'].id
+              } else roleId = app.RoleMap['getCollection'].id
+              and = [
+                {"repositoryName.name": repository_name},
+                {"collectionName.name": collection_name},
+                {"principalId": userId},
+                {"roleId": roleId}
+              ]
             }
-          } else {
-            console.log("collection_name NULL")
-            var where = {
-              where: {
-                and: [
-                  {"userId": userId},
-                  {"repositoryName": repository_name},
-                  {"collectionName": null}
+            else {
+              roleId = app.RoleMap['getRepository'].id
+              and = [
+                {"repositoryName.name": repository_name},
+                {"principalId": userId},
+                {"roleId": roleId}
+              ]
+            }
 
-                ]
-              }
+          }
+          if (method == 'POST') {
+            if (collection_name != null) {
+              console.log("app.RoleMap", app.RoleMap)
+              console.log("Role getCollection", app.RoleMap['getCollection'])
+              roleId = app.RoleMap['populateCollection'].id
+              and = [
+                {"repositoryName.name": repository_name},
+                {"collectionName.name": collection_name},
+                {"principalId": userId},
+                {"roleId": roleId}
+              ]
+            }
+            else {
+              roleId = app.RoleMap['createCollection'].id
+              and = [
+                {"repositoryName.name": repository_name},
+                {"principalId": userId},
+                {"roleId": roleId}
+              ]
+            }
+
+          }
+          var where = {
+            where: {
+              and: and
             }
           }
           console.log("WHERE:", JSON.stringify(where));
-          app.models.access.findOne(where, function (er, access) {
-            console.log("ACCESS:", access)
-
-            if (access) {
-              if (collection_name == null && access.collectionName) {
-                return next(401);
-              }
-              else
-                return next(200)
-            } else {
-              return next(401)
-            }
+          app.models.RoleMapping.findOne(where, function (err, mapping) {
+            if (err) throw err;
+            console.log("Mapping:", mapping);
+            if (mapping) return next(200)
+            else return next(401)
           })
+
+
         }
+
+
+        /*
+         else {
+         if (collection_name != null) {
+         var where = {
+         where: {
+         and: [
+         {"repositoryName": repository_name},
+         {"collectionName": collection_name},
+         {"userId": userId}
+         ]
+         }
+         }
+         } else {
+         console.log("collection_name NULL")
+         var where = {
+         where: {
+         and: [
+         {"userId": userId},
+         {"repositoryName": repository_name},
+         {"collectionName": null}
+
+         ]
+         }
+         }
+         }
+         console.log("WHERE:", JSON.stringify(where));
+         app.models.access.findOne(where, function (er, access) {
+         console.log("ACCESS:", access)
+
+         if (access) {
+         if (collection_name == null && access.collectionName) {
+         return next(401);
+         }
+         else
+         return next(200)
+         } else {
+         return next(401)
+         }
+         })
+         }
+         */
+
       })
     },
     createRole: function createRole(roleName, next) {
@@ -123,76 +329,43 @@ module.exports = function (app) {
       })
     },
 
-    addPrincipalIdToRole: function addPrincipalIdToRole(roleName, principalType, principalId, next) {
 
-      var Role = app.models.Role;
-      var RoleMapping = app.models.RoleMapping;
+    addPrincipalIdToRole: function addPrincipalIdToRole(roleName, principalType, principalId, access, next) {
+      console.log("[addPrincipalIdToRole]", roleName + " " + principalId + " " + principalType)
+      /*
+       ISSUE
+       The principleId field in
+       the Rolemapping model is stored as a string in mongodb
+       Delete the following
+        principalId = (principalId).toString() if you plan to use relation db
+       */
 
-      console.log("[addPrincipalIdToRole]",roleName + " " + principalId + " " + principalType)
-      //cerco il ruolo ed estraggo id
-      app.models.Role.findOne({ where: {'name': roleName}}, function (err, role) {
-        if (err) {
-          console.log('Role.findOne Error', err);
-          next(false);
+      principalId = (principalId).toString()
 
-        }
-        if (role) {
-          console.log("------------------------------------ ")
-          console.log("[Role.id]:", role.id)
-          console.log("[Role.name]:", role.name)
+      if (access.repositoryName && access.collectionName) {
 
-          console.log("[principalType]:", principalType)
-          console.log("[principalId]:", principalId)
-          console.log("------------------------------------ ")
+        addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'collectionName', function (mapping) {
+          console.log("[Callback from addMapping For collectionName]", mapping)
+          if (mapping) return next(true);
+          else return next(false)
+        })
 
-          /*
-           ISSUE
-           The principleId field in
-           the Rolemapping model is stored as a string in mongodb
-           Delete principalId = (principalId).toString() if you plan to use relation db
-           */
+      }
+      if (access.repositoryName && !access.collectionName) {
+        addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'repositoryName', function (mapping) {
+          console.log("[Callback from addMapping For repositoryName]", mapping)
+          if (mapping) return next(true);
+          else return next(false)
+        })
+      }
 
-          principalId = (principalId).toString()
 
-          RoleMapping.find({where:  {"and" :[{principalId: principalId},{roleId:role.id}]}}, function (err, rolemapping) {
-            if (err) {
-              console.log('RoleMapping.find', err);
-              next(false);
-            }
-            if (rolemapping && rolemapping.length > 0) {
-              console.log("[addPrincipalIdToRole]:esiste return false", rolemapping.length);
-              return next(false)
-            }
-            console.log("!rolemapping", principalType + ' ' + principalId + " " + rolemapping.length);
-            role.principals.create(
-              {
-                principalType: principalType,
-                principalId: principalId
-              }, function (err, principal) {
-
-                if (err) {
-                  console.log('[addPrincipalIdToRole][role.principals.create] Error', err);
-                  next(false);
-                } else {
-                  console.log("[addPrincipalIdToRole] OK", '')
-                  next(true);
-                }
-              })
-          })
-        }
-        else {
-          console.log("[addPrincipalIdToRole]!Role");
-          next(false);
-        }
-      })
     },
 
     loadACL: function loadACL(modelName, next) {
 
       ACL.find({where: {model: modelName}}, function (err, acl) {
-
         if (acl && acl.length > 0) {
-
           acl.forEach(function (entry) {
             if (app.models[modelName]) {
               console.log(" entry:", entry);
@@ -202,10 +375,7 @@ module.exports = function (app) {
           next(true)
 
         }
-
-
       })
-
     },
 
     setACLtoModel: function setACLToModel(model, acl, next) {
@@ -231,7 +401,5 @@ module.exports = function (app) {
     roleResolver: function roleResolver() {
 
     },
-
-
   }
 }

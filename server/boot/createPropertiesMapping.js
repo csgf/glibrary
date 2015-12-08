@@ -17,6 +17,8 @@ var repository = app.models['repository'];
 module.exports = function(app) {
 
   PropertiesMap = {}
+  RoleMap = {}
+  app.RoleMap = RoleMap;
 
 
   PropertiesMap['RepoR'] = {
@@ -39,6 +41,18 @@ module.exports = function(app) {
 
   app.PropertiesMap = PropertiesMap;
   console.log("Create: app.PropertiesMap",app.PropertiesMap)
+
+  app.models.Role.find(function(err,roles){
+
+    roles.forEach(function(role) {
+        console.log("Role",role.name)
+      app.RoleMap[role.name] = { id: role.id }
+
+
+    })
+
+  })
+
 
 }
 
