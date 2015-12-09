@@ -13,9 +13,12 @@ var RepoDataSource = {};
 
 var logger = require("./logger");
 
-var RoleMapper = require('./rolemapping');
 
-
+/**
+ *
+ * @param body
+ * @param next
+ */
 var validatereqbodyname = function (body, next) {
 
   if (body && body.name) {
@@ -247,9 +250,9 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
           logger.debug('[buildModelFromRDBMS][Model]:', camelize(options.name).trim().capitalize().value());
 
           //var nome = "FragebogenAutor"
-          var nome = Object.keys(models)[0];
-          var modello = app.model(models[nome]);
-          return callback(modello)
+          var name = Object.keys(models)[0];
+          var model = app.model(models[name]);
+          return callback(model)
 
           //app.model(models[camelize(options.name).trim().capitalize().value()])
           //return callback(models[camelize(options.name).trim().capitalize().value()]);
@@ -278,6 +281,7 @@ var buildModelFromRDBMS = function (app, datasource, table, options, callback) {
  */
 var buildModelFromNoSQL = function (app, datasource, table, callback) {
 
+  // just a default payload. Optional
   var json_test = {
     firstname: '',
     lastname: ''
@@ -544,8 +548,6 @@ var setModelName = function (app, req_params) {
 var setModelTable = function (app, req_params) {
   //var modelTable = req_params.repo_name + "_" + req_params.collection_name;
   var modelTable = req_params.repo_name + "+" + req_params.collection_name;
-
-
   return modelTable;
 }
 /**
@@ -556,11 +558,11 @@ var setModelTable = function (app, req_params) {
  */
 var setReplicaRelation = function (app, model, next) {
   var relation = require("./modelRelation");
-  var rl = new relation(app);
+  var _relation = new relation(app);
   var Replica = app.models.Replica;
 
   //set hasMany Replicas
-  rl.setModelRelation(model, Replica, 'collectionId', 'replicas', function (cb) {
+  _relation.setModelRelation(model, Replica, 'collectionId', 'replicas', function (cb) {
     logger.debug("[setReplicaRelation][", model.definition.name + " hasMany Replica]");
     // TODO: check cb value before return next()
     return next(cb)
@@ -646,13 +648,17 @@ module.exports = function (app) {
   return {
 
     getRepository: function getRepository(req, res, next) {
+      console.log("chiamo loadModel.getRepository")
       loadRepository(app, req, res, function (cb) {
         if (cb) {
           next.module = cb;
           logger.debug("[getRepository][next.module]= ", cb.definition.name);
           logger.debug("------------end of getRepository---------------")
           return next(cb);
-        } else return res.sendStatus(404);
+        } else {
+          console.log("QUIO------>>>",cb)
+          return next(false);
+        }
       })
     },
     getCollection: function getCollection(req, res, next) {
@@ -668,7 +674,7 @@ module.exports = function (app) {
         logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
           " DB =", app.CollectionDataSource.settings.database);
 
-         return  next();
+         return  next(true);
       }
 
       else {
@@ -734,7 +740,7 @@ module.exports = function (app) {
                       // sets relation btw Collection Model and Replica Model
                       setReplicaRelation(app, model, function (callback) {
                         if (callback) {
-                          return next();
+                          return next(true);
                         }
                       })
                       //return next();

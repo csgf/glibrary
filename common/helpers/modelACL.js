@@ -11,6 +11,7 @@ module.exports = function (app) {
   var RoleMapping = app.models.RoleMapping;
   var ACL = app.models.ACL;
   var loopback = require('loopback');
+  var async = require('async')
 
 
   var isAdmin = function (userId, next) {
@@ -37,7 +38,7 @@ module.exports = function (app) {
 
 
   var searchStringInArray = function searchStringInArray(str, strArray) {
-    console.log("strArray", strArray[0].name)
+    console.log("strArray", strArray)
     for (var j = 0; j < strArray.length; j++) {
       if (strArray[j].name == str) return true;
     }
@@ -78,6 +79,7 @@ module.exports = function (app) {
             if (kindOfMapping == 'collectionName') {
               var arrayToScan = mapping.collectionName
               var valueToPush = access.collectionName
+              mapping.repositoryName.push({"name":access.repositoryName})
             }
             if (kindOfMapping == 'repositoryName') {
               var arrayToScan = mapping.repositoryName
@@ -92,8 +94,9 @@ module.exports = function (app) {
               return next(false)
             }
            else {
-              console.log(kindOfMapping, " da AGGIUNGERE");
+              console.log(kindOfMapping, " da AGGIUNGERE",arrayToScan);
               arrayToScan.push({"name": valueToPush})
+             console.log("mapping repos",mapping.repositoryName)
               RoleMapping.update(
                 {
                   "id": mapping.id
@@ -344,16 +347,15 @@ module.exports = function (app) {
 
       if (access.repositoryName && access.collectionName) {
 
-        addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'collectionName', function (mapping) {
-          console.log("[Callback from addMapping For collectionName]", mapping)
-          if (mapping) return next(true);
-          else return next(false)
-        })
-
+            addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'collectionName', function (mapping) {
+              console.log("[1][Callback from addMapping For collectionName]", mapping)
+              if (mapping)  return next(true);
+              else return next(false)
+            })
       }
       if (access.repositoryName && !access.collectionName) {
         addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'repositoryName', function (mapping) {
-          console.log("[Callback from addMapping For repositoryName]", mapping)
+          console.log("[2][Callback from addMapping For repositoryName]", mapping)
           if (mapping) return next(true);
           else return next(false)
         })

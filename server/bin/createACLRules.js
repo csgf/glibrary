@@ -12,7 +12,7 @@ var async = require('async');
 var ACL = app.models.ACL;
 
 /*-- READ repository --*/
-var getRepository = {
+var getRepository_body = {
   "model": "repository",
   "property": "getRepository",
   "accessType": "READ",
@@ -21,7 +21,7 @@ var getRepository = {
   "principalId": "getRepository"
 }
 /*--- Collection ---*/
-var createCollection = {
+var createCollection_body = {
   "model": "repository",
   "property": "createCollection",
   "accessType": "EXECUTE",
@@ -29,7 +29,7 @@ var createCollection = {
   "principalType": "ROLE",
   "principalId": "createCollection"
 }
-var getCollection = {
+var getCollection_body = {
   "model": "repository",
   "property": "getCollection",
   "accessType": "READ",
@@ -39,7 +39,7 @@ var getCollection = {
 
 }
 /*-- Collection Items --*/
-var populateCollection = {
+var populateCollection_body = {
   "model": "repository",
   "property": "populateCollection",
   "accessType": "EXECUTE",
@@ -47,7 +47,7 @@ var populateCollection = {
   "principalType": "ROLE",
   "principalId": "populateCollection"
 }
-var getCollectionItem = {
+var getCollectionItem_body = {
   "model": "repository",
   "property": "getCollectionItem",
   "accessType": "READ",
@@ -62,7 +62,7 @@ async.parallel([
   function (callback) {
     console.log("Creating getRepository ACL ")
 
-    ACL.create(getRepository, function (err, entry) {
+    ACL.create(getRepository_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()
@@ -72,7 +72,7 @@ async.parallel([
   function (callback) {
 
     console.log("Creating createCollection");
-    ACL.create(createCollection, function (err, entry) {
+    ACL.create(createCollection_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()
@@ -81,7 +81,7 @@ async.parallel([
   function (callback) {
 
     console.log("Creating getCollection");
-    ACL.create(getCollection, function (err, entry) {
+    ACL.create(getCollection_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()
@@ -90,7 +90,7 @@ async.parallel([
   function (callback) {
 
     console.log("Creating populateCollection");
-    ACL.create(populateCollection, function (err, entry) {
+    ACL.create(populateCollection_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()
@@ -99,7 +99,7 @@ async.parallel([
   function (callback) {
 
     console.log("Creating getCollectionItem");
-    ACL.create(getCollectionItem, function (err, entry) {
+    ACL.create(getCollectionItem_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()
