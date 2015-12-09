@@ -331,7 +331,23 @@ module.exports = function (app) {
         }
       })
     },
+    removePrincipalIdFromRole: function removePrincipalIdFromRole(options,next) {
+      console.log("Options:",options)
+      var RoleMapping = app.models.RoleMapping;
+/*
+      RoleMapping.findOne({where: {
+        "repositoryName.name":payload.access.repositoryName
+        where: {
+          "and": [{principalType: principalType},
+            {principalId: principalId},
+            {roleId: role.id}]
+        }
 
+      }})
+*/
+
+
+    },
 
     addPrincipalIdToRole: function addPrincipalIdToRole(roleName, principalType, principalId, access, next) {
       console.log("[addPrincipalIdToRole]", roleName + " " + principalId + " " + principalType)
@@ -360,8 +376,6 @@ module.exports = function (app) {
           else return next(false)
         })
       }
-
-
     },
 
     loadACL: function loadACL(modelName, next) {

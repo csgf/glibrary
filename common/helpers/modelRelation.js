@@ -43,7 +43,7 @@ module.exports = function (app) {
             function (err, instance) {
               if (err) {
                 logger.error("[buildRelation][Query Error]", err);
-                res.sendStatus(500);
+                return res.status(500).send({error:err});
               }
               if (!instance) {
                 logger.error("[buildRelation][404 Error]", err);
