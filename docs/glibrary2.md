@@ -4,11 +4,34 @@
 
 * [Overview](#overview)
 * [Authentication](#authentication)
+	* [Login](#login) 
+	* [User creation](#user-creation)
 * [Authorization](#authorization)
+	* [ACLs](#ACLs) 
 * [Repositories](#repositories)
+	* [List repositories](#list-of-all-the-repositories-hosted-on-the-server)
+	* [Create a repository](#create-a-new-repository)
 * [Collections](#collections)
-* [Items](#items)
-
+	* [Create a collection](#create-a-new-collection) 
+	* [Import a collection](#import-data-from-an-existing-relational-database)
+	* [List all the collections](#list-all-the-collections-of-a-repository)
+	* [Collection's schema](#retrieve-the-schema-of-a-collection)
+	* [Delete a collection](#delete-a-collection)
+* [Items](#items-previously-entries)
+	* [Creation](#item-creation)
+	* [Listing](#item-listing)
+	* [Detail](#item-detail)
+	* [Deletion](#item-deletion)
+	* [Update](#item-update)
+* [Replicas](#replicas)
+	* [Creation](#replica-creation)
+	* [List](#retrieve-all-the-replicas-of-the-given-`item_id`)
+	* [Download](#download-a-given-replica)
+	* [Upload](#upload-a-replica)
+	* [Delete](#delete-a-replica)
+* [Relations](#relations)
+	* [Retrieve related items](#retrieve-related-items)
+* [Contacts](#contacts)
 
 ## Overview
 
@@ -444,7 +467,7 @@ GET /v2/repos/comics/dylandog/_schema HTTP/1.1
 }
 ```
 
-### Todo: Delete a collection
+### Delete a collection
 
 ```http
 DELETE /v2/repos/<repo_name>/<collection_name>  HTTP/1.1
@@ -554,11 +577,11 @@ Additional info on the full query syntax can be found [here](https://docs.strong
 
 
 
-### Replicas
+## Replicas
 
 Each item can have one or more attachments, generally the same file stored in different locations, such as Cloud storage servers (Swift based) or Grid Storage Elements (DPM based). So we call them also replicas.
 
-**Replica creation**
+### Replica creation
 
 ```http
 POST /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/ HTTP/1.1
@@ -574,20 +597,20 @@ The first two parameters (`uri` and `type`) are optionals if a `default_storage`
 
 Please note that this API will just create a replica entry for the item, but no actual file will be uploaded from the client. Once the replica has been created you need to use the **Upload** API to transfer the actual file payload.
 
-**Retrieve all the replicas of the given `item_id`**
+### Retrieve all the replicas of the given `item_id`
 
 ```http
 GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/ HTTP/1.1
 ```
 
-**Download a given replica**
+### Download a given replica
 
 
 ```http
 GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
 ```
 
-**Upload a replica**
+### Upload a replica
 
 Upload the file payload to the destinaton storage. This requires two subsequent API request.
 
@@ -613,7 +636,7 @@ PUT http://stack-server-01.ct.infn.it:8080/v2/AUTH_51b2f4e508144fa5b0c28f02b1618
 
 It will return a 201 status code, if the upload will complete successfully
 
-**Delete a replica**
+### Delete a replica
 
 ```http
 DELETE /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
@@ -622,7 +645,7 @@ DELETE /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP
 
 **Example**
 
-### Relations
+## Relations
 
 One to many relations can be created between collections of the same repository, properly setting a foreign key.
 
@@ -641,7 +664,7 @@ _fk_					| the *foreign key* of _relatedCollection_ that match the _id_ of <*col
 
 In practice, you should set the _fk_ in such a way `collection_name.id` == `relatedCollection.fk`
 
-**Retrive related items**
+### Retrieve related items
 
 ```http
 GET /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection>
