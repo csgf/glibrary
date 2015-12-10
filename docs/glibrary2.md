@@ -25,7 +25,7 @@
 	* [Update](#item-update)
 * [Replicas](#replicas)
 	* [Creation](#replica-creation)
-	* [List](#retrieve-all-the-replicas-of-the-given-`item_id`)
+	* [List](#retrieve-all-the-replicas-of-the-given-item_id)
 	* [Download](#download-a-given-replica)
 	* [Upload](#upload-a-replica)
 	* [Delete](#delete-a-replica)
