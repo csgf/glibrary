@@ -38,7 +38,6 @@ module.exports = function (app) {
 
 
   var searchStringInArray = function searchStringInArray(str, strArray) {
-    console.log("strArray", strArray)
     for (var j = 0; j < strArray.length; j++) {
       if (strArray[j].name == str) return true;
     }
@@ -48,19 +47,20 @@ module.exports = function (app) {
 
     var Role = app.models.Role;
     var RoleMapping = app.models.RoleMapping;
-    console.log("[addMappingForCollection]")
+    //console.log("[addMappingForCollection]")
     app.models.Role.findOne({where: {'name': roleName}}, function (err, role) {
       if (err) {
         console.log('Role.findOne Error', err);
         next(false);
       }
       if (role) {
-        console.log("------------------------------------ ")
-        console.log("[Role.id]:", role.id)
-        console.log("[Role.name]:", role.name)
-        console.log("[principalType]:", principalType)
-        console.log("[principalId]:", principalId)
-        console.log("------------------------------------ ")
+
+       // console.log("------------------------------------ ")
+       // console.log("[Role.id]:", role.id)
+      //  console.log("[Role.name]:", role.name)
+       // console.log("[principalType]:", principalType)
+       // console.log("[principalId]:", principalId)
+       // console.log("------------------------------------ ")
 
 
         RoleMapping.findOne({
@@ -72,10 +72,8 @@ module.exports = function (app) {
         }, function (e, mapping) {
           if (mapping) {
 
-            console.log("kindOfMapping: ", kindOfMapping)
-
-
-            console.log("******************Mapping trovato per ", mapping);
+           // console.log("kindOfMapping: ", kindOfMapping)
+           // console.log("Mapping trovato per ", mapping.roleName);
             if (kindOfMapping == 'collectionName') {
               var arrayToScan = mapping.collectionName
               var valueToPush = access.collectionName
@@ -85,18 +83,18 @@ module.exports = function (app) {
               var arrayToScan = mapping.repositoryName
               var valueToPush = access.repositoryName
             }
-            console.log("******************valueToPush ", valueToPush);
+            //console.log("******************valueToPush ", valueToPush);
 
             var result = searchStringInArray(valueToPush, arrayToScan)
-            console.log("RESULT", result);
+            //console.log("RESULT", result);
             if (result) {
-              console.log("***DUPLICATO***", valueToPush)
+            //  console.log("***DUPLICATO***", valueToPush)
               return next(false)
             }
            else {
-              console.log(kindOfMapping, " da AGGIUNGERE",arrayToScan);
+             // console.log(kindOfMapping, " da AGGIUNGERE",arrayToScan);
               arrayToScan.push({"name": valueToPush})
-             console.log("mapping repos",mapping.repositoryName)
+           //  console.log("mapping repos",mapping.repositoryName)
               RoleMapping.update(
                 {
                   "id": mapping.id
@@ -114,7 +112,7 @@ module.exports = function (app) {
                     console.log('[addPrincipalIdToRole][Error while Adding collection to existing array] Error', err);
                     return next(false);
                   }
-                  console.log("[addPrincipalIdToRole][Added collection to existing array]")
+                //  console.log("[addPrincipalIdToRole][Added collection to existing array]")
                   return next(true);
                 })
             }
@@ -125,8 +123,7 @@ module.exports = function (app) {
             repositoryName = []
             collectionName = []
             if (kindOfMapping == 'collectionName') {
-              console.log("kindOfMapping == 'collectionName")
-
+           //   console.log("kindOfMapping == 'collectionName")
               repositoryName.push({"name": access.repositoryName})
               collectionName.push({"name": access.collectionName})
               var payloadToCreate = {
@@ -141,7 +138,7 @@ module.exports = function (app) {
             }
             if (kindOfMapping == 'repositoryName') {
               repositoryName.push({"name": access.repositoryName})
-              console.log("kindOfMapping == 'repositoryName")
+           //   console.log("kindOfMapping == 'repositoryName")
               var payloadToCreate = {
                 principalType: principalType,
                 principalId: principalId,
@@ -150,17 +147,15 @@ module.exports = function (app) {
                 repositoryName: repositoryName
               }
             }
-            console.log("repositoryName", repositoryName)
-            console.log("collectionName", collectionName)
 
             role.principals.create(
               payloadToCreate, function (err, principal) {
 
                 if (err) {
-                  console.log('[addPrincipalIdToRole][role.principals.create] Error', err);
+                //  console.log('[addPrincipalIdToRole][role.principals.create] Error', err);
                   return next(false);
                 } else {
-                  console.log("[addPrincipalIdToRole][Add new RoleMapping]", '')
+                  //console.log("[addPrincipalIdToRole][Add new RoleMapping]", '')
                   return next(true);
                 }
               })
@@ -168,11 +163,13 @@ module.exports = function (app) {
         })
       }
       else {
-        console.log("[addPrincipalIdToRole]!Role");
+        //console.log("[addPrincipalIdToRole]!Role");
         return next(false);
       }
     })
   }
+
+
 
 
   return {
@@ -194,8 +191,8 @@ module.exports = function (app) {
       if (!userId) {
         return next(401)
       }
-      console.log("USERID", userId);
-      console.log("REQ", context.req.method)
+      console.log("-----USERID", userId);
+      console.log("-----REQ", context.req.method)
       var method = context.req.method
       isAdmin(userId, function (hasAdminRole) {
         console.log("NEXT ADMIN", hasAdminRole)
@@ -350,7 +347,7 @@ module.exports = function (app) {
     },
 
     addPrincipalIdToRole: function addPrincipalIdToRole(roleName, principalType, principalId, access, next) {
-      console.log("[addPrincipalIdToRole]", roleName + " " + principalId + " " + principalType)
+      //console.log("[addPrincipalIdToRole]", roleName + " " + principalId + " " + principalType)
       /*
        ISSUE
        The principleId field in
@@ -364,14 +361,14 @@ module.exports = function (app) {
       if (access.repositoryName && access.collectionName) {
 
             addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'collectionName', function (mapping) {
-              console.log("[1][Callback from addMapping For collectionName]", mapping)
+              console.log("--[1][Callback from addMapping For collectionName]", roleName)
               if (mapping)  return next(true);
               else return next(false)
             })
       }
       if (access.repositoryName && !access.collectionName) {
         addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'repositoryName', function (mapping) {
-          console.log("[2][Callback from addMapping For repositoryName]", mapping)
+          console.log("--[2][Callback from addMapping For repositoryName]", roleName)
           if (mapping) return next(true);
           else return next(false)
         })

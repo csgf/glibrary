@@ -10,6 +10,7 @@ var async = require('async');
 var Role = app.models.Role;
 
 async.parallel([
+    /*
   function (callback) {
     Role.create({"name": "getRepository"}, function (err, entry) {
       if (err) throw err;
@@ -45,7 +46,79 @@ async.parallel([
       console.log("Role created: ", entry)
       callback()
     })
-  }
-], function (err) { //This is the final callback
+  },
+  function (callback) {
+    Role.create({"name": "editCollectionBody"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "deleteCollection"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "editCollectionItem"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "deleteCollectionItem"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "getCollectionSchema"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  }/*,
+  function (callback) {
+    Role.create({"name": "getReplicas"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "getReplicaById"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "createReplica"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "deleteReplicaById"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
+    Role.create({"name": "uploadReplicaById"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  }*/
+
+
+], function (err) {
     console.log('Role created')
 });

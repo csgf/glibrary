@@ -537,7 +537,7 @@ module.exports = function (Repository) {
                   if (err) return res.status(500).send({error: err})
                   console.log("Count:", replica.count)
                   if (replica.count > 0)
-                    return res.status(200).send({message: "Replica [ "+req.params.replica_id+ " ] has been removed"})
+                    return res.status(200).send({message: "Replica [ " + req.params.replica_id + " ] has been removed"})
                 })
               }
               else {
@@ -617,25 +617,32 @@ module.exports = function (Repository) {
    */
   var validateGrantAccessBody = function (body, next) {
     console.log("body", body);
-    if (!body.grant || !body.user) {
+    if (!body.permissions || !body.username) {
+      console.log("1")
       return next({
         "validate": false
       })
     }
-    app.models.User.findOne({where: {"email": body.user}}, function (err, user) {
+    app.models.User.findOne({where: {"username": body.username}}, function (err, user) {
       console.log("User", user);
       if (err) {
+        console.log("2")
+
         return next({
           "validate": false
         })
       }
       if (user) {
+        console.log("3")
+
         return next({
           "validate": true,
           userId: user.id
         })
       }
       if (!user) {
+        console.log("4")
+
         return next({
           "validate": false
         })
@@ -643,14 +650,76 @@ module.exports = function (Repository) {
     })
   }
 
+  /**
+   *
+   * @param array
+   * @param property
+   * @param value
+   */
+  function findAndRemove(array, property, value) {
+    var oldarray = array;
+    console.log("findAndRemove")
+    array.forEach(function (result, index) {
+      if (result[property] === value) {
+        //Remove from array
+        array.splice(index, 1);
+      }
+    });
+    return oldarray.length != array.length
+  }
 
+  /**
+   *
+   * @param payload
+   * @param label
+   * @param next
+   */
   var removePermissionsToUser = function (payload, label, next) {
+
     var RoleMapping = app.models.RoleMapping;
-
-    var permission = payload.grant
+    var _ = require('underscore')
+    console.log("payload", payload)
     payload.kind = label
-    console.log("GRANT:", app.PropertiesMap[label + permission].property)
 
+    RoleMapping.find({
+      where: {
+        "and": [
+          {"repositoryName.name": payload.repo_name},
+          {"collectionName.name": payload.collection_name},
+          {"principalId": payload.userId}
+        ]
+      }
+    }, function (err, mappers) {
+
+      mappers.forEach(function(mapper){
+
+        var removed_status_1 = findAndRemove(mapper.repositoryName, 'name', 'fishes');
+        var removed_status_2 = findAndRemove(mapper.collectionName, 'name', 'sharks');
+        console.log("-----status_1",removed_status_1);
+        console.log("-----status_2",removed_status_2);
+
+      })
+      mappers.forEach(function(mapper){
+
+        console.log("------mappers-----:",mapper)
+        RoleMapping.update(mapper,function(err,result){
+          if(err) throw err;
+          console.log("result:",result)
+        })
+
+      })
+
+    /*
+      findAndRemove(mappers[0].repositoryName, 'name', 'fishes');
+      findAndRemove(mappers[0].collectionName, 'name', 'sharks');
+
+
+      console.log("mappers", mappers[1].repositoryName,'---'+mappers[1].roleName)
+
+      console.log("mappers", mappers[0].repositoryName)
+      console.log("mappers", mappers[0].collectionName)
+    */
+    })
     /*
      _modelACL.removePrincipalIdFromRole(payload,function(callback){
      console.log("[removePermissionToUser]",callback)
@@ -665,49 +734,159 @@ module.exports = function (Repository) {
    * @param next
    */
 
-  var grantPermissionsToUser = function (source, label, next) {
+  var setPermissionsToUser = function (source, label, next) {
     var RoleMapping = app.models.RoleMapping;
 
-    console.log("SOURCE:", source)
-    console.log("LABEL:", label)
-    var permission = source.grant
-    //console.log("REPO_GRANT", app.PropertiesMap)
-    console.log("PERMISSION", permission)
-    if (source.grant.length > 1) {
-      console.log("[grantPermissionToUser][source.grant.length > 1]")
+    var permissions = source.permissions
+    console.log("[setPermissionsToUser][PERMISSION]", label + permissions)
+    if (permissions.length > 1) {
+
       async.parallel([
         function (callback) {
-
-          _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[0]].property,
-            RoleMapping.USER, source.userId, source.access, function (cb) {
-              console.log("[1]Callback from grantPermissionsToUser", cb);
-              callback(null, cb)
-            })
+          var options = {
+            userId: source.userId,
+            permission: label + permissions[0],
+            endpoints: source.access
+          }
+          processRoleforEachPermission(options, function (next) {
+            console.log("#########################[setPermissionsToUser][1A][Callback from processRole]:", next);
+            callback(null, next)
+          })
         },
         function (callback) {
-          _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permission.split('-')[1]].property,
-            RoleMapping.USER, source.userId, source.access, function (cb2) {
-              console.log("[2]Callback from grantPermissionsToUser", cb2);
-              callback(null, cb2)
-            })
+          var options = {
+            userId: source.userId,
+            permission: label + permissions[1],
+            endpoints: source.access
+          }
+          processRoleforEachPermission(options, function (next) {
+            console.log("[setPermissionsToUser][2A][Callback from processRole]:", next);
+            callback(null, next)
+          })
+
         }
-      ], function (err, cb) {
-        console.log("-----------FINE-------------", cb)
-        if (!err && cb[0] != false || cb[1] != false) return next(true)
+      ], function (err, results) {
+        console.log("-------------------------------------------------------")
+        console.log("[setPermissionsToUser][END ASYNC PARALLEL]", err, results)
+        console.log("-------------------------------------------------------")
+        if (!err && results[0] != false || results[1] != false) return next(true)
         else return next(false);
 
-      });
+      })
+    } else {
+      var options = {
+        permission: label + permissions,
+        endpoints: source.access
+      }
+      processRoleforEachPermission(options, function (cb) {
+        console.log("[3]--NEXT from processRole", cb);
+        if (cb) {
+          return next(true)
+        } else next(false)
+      })
     }
-    else {
-      console.log("[grantPermissionToUser][source.grant.length == 1]", source)
-      _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permission].property,
-        RoleMapping.USER, source.userId, source.access, function (callback) {
-          console.log("[3]Callback from grantPermissionsToUser", callback);
-          return next(callback)
+  }
+
+
+  var processRoleforEachPermission = function (options, next) {
+    var RoleMapping = app.models.RoleMapping;
+    var permission = options.permission;
+    var endpoints = options.endpoints;
+    var userId = options.userId;
+
+    console.log("**[processRoleforEachPermission][label + permissions]", app.PropertiesMap[permission])
+
+    if (app.PropertiesMap[permission].length) {
+      console.log("**[processRoleforEachPermission][Ruoli multipli da assegnare]")
+      properties_lenght = app.PropertiesMap[permission].length
+      value = app.PropertiesMap[permission];
+      var count = 0;
+      async.forEach(value, function (roleName, callback) {
+        console.log("**[processRoleforEachPermission][roleName]:", roleName.property)
+        _modelACL.addPrincipalIdToRole(roleName.property,
+          RoleMapping.USER, userId, endpoints, function (cb) {
+            console.log("**[processRoleforEachPermission][Callback [A] from addPrincipalIdToRole][roleName]", roleName.property, cb);
+            count = count + 1;
+            callback(cb)
+          })
+      }, function (value) {
+        console.log('iterating done', value);
+        if (!value) {
+          console.log("FALSE")
+          return next(false);
+        } else return next(true)
+      });
+
+    } else {
+      console.log("**[processRoleforEachPermission][Ruolo Singolo da Assegnare]");
+      roleName = app.PropertiesMap[permission]
+      _modelACL.addPrincipalIdToRole(roleName.property,
+        RoleMapping.USER, userId, endpoints, function (cb) {
+          console.log("**[processRoleforEachPermission][Callback [B] from addPrincipalIdToRole]", cb);
+          return next(cb);
         })
     }
-
   }
+
+  /*
+   var grantPermissionsToUser = function (source, label, next) {
+   var RoleMapping = app.models.RoleMapping;
+
+   //console.log("SOURCE:", source)
+   //console.log("LABEL:", label)
+   var permissions = source.permissions
+   //console.log("REPO_GRANT", app.PropertiesMap)
+   //console.log("PERMISSION", permissions)
+   if (permissions.length > 1) {
+   // console.log("[grantPermissionToUser][source.permissions.length > 1]")
+   //console.log("PERMESSI:", permissions[0])
+   // console.log("PERMESSI:", permissions[1])
+   async.parallel([
+   function (callback) {
+
+   if (label == 'Item') {
+
+   // console.log("ITEM PROPERTIES:",app.PropertiesMap[label + permissions[0]].property);
+   //  console.log("ITEM PROPERTIES:",app.PropertiesMap[label + permissions[1]].property);
+   setPermissionsToUser(function (cb) {
+   console.log("[1]Callback from setPermissionsToUser", cb);
+
+   })
+
+   }
+   /!*
+   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions[0]].property,
+   RoleMapping.USER, source.userId, source.access, function (cb) {
+   console.log("[1]Callback from grantPermissionsToUser", cb);
+   callback(null, cb)
+   })
+   *!/
+   },
+   function (callback) {
+   /!*
+   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions[1]].property,
+   RoleMapping.USER, source.userId, source.access, function (cb2) {
+   console.log("[2]Callback from grantPermissionsToUser", cb2);
+   callback(null, cb2)
+   })
+   *!/
+   }
+   ], function (err, cb) {
+   console.log("-----------FINE-------------", cb)
+   if (!err && cb[0] != false || cb[1] != false) return next(true)
+   else return next(false);
+   });
+   }
+   else {
+   console.log("[grantPermissionToUser][source.permissions.length == 1]", source)
+   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions].property,
+   RoleMapping.USER, source.userId, source.access, function (callback) {
+   console.log("[3]Callback from grantPermissionsToUser", callback);
+   return next(callback)
+   })
+   }
+   }
+   */
 
   /**
    * @param req
@@ -722,12 +901,12 @@ module.exports = function (Repository) {
       {
         var payload = {
           "userId": isvalidate.userId,
-          "grant": req.body.grant,
+          "permissions": req.body.permissions,
           "access": {
             "repositoryName": req.params.repo_name
           }
         }
-        grantPermissionsToUser(payload, 'Repo', function (permission) {
+        setPermissionsToUser(payload, 'Repo', function (permission) {
           if (permission) {
             console.log("PERMISSION:", permission);
             return res.status(200).send({message: "ACL has been added"});
@@ -751,44 +930,97 @@ module.exports = function (Repository) {
     console.log("grantAccess", req.body);
     validateGrantAccessBody(req.body, function (isvalidate) {
       if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
-      console.log("Validate:", isvalidate);
+      //  console.log("Validate:", isvalidate);
       var payload = {
         "userId": isvalidate.userId,
-        "grant": req.body.grant,
+        "permissions": req.body.permissions,
         "access": {
           "repositoryName": req.params.repo_name,
           "collectionName": req.params.collection_name
         }
       }
       console.log("payload", payload);
-      grantPermissionsToUser(payload, 'Coll', function (permission) {
-        if (permission) {
-          if (req.body.item_grant) {
-            console.log("ITEM_GRANT", req.body.item_grant);
+      if (req.body.items_permissions) {
+        async.parallel([
+          function (callback) {
+            setPermissionsToUser(payload, 'Coll', function (permission) {
+              if (permission) {
+                callback(null, true)
+              } else callback(null, false)
+            })
+          },
+          function (callback) {
+            console.log("------------items_permissions------------", req.body.items_permissions);
             var payload = {
               "userId": isvalidate.userId,
-              "grant": req.body.item_grant,
+              "permissions": req.body.items_permissions,
               "access": {
                 "repositoryName": req.params.repo_name,
                 "collectionName": req.params.collection_name
               }
             }
-            grantPermissionsToUser(payload, 'Item', function (permission) {
+            setPermissionsToUser(payload, 'Item', function (permission) {
               if (permission) {
-                return res.status(200).send({message: "ACL has been added"});
-              } else {
-                return res.status(409).send({message: "ACL is already exists"});
-              }
+                callback(null, true)
+              } else callback(null, false)
             })
-          } else {
-            return res.status(200).send({message: "ACL has been added"});
           }
-        }
-        else {
-          return res.status(409).send({message: "ACL is already exists"});
-        }
-      })
+        ], function (err, results) {
+          console.log("[SetACLtoCollection][END ASYNC PARALLEL]", results[0], results[1])
+          if (results[0] && results[1]) {
+            console.log("ACLs created")
+            return res.status(200).send({message: "ACLs created"});
+          }
+          if (!results[0] && !results[1]) {
+            console.log("ACLs are already exists")
+            return res.status(409).send({message: "ACLs are already exists"});
+          }
+          if (results[0] && !results[1]) {
+            return res.status(200).send({message: "ACL for collection [" + req.params.collection_name + "] has been added"});
+          }
+          if (!results[0] && results[1]) {
+            return res.status(200).send({message: "ACL for collection [" + req.params.collection_name + "] ITEMS has been added"});
+          }
+        })
+
+      } else {
+        setPermissionsToUser(payload, 'Coll', function (permission) {
+          if (permission) {
+            return res.status(200).send({message: "ACL has been added"});
+          } else {
+            return res.status(409).send({message: "ACL is already exists"});
+          }
+        })
+      }
+      /*
+       grantPermissionsToUser(payload, 'Coll', function (permission) {
+       if (permission) {
+       if (req.body.items_permissions) {
+       var payload = {
+       "userId": isvalidate.userId,
+       "permissions": req.body.items_permissions,
+       "access": {
+       "repositoryName": req.params.repo_name,
+       "collectionName": req.params.collection_name
+       }
+       }
+       grantPermissionsToUser(payload, 'Item', function (permission) {
+       if (permission) {
+       return res.status(200).send({message: "ACL has been added"});
+       } else {
+       return res.status(409).send({message: "ACL is already exists"});
+       }
+       })
+       } else {
+       return res.status(200).send({message: "ACL has been added"});
+       }
+       }
+       else {
+       return res.status(409).send({message: "ACL is already exists"});
+       }
+       })*/
     })
+
   }
   Repository.RemoveACLtoCollection = function (req, res, next) {
 
@@ -796,16 +1028,13 @@ module.exports = function (Repository) {
     console.log("RemoveACLtoCollection", req.params.repo_name)
     console.log("RemoveACLtoCollection", req.params.collection_name)
 
-    validateGrantAccessBody(req.body, function (isvalidate) {
-      if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
-      console.log("Validate:", isvalidate);
+    app.models.User.findOne({where: {"username": req.body.username}}, function (err, user) {
+      if (!user) return res.status(400).send({message: 'Bad payload'})
       var payload = {
-        "userId": isvalidate.userId,
-        "grant": req.body.grant,
-        "access": {
-          "repositoryName": req.params.repo_name,
-          "collectionName": req.params.collection_name
-        }
+        "userId": user.id,
+        "repo_name": req.params.repo_name,
+        "colletion_name": req.params.collection_name
+
       }
       console.log("payload", payload);
       removePermissionsToUser(payload, 'Coll', function (permission) {
@@ -821,9 +1050,94 @@ module.exports = function (Repository) {
    * @param req
    * @param res
    * @param next
+   * @constructor
    */
-  Repository.getACLforRepository = function (req, res, next) {
-    app.models.User.find({where: {"email": req.params.acls_for_user}}, function (err, access) {
+  Repository.ListACLforRepositories = function (req, res, next) {
+
+    var User = app.models.user;
+    app.models.RoleMapping.find(
+      {where: {"repositoryName.name": req.params.repo_name}},
+      {
+        fields: {
+          roleName: true,
+          principalId: true,
+          repositoryName: true,
+          collectionName: true
+        }
+      }, function (err, acls) {
+        var roleMappedTo = []
+        async.forEach(acls, function (acl, callback) {
+          User.findById(acl.principalId, function (err, user) {
+            roleMappedTo.push({
+              "username": user.username,
+              "roleName": acl.roleName,
+              "repositoriesName": acl.repositoryName,
+              "collectionsName": acl.collectionName
+            })
+            callback()
+          })
+        }, function () {
+          return res.status(200).send({"acls": roleMappedTo})
+        });
+      })
+  }
+
+
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   * @constructor
+   */
+  Repository.ListACLforCollections = function (req, res, next) {
+
+    var User = app.models.user;
+    app.models.RoleMapping.find(
+      {
+        where: {
+
+          "and": [
+            {"repositoryName.name": req.params.repo_name},
+            {"collectionName.name": req.params.collection_name}
+          ]
+        }
+      },
+      {
+        fields: {
+          roleName: true,
+          principalId: true,
+          repositoryName: true,
+          collectionName: true
+        }
+      }, function (err, acls) {
+        var roleMappedTo = []
+        async.forEach(acls, function (acl, callback) {
+          User.findById(acl.principalId, function (err, user) {
+            roleMappedTo.push({
+              "username": user.username,
+              "roleName": acl.roleName,
+              "repositoriesName": acl.repositoryName,
+              "collectionsName": acl.collectionName
+            })
+            callback()
+          })
+        }, function () {
+          return res.status(200).send({"acls": roleMappedTo})
+        });
+      })
+  }
+
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
+  Repository.getACLsByusername = function (req, res, next) {
+
+    app.models.User.find({where: {"username": req.params.acls_for_user}}, function (err, access) {
+      console.log("USER:", access);
       //app.models.access.find({where: {"repositoryName": req.params.repo_name}},{include:'users'}, function (err, access) {
       if (err) {
         return res.setatus(500).send({error: err})
@@ -831,7 +1145,24 @@ module.exports = function (Repository) {
       if (access.length == 0) {
         return res.setatus(404).send({message: "USER NOT FOUND"})
       }
-      app.models.RoleMapping.find({where: {"principalId": access[0].id}}, function (err, mapping) {
+      var where = {};
+      if (req.params.repo_name && req.params.collection_name) {
+        where = {
+          "and": [
+            {"repositoryName.name": req.params.repo_name},
+            {"collectionName.name": req.params.collection_name},
+            {"principalId": access[0].id}
+          ]
+        }
+      } else {
+        where = {
+          "and": [
+            {"repositoryName.name": req.params.repo_name},
+            {"principalId": access[0].id}
+          ]
+        }
+      }
+      app.models.RoleMapping.find(where, function (err, mapping) {
         if (err) {
           return res.status(500).send({error: err})
         }
@@ -913,15 +1244,15 @@ module.exports = function (Repository) {
       if (allowed == 200) {
         _loadModel.getRepository(req, res, function (next) {
           if (next) {
-            console.log("req.params.repo_name",req.params.repo_name)
+            console.log("req.params.repo_name", req.params.repo_name)
             app.repositoryModel.findOne(function (err, value) {
-              console.log("VALUE:",value)
-              if(value) {
-                return res.status(403).send({message:"The repository still has collections"})
+              console.log("VALUE:", value)
+              if (value) {
+                return res.status(403).send({message: "The repository still has collections"})
               }
               else return final()
             })
-          } else res.status(500).send({error:"getRepository error"})
+          } else res.status(500).send({error: "getRepository error"})
         })
       }
     })
@@ -1433,8 +1764,35 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   })
 
-  Repository.remoteMethod('getACLforRepository', {
+  Repository.remoteMethod('getACLsByusername', {
     http: {path: '/:repo_name/_acls/:acls_for_user', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+  Repository.remoteMethod('getACLsByusername', {
+    http: {path: '/:repo_name/:collection_name/_acls/:acls_for_user', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+  Repository.remoteMethod('ListACLforRepositories', {
+    http: {path: '/:repo_name/_acls', verb: 'get'},
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+    ],
+    returns: {arg: 'data', type: 'object'}
+  })
+
+  Repository.remoteMethod('ListACLforCollections', {
+    http: {path: '/:repo_name/:collection_name/_acls', verb: 'get'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -1461,14 +1819,7 @@ module.exports = function (Repository) {
     returns: {arg: 'data', type: 'object'}
   })
 
-  Repository.remoteMethod('RemoveACLtoCollection', {
-    http: {path: '/:repo_name/:collection_name/_acls', verb: 'delete'},
-    accepts: [
-      {arg: 'req', type: 'object', 'http': {source: 'req'}},
-      {arg: 'res', type: 'object', 'http': {source: 'res'}}
-    ],
-    returns: {arg: 'data', type: 'object'}
-  })
+
 
 
   /*-------------------------------------OBSERVE---------------------------------------------------*/
