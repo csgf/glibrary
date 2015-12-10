@@ -1,5 +1,15 @@
 # gLibrary 2.0
 
+## Table of contents
+
+* [Overview](#overview)
+* [Authentication](#authentication)
+* [Authorization](#authorization)
+* [Repositories](#repositories)
+* [Collections](#collections)
+* [Items](#items)
+
+
 ## Overview
 
 gLibrary is a service that offers both access to existing data repositories and creation of new ones via a simple REST API.
@@ -17,7 +27,7 @@ Each item can have one or more *attachment*, that we call **replica**. Replicas 
 **Relations** between two collections of the same repository can be created, if foreign keys are properly assigned. Currently we support one-to-many relations.
 
 
-### Testing endpoint
+### Beta server endpoint
 
 	http://glibrary.ct.infn.it:3500
 	
@@ -434,7 +444,7 @@ GET /v2/repos/comics/dylandog/_schema HTTP/1.1
 }
 ```
 
-### TODO: Delete a collection
+### Todo: Delete a collection
 
 ```http
 DELETE /v2/repos/<repo_name>/<collection_name>  HTTP/1.1
@@ -497,13 +507,20 @@ GET /v2/repos/infn/articles/22
 ```
 
 
-### TODO: Item deletion
+### Item deletion
 
 ```http
 DELETE  /v2/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 ```
 
-Delete the given `item_id` of the the collection `collection_name`.
+Delete the given `item_id` of the the collection `collection_name`. Delete will be successfull only if the given item has no replica. You can force the deletion of item with replicas setting:
+
+```json
+{
+	"force": true
+}
+```
+in the request body.
 
 
 ### Item update
@@ -577,7 +594,7 @@ Upload the file payload to the destinaton storage. This requires two subsequent 
 First, ask for the destination endpoint for the upload with:
 
 ```http
-PUT /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection_name> HTTP/1.1
+PUT /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
 ```
 
 This will return a **temporaryURL** valid a few seconds (example):
@@ -596,17 +613,42 @@ PUT http://stack-server-01.ct.infn.it:8080/v2/AUTH_51b2f4e508144fa5b0c28f02b1618
 
 It will return a 201 status code, if the upload will complete successfully
 
+**Delete a replica**
 
+```http
+DELETE /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
+```
 
 
 **Example**
 
 ### Relations
 
-One to many relations can be created between collections of the same repository, setting properly a foreign key.
+One to many relations can be created between collections of the same repository, properly setting a foreign key.
+
+To set the relation among two collections, issue the following request to the collection in the "one" side of the one-to-many relation:
+
+```http
+POST /v2/repos/<repo_name>/<collection_name>/_relation HTTP/1.1
+```
+
+The body of the request needs to provide two attributes:
+
+name					| description
+--------------------|-----------------------------------------------------------------------------------
+_relatedCollection_	| the "many" side of the one-to-many relation
+_fk_					| the *foreign key* of _relatedCollection_ that match the _id_ of <*collection_name*>
+
+In practice, you should set the _fk_ in such a way `collection_name.id` == `relatedCollection.fk`
+
+**Retrive related items**
+
+```http
+GET /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection>
+```
+
+Retrieve all the items from `related_collection` of the given `item_id`.
 
 
 
-
-Retrieve all the items from `related_collection_name` of the given `item_id`.
 
