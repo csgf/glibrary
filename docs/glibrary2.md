@@ -61,6 +61,63 @@ Alternatively you can use the `email` addess instead of the `username`.
 
 ### User creation
 
+New users are created issuing requests to the following endpoint:
+
+```http
+POST /v2/repos/users HTTP/1.1
+```
+
+The mandatory parameters are:
+
+* __username__
+* __email__
+* __password__
+
+Please notice that the created user, has no access to any repository yet. The admin user need to assign the created user to any repository and/or collections, setting properly the ACLs.
+
+
+## Authorization
+
+Currently gLibrary allows to set separate permissions to repositories, collections and items per each user. The default permission set to a newly created user is _NO ACCESS_ to anything. It's admin's responsability to set properly the ACLs per each user. Currenly an instance of gLibrary server has just one superadmin (the _admin_ user), but in future releases you will have the option to define admins per repository.
+
+### ACLs
+
+To set ACLs, the super admin can issue requests to two separate endpoints:
+
+```http
+POST /v2/repos/<repo_name>/_acls http/1.1
+```
+
+and/or
+
+```http
+POST /v2/repos/<repo_name>/<collection_name>/_acls http/1.1
+```
+The body of each requests has the following attributes:
+
+
+attribute				|  description
+--------------------|---------------------------------------------------------------
+_username_			| the username of the user to which we are adding permissions to
+_permissions_			| valid options are "R" and "RW"
+_items_permissions_	| (for collections only) valid options are "R" and "RW"
+
+_permissions_ refers to repository or collection permission, according to where the request is issued:
+
+* Repository: 
+	* "R" grants a user the capability of listing its content (ie. list of collections)
+	* "RW" grants a user the capability of creating (or importing) new collections or deleting them
+* Collection:
+	* "R" grants a user the capabilities to list the collection's content (list of items)
+	* "RW" grants a user the capabilities of creating, updating, deleting the collection's items 
+
+_items\_permissions_ is valid only for collections's ACL and refers to:
+
+* "R" grants a user the capability to download items'replicas
+* "RW" grants a user the capality to create, update and upload replicas
+ 
+
+
 
 
 ## Repositories
