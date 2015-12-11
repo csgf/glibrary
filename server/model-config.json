@@ -16,15 +16,15 @@
     "public": false
   },
   "ACL": {
-    "dataSource": "db",
-    "public": false
+    "dataSource": "repoDB",
+    "public": true
   },
   "RoleMapping": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "Role": {
-    "dataSource": "db",
+    "dataSource": "repoDB",
     "public": false
   },
   "user": {
@@ -36,6 +36,10 @@
     "public": true
   },
   "replica": {
+    "dataSource": "repoDB",
+    "public": true
+  },
+  "accessToken": {
     "dataSource": "repoDB",
     "public": true
   }

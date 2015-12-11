@@ -12,16 +12,9 @@ var options = {
   //cert: fs.readFileSync(path.join(__dirname, './private/certificate.pem'))
 };
 
-var limitQuery = function(req,res,next) {
-  if( ! req.query.filter ) {
-   // console.log("set query limit to 50 records");
-    req.query.filter = {limit : 50 };
-    next();
-  } else next();
-}
+
 
 app.middleware('initial', bodyParser.urlencoded({ extended: true }));
-app.middleware('parse', limitQuery);
 
 // Bootstrap the application, configure models, datasources and middleware.
 // Sub-apps like REST API are mounted via boot scripts.

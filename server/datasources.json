@@ -9,8 +9,15 @@
     "database": "glibrary",
     "username": "",
     "password": "",
-    "name": "mongoDB",
+    "name": "repoDB",
     "connector": "mongodb"
-  }
+  },
+  "swift_storage": {
 
+    "keys" : {
+      "AUTH_xxxx": "yyyy",
+      "AUTH_zzzz": "wwww"
+    },
+    "expirationTimeInSeconds" : 30
+  }
 }

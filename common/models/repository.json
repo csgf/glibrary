@@ -1,33 +1,39 @@
 {
   "name": "repository",
-  "plural": "repositories",
+  "plural": "repos",
   "base": "PersistedModel",
   "idInjection": true,
   "options": {
     "validateUpsert": true
   },
   "properties": {
-    "ownerId": {
-      "type": "number"
-    },
     "name": {
-      "type": "string",
-      "required": true
-    },
-    "location": {
       "type": "string",
       "required": true
     },
     "path": {
       "type": "string",
-      "required": true
+      "required": false
     },
-    "storage": {
+    "tablename": {
       "type": "string",
       "required": false
     },
+    "collection_db": {
+      "type": "object",
+      "required": false
+    },
+    "default_storage":{
+      "type":"object",
+      "required":false
+    },
     "import": {
-      "type": "string"
+      "type": "string",
+      "required": false
+    },
+    "schema": {
+      "type": "string",
+      "required": false
     }
   },
   "validations": [],
@@ -38,6 +44,35 @@
       "foreignKey": "ownerId"
     }
   },
-  "acls": [],
-  "methods": []
+  "acls": [
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "find"
+    },
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "ACLtoCollection"
+
+
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW"
+    }
+  ],
+  "methods": {}
 }

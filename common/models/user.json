@@ -3,39 +3,40 @@
   "base": "User",
   "idInjection": true,
   "properties": {
-    "id" : {
-      "type": "number",
-      "id": true
-
-    },
     "username": {
-      "type": "string"
+      "type": "string",
+      "required": true
     },
     "email": {
-      "type": "string"
+      "type": "string",
+      "required": true
     },
     "password": {
-      "type": "string"
+      "type": "string",
+      "required": true
     }
   },
   "validations": [],
   "relations": {
-    "projects": {
+    "accessTokens": {
       "type": "hasMany",
-      "model": "project",
-      "foreignKey": "ownerId"
+      "model": "accessToken",
+      "foreignKey": "userId"
     },
-    "teams": {
+    "accesses": {
       "type": "hasMany",
-      "model": "team",
-      "foreignKey": "ownerId"
-    },
-    "repositories": {
-      "type": "hasMany",
-      "model": "repository",
-      "foreignKey": "ownerId"
+      "model": "access",
+      "foreignKey": "userId"
     }
   },
-  "acls": [],
-  "methods": []
+  "acls": [
+    {
+      "accessType": "EXECUTE",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "*"
+    }
+  ],
+  "methods": {}
 }

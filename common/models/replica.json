@@ -6,7 +6,7 @@
     "validateUpsert": true
   },
   "properties": {
-    "file": {
+    "filename": {
       "type": "string",
       "required": true
     },
@@ -14,9 +14,17 @@
       "type": "string",
       "required": true
     },
-    "collectionId":{
+    "repository":{
       "type":"string",
-      "required":false
+      "required":true
+    },
+    "collection":{
+      "type":"string",
+      "required":true
+    },
+    "itemId":{
+      "type":"string",
+      "required":true
     }
   },
   "validations": [],

@@ -1,11 +1,14 @@
 {
-  "restApiRoot": "/api",
+  "restApiRoot": "/v2",
   "host": "0.0.0.0",
-  "port": 3000,
+  "port": 3500,
   "legacyExplorer": false,
   "remoting": {
     "context": {
       "enableHttpContext": false
+    },
+    "errorHandler": {
+      "disableStackTrace": true
     },
     "rest": {
       "normalizeHttpPath": false,
