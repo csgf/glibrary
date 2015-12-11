@@ -27,7 +27,7 @@ You can find the documentation of the APIs [here](https://github.com/csgf/glibra
 
 **Requirements**
 
-gLibrary 2 requires a **MongoDB** (> 3.x) server running. It's used to mantain repositories'configurations and also for metadata storage for local repositories.
+gLibrary 2 requires a **MongoDB** (> 3.x) server running. It's used to mantain repositories'configurations and also for metadata storage for local repositories. Node.js (> 0.12) is required too.
 
 Being a server service, a tool that ensures it indefinetively runs or restarts automatically is recommended. We have successfully deployed gLibrary both with [forever](https://github.com/foreverjs/forever) and [pm2](https://github.com/Unitech/pm2). For testing purposes, [Nodemon](https://github.com/remy/nodemon) is a valid option.
 
