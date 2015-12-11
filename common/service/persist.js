@@ -11,8 +11,9 @@ exports.createTable = function createTable(datasource, data, callback) {
   //var table_name = data.name.toLowerCase();
   var table_name = data.name;
 
-  console.log("TABLE",table_name)
-
+  /**
+   *
+   */
   checkIfDataHasToBeImported(data, function (cb) {
     if (cb) {
       logger.debug("[persist][Import Collection]");
@@ -52,9 +53,8 @@ exports.createTable = function createTable(datasource, data, callback) {
           }
         }
       }
-      console.log("modelName:",modelName);
-      console.log("schema_collection:",schema_collection);
-
+      logger.debug("[persist][createTable][modelName] :",modelName);
+      logger.debug("[persist][createTable][schema_collection] :",schema_collection);
 
       repoDB.createModel(modelName, schema_collection.properties, {"base": "PersistedModel", "idInjection": true});
       repoDB.autoupdate(modelName, function (err, result) {

@@ -6,8 +6,5 @@ module.exports = function (AccessToken) {
       context.instance.email = (!userdata.email ? '' : userdata.email);
       final()
     })
-
   })
-
-
 };

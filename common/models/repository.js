@@ -33,6 +33,10 @@ module.exports = function (Repository) {
   Repository.disableRemoteMethod('updateAttributes', false);//it is necessary in order to enable the 'editRepository' method
   Repository.disableRemoteMethod('deleteById', true); //it is necessary in order to enable the 'deleteRepository' method
 
+  var repository_json = require('./repository.json')
+  var config_data = require('../../server/config.json')
+  var api_prefix = config_data.restApiRoot + '/' + repository_json.plural
+
 
   /**
    *
@@ -50,140 +54,6 @@ module.exports = function (Repository) {
     return error;
   }
 
-  /* ----------------------- https and openstack testing remote methods-----------------------------
-   Repository.beforeRemote('list_repositories', function (context, user, next) {
-   var req = context.req;
-   req.body.publisherId = req.accessToken.userId;
-   userId = req.accessToken.userId;
-   next();
-   })
-
-
-   Repository.remoteMethod('openstack_login', {
-   returns: {arg: 'client', type: 'object'},
-   http: {path: '/openstackLogin', verb: 'get'}
-   })
-
-   Repository.remoteMethod('testhttps', {
-   returns: {arg: 'client', type: 'object'},
-   http: {path: '/testRequest', verb: 'get'}
-   })
-
-   Repository.remoteMethod('login_repository', {
-   accepts: {arg: 'req', type: 'object', http: {source: 'body'}},
-   returns: {arg: 'repositories', type: 'array'},
-   http: {path: '/login_repository', verb: 'post'}
-   });
-
-
-   Repository.remoteMethod('list_repositories', {
-   returns: {arg: 'repositories', type: 'array'},
-   http: {path: '/list_repositories', verb: 'get'}
-   });
-
-
-   Repository.list_repositories = function (next) {
-   Repository.find({
-   where: {
-   ownerId: userId
-   }
-   }, next);
-   };
-
-   Repository.openstack_login = function (req, next) {
-
-   var client = require('pkgcloud').storage.createClient({
-   provider: 'openstack',
-   username: 'acaland',
-   password: 'demo2015',
-   tenantName: 'glibrary',
-   authUrl: 'https://stack-server-01.ct.infn.it:35357/',
-   options: {
-   ca: fs.readFileSync(path.join(__dirname, '../../server/private/INFNCA.pem')).toString()
-
-
-   }
-   });
-
-
-   client.getContainers(function (err, containers) {
-   if (err) throw err;
-   console.log("****CONTAINERS****:");
-   containers.forEach(function (value) {
-   console.log("VALUE:", value.name);
-   })
-   })
-
-   client.getFiles('demo', function (err, files) {
-   if (err) throw err;
-   // console.log("FILES:",files);
-   })
-   client.getFile('demo', 'ananas33.jpg', function (err, server) {
-   // console.log("GETFILE:",server);
-   })
-   client.download({
-   container: 'demo',
-   remote: 'ananas33.jpg'
-   }).pipe(fs.createWriteStream('download_ananas33.jpg'));
-
-
-   }
-   Repository.testhttps = function (req, next) {
-
-
-   var testData = {
-   "uri": "https://stack-server-01.ct.infn.it:35357/v2.0/tokens",
-   "method": "POST",
-   "headers": {
-   "User-Agent": "nodejs-pkgcloud/1.2.0-alpha.0",
-   "Content-Type": "application/json", "Accept": "application/json"
-   },
-   "json": {
-   "auth": {
-   "passwordCredentials": {"username": "acaland", "password": "demo2015"},
-   "tenantName": "glibrary"
-   }
-   },
-   "ca": "-----BEGIN CERTIFICATE-----\nMIIDczCCAlugAwIBAgIBADANBgkqhkiG9w0BAQUFADAuMQswCQYDVQQGEwJJVDEN\nMAsGA1UEChMESU5GTjEQMA4GA1UEAxMHSU5GTiBDQTAeFw0wNjEwMDMxNDE2NDda\nFw0xNjEwMDMxNDE2NDdaMC4xCzAJBgNVBAYTAklUMQ0wCwYDVQQKEwRJTkZOMRAw\nDgYDVQQDEwdJTkZOIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\nzpWODoOVnUKpyikjyrdj+QpJuoJeKkqF4fbd6LrqeQL0dqAiluVR8D4y/T2Mqvsd\nH/fg0s3EYZUDQZimcAmC3ammTX3rqXOz34GWLGpXoXAmUVKWPNFJo6rAEwhw3Sja\na8mEjMiZE/JigHN5RI8K6taKtjL/jE4XUTZOGbvlKsROxzJPM6bO4GJdYO+qhK9E\n5HsbV699DYyukBfUB6ChtD6GDbcdPKUKwheni5j0v6smFjiBEb3VQg4O+uBWTHMP\n116L9kPY+I7ojzXLuayMTd+6TXzunR33+v6h8AtLChcQRt4vj7oG/scTg3eSnFsq\noEO4D4IF9v481GJJwg58LwIDAQABo4GbMIGYMA8GA1UdEwEB/wQFMAMBAf8wDgYD\nVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBTRYvOzd3LILvvyeRpvN04nnxPVIDBWBgNV\nHSMETzBNgBTRYvOzd3LILvvyeRpvN04nnxPVIKEypDAwLjELMAkGA1UEBhMCSVQx\nDTALBgNVBAoTBElORk4xEDAOBgNVBAMTB0lORk4gQ0GCAQAwDQYJKoZIhvcNAQEF\nBQADggEBAHjX0z+3P3JyQGIBI5aAXOS3NuDEf0MdqCLFIGsXjtvIm2kDSMSGQOg5\nuZnJLTAhaT+gX5eNkDdzhuuJEgW1FPGDy2If6zgD4T4EsS50E+L5BTNOG78UzF4H\n9DGBlbrkD8VEug9RpxGusSweGGlnO6CT/U1Tb3XY5ZjIrMubh09UwmjK9nEIe3vC\nRPInAkbmamteezpKOqC5Knj0ZpqU+CnWkuyYnjslX1e9O5lbupLTp5NOqZRCFn1i\niTjpoNefgqLE3sHedgb2P1vS8lO+EIhRnWgfN9qAHSqkQ+ZObxIfPJFdcluu8d/K\ntXsFkKmmFuEHd0SrYpBh9ZCLDgq2x9Y=\n-----END CERTIFICATE-----\n"
-   };
-   var cert = fs.readFileSync(path.join(__dirname, '../../server/private/INFNCA.pem')).toString();
-
-   var requestData = {
-   auth: {
-   'tenantName': 'glibrary',
-   'passwordCredentials': {
-   'username': 'acaland',
-   'password': 'demo2015'
-   }
-   }
-   }
-
-   request(testData, function (err, response, body) {
-   if (err) throw err;
-   console.log("RES", response.statusCode);
-   console.log("BODY", body);
-   })
-   /*
-
-   request({
-   url: 'https://stack-server-01.ct.infn.it:35357/v2.0/tokens',
-   method: "POST",
-   headers: {
-   "content-type": "application/json",
-   },
-
-   ca: cert,
-   body: JSON.stringify(requestData)
-   },function(err,res,body) {
-   if(err) throw err;
-   console.log("RES:",res.statusCode);
-   console.log("BODY",body);
-
-   });
-
-   }
-   */
-
 
   /* --- Repository -----*/
   /**
@@ -193,13 +63,19 @@ module.exports = function (Repository) {
    * @param next
    */
   Repository.getRepository = function (req, res, next) {
-    _loadModel.getRepository(req, res, function (model) {
+    _loadModel.buildRepositoryModel(req, res, function (model) {
       if (model) {
-        console.log("[Repository.getRepository]", app.repositoryModel.definition.name)
+        logger.debug("[Repository.buildRepositoryModel]", app.repositoryModel.definition.name)
+
         var fields = {
-          fields: {name: true, location: true, path: true}
+          fields: {name: true, tablename: true, path: true}
         }
-        var query_filters = JSON.parse((JSON.stringify(fields) + JSON.stringify(req.query.filter)).replace(/}{/g, ","));
+        console.log("FILTER", req.query)
+        if (req.query.filter) {
+          var query_filters = JSON.parse((JSON.stringify(fields) + JSON.stringify(req.query.filter)).replace(/}{/g, ","));
+        } else
+          var query_filters = JSON.parse((JSON.stringify(fields)).replace(/}{/g, ","));
+
         app.repositoryModel.find(query_filters, function (err, instance) {
           if (err) {
             return res.status(500).send({error: err})
@@ -208,8 +84,8 @@ module.exports = function (Repository) {
             return res.status(404).send({error: "Repository not Found"})
           }
           if (instance) {
-            next(null,instance)
-          //  return res.status(200).send(instance);
+            next(null, instance)
+            //  return res.status(200).send(instance);
           }
         })
       } else return res.status(404).send({message: "The repository model does not exists"})
@@ -233,28 +109,31 @@ module.exports = function (Repository) {
     })
   }
 
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
 
   Repository.deleteRepository = function (req, res, next) {
 
-    console.log("[deleteRepository]: ", req.params.repo_name)
+    logger.debug("[deleteRepository]: ", req.params.repo_name)
     app.models.Repository.findOne({where: {name: req.params.repo_name}}, function (err, repo) {
       if (err) return res.status(500).send({error: err});
       if (!repo) {
         app.models[req.params.repo_name] = null;
         return res.status(404).send({"message": "repository not found"});
       }
-
-
       app.models.Repository.destroyById(repo.id, function (err) {
         if (err) return res.status(500).send({error: err});
         req.params.pathToDelete = req.params.repo_name;
         next()
       })
-
     })
   }
 
-  /* ---- GET Collection ----*/
+  /* ----------------------------------------  Collection ------------------------------------------------*/
   /**
    *
    * @param req
@@ -263,10 +142,10 @@ module.exports = function (Repository) {
    */
   Repository.getCollection = function (req, res, next) {
 
-    console.log("[Repository.getCollection]", req.query.filter)
-    _loadModel.getCollection(req, res, function (next) {
+    logger.debug("[Repository.getCollection]", req.query.filter)
+    _loadModel.buildCollectionModel(req, res, function (next) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
-      if(app.next_module) {
+      if (app.next_module) {
         app.next_module.find(req.query.filter, function (err, instance) {
           if (err) return res.status(500).send({"error": err});
           if (!instance) return res.status(404).send({"message": "collection not found"});
@@ -279,71 +158,101 @@ module.exports = function (Repository) {
     })
   }
 
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.editCollectionBody = function (req, res, next) {
 
-    console.log("[Repository.editCollectionBody]", req.query.filter)
-    _loadModel.getCollection(req, res, function (next) {
+    logger.debug("[Repository.editCollectionBody]", req.query.filter)
+    _loadModel.buildCollectionModel(req, res, function (next) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
       app.next_module.findById(req.body.id, function (err, instance) {
         if (err) return res.status(500).send({"error": err});
         if (!instance) return res.status(404).send({"message": "Collection not found"});
-        console.log("INSTANCE", instance)
         instance.updateAttributes(req.body, function (err) {
           return res.status(200).send({message: "Collection updated"})
         })
       })
     })
   }
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.deleteCollection = function (req, res, next) {
 
-    console.log("[Repository.deleteCollection]", req.params.collection_name)
-    _loadModel.getRepository(req, res, function (callback) {
+    logger.debug("[Repository.deleteCollection]", req.params.collection_name)
+    _loadModel.buildRepositoryModel(req, res, function (callback) {
       if (!callback) return res.status(500).send({message: "getCollection Error"})
       app.repositoryModel.findOne({where: {name: req.params.collection_name}},
         function (err, instance) {
           if (err) return res.status(500).send({error: err});
           if (!instance) return res.status(404).send({message: "Collection not found"});
-          console.log("instance", instance);
           instance.destroy(function (err) {
             if (err) return res.status(500).send({error: "Instance destroy error"})
             else {
-              console.log("PASSOOOOOOOOOOOOOOOOOOOOOOOOO")
-            next()
-            /*
-              req.params.pathToDelete = req.params.collection_name;
-              _loadModel.removeModel(req, res, function (cb) {
-                return res.status(200).send({message: "The collection [" + req.params.collection_name + "] has been removed"})
-              })
-            */
+              next()
             }
           })
         })
     })
   }
 
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   * @returns {*}
+   */
   Repository.getCollectionSchema = function (req, res, next) {
-    console.log("[Repository.getCollectionSchema]");
+    logger.debug("[Repository.getCollectionSchema]");
     return res.json(app.next_module.definition.properties);
   }
 
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   * @returns {*}
+   */
   Repository.createCollection = function (req, res, next) {
     return res.status(201).send({message: "The collection was successfully created "})
   }
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.populateCollection = function (req, res, next) {
     //return res.status(200).send;
   }
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.getCollectionItem = function (req, res, next) {
   }
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.editCollectionItem = function (req, res, next) {
   }
 
 
-  /*------------------------ Model Relations -----------------------------*/
+  /*------------------------------------------------------- Relations btw Models --------------------------------------*/
 
   Repository.createRelation = function (req, res, next) {
 
@@ -353,7 +262,7 @@ module.exports = function (Repository) {
         if (err) res.sendStatus(500);
         if (!instance) return res.status(404).send({"error": "Collection not found"});
         var relation_array = (!instance.relatedTo ? [] : instance.relatedTo)
-        console.log("[Repository.createRelation]", relation_array);
+        logger.debug("[Repository.createRelation]", relation_array);
         _loadModel.checkduplicate(relation_array, app.relationbody, function (duplicate) {
           if (duplicate) return res.status(409).send({"error": "Relation " + app.relationbody.relatedCollection + " is already defined"})
           else {
@@ -362,7 +271,7 @@ module.exports = function (Repository) {
             instance.updateAttributes(relatedTo, function (err) {
               if (err) return res.status(500).send({"error": "Error during updating attributes"})
               else {
-                logger.debug("[rest-api][updateAttribute on = ", instance.path + "of Repository Model " + app.repositoryModel.definition.name);
+                logger.debug("[Repository.createRelation][updateAttribute on = ", instance.path + "of Repository Model " + app.repositoryModel.definition.name);
                 return res.status(201).send({"message": "Relation Created"})
               }
             })
@@ -370,15 +279,20 @@ module.exports = function (Repository) {
         })
       })
   }
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.getRelation = function (req, res, next) {
 
-    //  logger.info("----------[Repository.getRelation][app.relationName = ", app.relationName + "]");
-    console.log(" GET RELATION  app.first_model", app.first_model.definition.name)
+    logger.debug("[Repository.getRelation][app.first_model]", app.first_model.definition.name)
     app.first_model.findById(req.params.item_id,
       {include: app.relationName},
       function (err, instance) {
         if (err) {
-          logger.error("Relation Query Error:", err);
+          logger.error("[Repository.getRelation][Relation Query Error]:", err);
         }
         if (!instance) return res.sendStatus(404);
         return res.json(instance);
@@ -420,37 +334,15 @@ module.exports = function (Repository) {
         "itemId": req.params.item_id,
         "name": "replica"
       }
-      console.log("payload:", payload);
-      console.log("repositoryDB", repositoryDB.settings.host +
-        " DB =", repositoryDB.settings.database)
+
       Replica.create(payload, function (err, instance) {
         if (err) return res.status(500).send({message: err});
-        console.log("instance", instance);
         return res.status(200).send(instance);
       })
     })
   }
 
-  /**
-   *
-   * @param req
-   * @param res
-   * @param next
-   */
 
-  /*
-   Repository.deleteReplicaById = function(req,res,next) {
-
-   var Replica = app.models.Replica;
-   console.log("[deleteReplicaById",req.params.replica_id);
-   Replica.destroyById(req.params.replica_id,function(err,replica){
-   if(err) return res.status(500).send({error:err})
-   console.log("Count:",replica.count)
-   if(replica.count > 0) return res.status(200).send({message:"The Replica id < "+req.params.replica_id+" > has been removed"})
-   else return res.status(404).send({message:"Replica not found"})
-   })
-   }
-   */
   /**
    *
    * @param req
@@ -492,7 +384,7 @@ module.exports = function (Repository) {
         if (err) return res.status(500).send({message: err});
         if (!replica) return res.status(404).send({message: "Replica not found"});
         var uri = replica.uri;
-        console.log("URI:", uri);
+        logger.debug("[Repository.getReplicaById][URI]:", uri);
         var url = getTempURL(uri, 'GET');
         if (!url.error) {
           return res.redirect(url.url);
@@ -516,7 +408,7 @@ module.exports = function (Repository) {
         if (err) return res.status(500).send({message: err});
         if (!replica) return res.sendStatus(404);
         var uri = replica.uri;
-        console.log("URI:", uri);
+        logger.debug("[ Repository.uploadReplicaById][URI]: ", uri);
         var url = getTempURL(uri, 'PUT');
         if (!url.error) {
           return res.status(200).send({uploadURI: url.url})
@@ -524,7 +416,12 @@ module.exports = function (Repository) {
       })
   }
 
-
+  /**
+   *
+   * @param req
+   * @param res
+   * @param next
+   */
   Repository.deleteReplicaById = function (req, res, next) {
 
     var Replica = app.models.Replica;
@@ -539,18 +436,17 @@ module.exports = function (Repository) {
         if (err) return res.status(500).send({message: err});
         if (!replica) return res.status(404).send({message: "Replica not found"});
         var uri = replica.uri;
-        console.log("URI:", uri);
+        logger.debug("[Repository.deleteReplicaById][URI]: ", uri);
         var url = getTempURL(uri, 'DELETE');
-        console.log("DELETE-URL:", url.error)
+        logger.debug("[Repository.deleteReplicaById][DELETE-URL] :", url.error)
         if (url.error == 0) {
-          console.log("[deleteReplicaById", req.params.replica_id);
-
+          logger.debug("[Repository.deleteReplicaById][req.params.replica_id]", req.params.replica_id);
           request.del(url.url, function (err, response, body) {
 
               if (!err && response.statusCode == '204' || req.body.force) {
                 Replica.destroyById(req.params.replica_id, function (err, replica) {
                   if (err) return res.status(500).send({error: err})
-                  console.log("Count:", replica.count)
+                  logger.debug("Count:", replica.count)
                   if (replica.count > 0)
                     return res.status(200).send({message: "Replica [ " + req.params.replica_id + " ] has been removed"})
                 })
@@ -577,28 +473,25 @@ module.exports = function (Repository) {
   var getTempURL = function (uri, method) {
     var url = require('url');
     var crypto = require('crypto');
+    var swift_storage = require('../../server/datasources.json')
+    var keys = swift_storage.swift_storage.keys
+    var expirationTimeInSeconds = swift_storage.swift_storage.expirationTimeInSeconds;
 
-    var keys = {
-      "AUTH_51b2f4e508144fa5b0c28f02b1618bfd": "correcthorsebatterystaple",
-      "AUTH_3729798f1d494dcba22abe9763c22258": "4paxXm3tar94T62oGrlQSi5bE4o5mcA1",
-      "glibrary": ""
-    };
-    var expirationTimeInSeconds = 60;
     var storage_parts = url.parse(uri);
     var host = storage_parts.host;
     var path = storage_parts.pathname;
-    console.log("[getTempURL]", host);
-    console.log("[getTempURL]", path);
-    //console.log(req.params);
-    //console.log(req.method);
-    //console.log(req.route);
+    logger.debug("[getTempURL][host]", host);
+    logger.debug("[getTempURL][path]", path);
+    //logger.debug(req.params);
+    //logger.debug(req.method);
+    //logger.debug(req.route);
 
     var expires = Math.floor(Date.now() / 1000) + expirationTimeInSeconds;
     if (path[0] != '/') {
       path = '/' + path;
     }
     var pathParts = path.split('/', 5);
-    //console.log(pathParts);
+    //logger.debug(pathParts);
     if (pathParts.length != 5 || pathParts[0] || pathParts[1] != 'v1' || !pathParts[2] || !pathParts[3] || pathParts[4] == '/') {
       res.json(400, {
         error: "WARNING: " + path + " does not refer to a Swift Object (e.g. /v1/account/container/object)"
@@ -622,7 +515,7 @@ module.exports = function (Repository) {
   }
 
 
-  /*----------------- ACL ----------------------------------------*/
+  /*------------------------------------------------------------------- ACL ----------------------------------------*/
 
   /**
    *
@@ -631,33 +524,24 @@ module.exports = function (Repository) {
    * @returns {*}
    */
   var validateGrantAccessBody = function (body, next) {
-    console.log("body", body);
     if (!body.permissions || !body.username) {
-      console.log("1")
       return next({
         "validate": false
       })
     }
     app.models.User.findOne({where: {"username": body.username}}, function (err, user) {
-      console.log("User", user);
       if (err) {
-        console.log("2")
-
         return next({
           "validate": false
         })
       }
       if (user) {
-        console.log("3")
-
         return next({
           "validate": true,
           userId: user.id
         })
       }
       if (!user) {
-        console.log("4")
-
         return next({
           "validate": false
         })
@@ -673,7 +557,6 @@ module.exports = function (Repository) {
    */
   function findAndRemove(array, property, value) {
     var oldarray = array;
-    console.log("findAndRemove")
     array.forEach(function (result, index) {
       if (result[property] === value) {
         //Remove from array
@@ -684,7 +567,7 @@ module.exports = function (Repository) {
   }
 
   /**
-   *
+   * Todo: Don't use. To be completed
    * @param payload
    * @param label
    * @param next
@@ -693,7 +576,7 @@ module.exports = function (Repository) {
 
     var RoleMapping = app.models.RoleMapping;
     var _ = require('underscore')
-    console.log("payload", payload)
+    logger.debug("payload", payload)
     payload.kind = label
 
     RoleMapping.find({
@@ -706,40 +589,27 @@ module.exports = function (Repository) {
       }
     }, function (err, mappers) {
 
-      mappers.forEach(function(mapper){
+      mappers.forEach(function (mapper) {
 
-        var removed_status_1 = findAndRemove(mapper.repositoryName, 'name', 'fishes');
-        var removed_status_2 = findAndRemove(mapper.collectionName, 'name', 'sharks');
-        console.log("-----status_1",removed_status_1);
-        console.log("-----status_2",removed_status_2);
+        var removed_status_1 = findAndRemove(mapper.repositoryName, 'name', payload.repo_name);
+        var removed_status_2 = findAndRemove(mapper.collectionName, 'name', payload.collection_name);
+        logger.debug("[removePermissionsToUser][status_1]: ", removed_status_1);
+        logger.debug("[removePermissionsToUser][status_2]: ", removed_status_2);
 
       })
-      mappers.forEach(function(mapper){
+      mappers.forEach(function (mapper) {
 
-        console.log("------mappers-----:",mapper)
-        RoleMapping.update(mapper,function(err,result){
-          if(err) throw err;
-          console.log("result:",result)
+        RoleMapping.update(mapper, function (err, result) {
+          if (err) throw err;
+          logger.debug("result:", result)
         })
 
       })
-
-    /*
-      findAndRemove(mappers[0].repositoryName, 'name', 'fishes');
-      findAndRemove(mappers[0].collectionName, 'name', 'sharks');
-
-
-      console.log("mappers", mappers[1].repositoryName,'---'+mappers[1].roleName)
-
-      console.log("mappers", mappers[0].repositoryName)
-      console.log("mappers", mappers[0].collectionName)
-    */
     })
-    /*
-     _modelACL.removePrincipalIdFromRole(payload,function(callback){
-     console.log("[removePermissionToUser]",callback)
-     })
-     */
+    _modelACL.removePrincipalIdFromRole(payload, function (callback) {
+      logger.debug("[removePermissionToUser]", callback)
+    })
+
   }
 
   /**
@@ -753,7 +623,7 @@ module.exports = function (Repository) {
     var RoleMapping = app.models.RoleMapping;
 
     var permissions = source.permissions
-    console.log("[setPermissionsToUser][PERMISSION]", label + permissions)
+    logger.debug("[setPermissionsToUser][PERMISSION]", label + permissions)
     if (permissions.length > 1) {
 
       async.parallel([
@@ -764,7 +634,7 @@ module.exports = function (Repository) {
             endpoints: source.access
           }
           processRoleforEachPermission(options, function (next) {
-            console.log("#########################[setPermissionsToUser][1A][Callback from processRole]:", next);
+            logger.debug("[setPermissionsToUser][1A][Callback from processRole]:", next);
             callback(null, next)
           })
         },
@@ -775,15 +645,15 @@ module.exports = function (Repository) {
             endpoints: source.access
           }
           processRoleforEachPermission(options, function (next) {
-            console.log("[setPermissionsToUser][2A][Callback from processRole]:", next);
+            logger.debug("[setPermissionsToUser][2A][Callback from processRole]:", next);
             callback(null, next)
           })
 
         }
       ], function (err, results) {
-        console.log("-------------------------------------------------------")
-        console.log("[setPermissionsToUser][END ASYNC PARALLEL]", err, results)
-        console.log("-------------------------------------------------------")
+        logger.debug("-------------------------------------------------------")
+        logger.debug("[setPermissionsToUser][END ASYNC PARALLEL]", err, results)
+        logger.debug("-------------------------------------------------------")
         if (!err && results[0] != false || results[1] != false) return next(true)
         else return next(false);
 
@@ -794,7 +664,7 @@ module.exports = function (Repository) {
         endpoints: source.access
       }
       processRoleforEachPermission(options, function (cb) {
-        console.log("[3]--NEXT from processRole", cb);
+        logger.debug("[setPermissionsToUser][3A] Callback from processRole", cb);
         if (cb) {
           return next(true)
         } else next(false)
@@ -802,106 +672,49 @@ module.exports = function (Repository) {
     }
   }
 
-
+  /**
+   *
+   * @param options
+   * @param next
+   */
   var processRoleforEachPermission = function (options, next) {
     var RoleMapping = app.models.RoleMapping;
     var permission = options.permission;
     var endpoints = options.endpoints;
     var userId = options.userId;
 
-    console.log("**[processRoleforEachPermission][label + permissions]", app.PropertiesMap[permission])
+    logger.debug("**[processRoleforEachPermission][label + permissions]", app.PropertiesMap[permission])
 
     if (app.PropertiesMap[permission].length) {
-      console.log("**[processRoleforEachPermission][Ruoli multipli da assegnare]")
+      logger.debug("**[processRoleforEachPermission][Ruoli multipli da assegnare]")
       properties_lenght = app.PropertiesMap[permission].length
       value = app.PropertiesMap[permission];
       var count = 0;
       async.forEach(value, function (roleName, callback) {
-        console.log("**[processRoleforEachPermission][roleName]:", roleName.property)
+        logger.debug("**[processRoleforEachPermission][roleName]:", roleName.property)
         _modelACL.addPrincipalIdToRole(roleName.property,
           RoleMapping.USER, userId, endpoints, function (cb) {
-            console.log("**[processRoleforEachPermission][Callback [A] from addPrincipalIdToRole][roleName]", roleName.property, cb);
+            logger.debug("**[processRoleforEachPermission][Callback [A] from addPrincipalIdToRole][roleName]", roleName.property, cb);
             count = count + 1;
             callback(cb)
           })
       }, function (value) {
-        console.log('iterating done', value);
         if (!value) {
-          console.log("FALSE")
           return next(false);
         } else return next(true)
       });
 
     } else {
-      console.log("**[processRoleforEachPermission][Ruolo Singolo da Assegnare]");
+      logger.debug("**[processRoleforEachPermission][Ruolo Singolo da Assegnare]");
       roleName = app.PropertiesMap[permission]
       _modelACL.addPrincipalIdToRole(roleName.property,
         RoleMapping.USER, userId, endpoints, function (cb) {
-          console.log("**[processRoleforEachPermission][Callback [B] from addPrincipalIdToRole]", cb);
+          logger.debug("**[processRoleforEachPermission][Callback [B] from addPrincipalIdToRole]", cb);
           return next(cb);
         })
     }
   }
 
-  /*
-   var grantPermissionsToUser = function (source, label, next) {
-   var RoleMapping = app.models.RoleMapping;
-
-   //console.log("SOURCE:", source)
-   //console.log("LABEL:", label)
-   var permissions = source.permissions
-   //console.log("REPO_GRANT", app.PropertiesMap)
-   //console.log("PERMISSION", permissions)
-   if (permissions.length > 1) {
-   // console.log("[grantPermissionToUser][source.permissions.length > 1]")
-   //console.log("PERMESSI:", permissions[0])
-   // console.log("PERMESSI:", permissions[1])
-   async.parallel([
-   function (callback) {
-
-   if (label == 'Item') {
-
-   // console.log("ITEM PROPERTIES:",app.PropertiesMap[label + permissions[0]].property);
-   //  console.log("ITEM PROPERTIES:",app.PropertiesMap[label + permissions[1]].property);
-   setPermissionsToUser(function (cb) {
-   console.log("[1]Callback from setPermissionsToUser", cb);
-
-   })
-
-   }
-   /!*
-   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions[0]].property,
-   RoleMapping.USER, source.userId, source.access, function (cb) {
-   console.log("[1]Callback from grantPermissionsToUser", cb);
-   callback(null, cb)
-   })
-   *!/
-   },
-   function (callback) {
-   /!*
-   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions[1]].property,
-   RoleMapping.USER, source.userId, source.access, function (cb2) {
-   console.log("[2]Callback from grantPermissionsToUser", cb2);
-   callback(null, cb2)
-   })
-   *!/
-   }
-   ], function (err, cb) {
-   console.log("-----------FINE-------------", cb)
-   if (!err && cb[0] != false || cb[1] != false) return next(true)
-   else return next(false);
-   });
-   }
-   else {
-   console.log("[grantPermissionToUser][source.permissions.length == 1]", source)
-   _modelACL.addPrincipalIdToRole(app.PropertiesMap[label + permissions].property,
-   RoleMapping.USER, source.userId, source.access, function (callback) {
-   console.log("[3]Callback from grantPermissionsToUser", callback);
-   return next(callback)
-   })
-   }
-   }
-   */
 
   /**
    * @param req
@@ -910,7 +723,7 @@ module.exports = function (Repository) {
    * @constructor
    */
   Repository.SetACLtoRepository = function (req, res, next) {
-    console.log("[SetACLtoRepository]", req.body);
+    logger.debug("[SetACLtoRepository]", req.body);
     validateGrantAccessBody(req.body, function (isvalidate) {
       if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
       {
@@ -923,7 +736,7 @@ module.exports = function (Repository) {
         }
         setPermissionsToUser(payload, 'Repo', function (permission) {
           if (permission) {
-            console.log("PERMISSION:", permission);
+            logger.debug("PERMISSION:", permission);
             return res.status(200).send({message: "ACL has been added"});
           } else {
             return res.status(409).send({message: "ACL is already exists"});
@@ -942,10 +755,9 @@ module.exports = function (Repository) {
    * @constructor
    */
   Repository.SetACLtoCollection = function (req, res, next) {
-    console.log("grantAccess", req.body);
+    logger.debug("grantAccess", req.body);
     validateGrantAccessBody(req.body, function (isvalidate) {
       if (!isvalidate.validate) return res.status(400).send({message: 'Bad payload'})
-      //  console.log("Validate:", isvalidate);
       var payload = {
         "userId": isvalidate.userId,
         "permissions": req.body.permissions,
@@ -954,7 +766,7 @@ module.exports = function (Repository) {
           "collectionName": req.params.collection_name
         }
       }
-      console.log("payload", payload);
+      logger.debug("payload", payload);
       if (req.body.items_permissions) {
         async.parallel([
           function (callback) {
@@ -965,7 +777,7 @@ module.exports = function (Repository) {
             })
           },
           function (callback) {
-            console.log("------------items_permissions------------", req.body.items_permissions);
+            logger.debug("[SetACLtoCollection][items_permissions]: ", req.body.items_permissions);
             var payload = {
               "userId": isvalidate.userId,
               "permissions": req.body.items_permissions,
@@ -981,13 +793,13 @@ module.exports = function (Repository) {
             })
           }
         ], function (err, results) {
-          console.log("[SetACLtoCollection][END ASYNC PARALLEL]", results[0], results[1])
+          logger.debug("[SetACLtoCollection][END ASYNC PARALLEL]", results[0], results[1])
           if (results[0] && results[1]) {
-            console.log("ACLs created")
+            logger.debug("ACLs created")
             return res.status(200).send({message: "ACLs created"});
           }
           if (!results[0] && !results[1]) {
-            console.log("ACLs are already exists")
+            logger.debug("ACLs are already exists")
             return res.status(409).send({message: "ACLs are already exists"});
           }
           if (results[0] && !results[1]) {
@@ -1007,41 +819,23 @@ module.exports = function (Repository) {
           }
         })
       }
-      /*
-       grantPermissionsToUser(payload, 'Coll', function (permission) {
-       if (permission) {
-       if (req.body.items_permissions) {
-       var payload = {
-       "userId": isvalidate.userId,
-       "permissions": req.body.items_permissions,
-       "access": {
-       "repositoryName": req.params.repo_name,
-       "collectionName": req.params.collection_name
-       }
-       }
-       grantPermissionsToUser(payload, 'Item', function (permission) {
-       if (permission) {
-       return res.status(200).send({message: "ACL has been added"});
-       } else {
-       return res.status(409).send({message: "ACL is already exists"});
-       }
-       })
-       } else {
-       return res.status(200).send({message: "ACL has been added"});
-       }
-       }
-       else {
-       return res.status(409).send({message: "ACL is already exists"});
-       }
-       })*/
+
     })
 
   }
+
+  /**
+   * todo: To be completed
+   * @param req
+   * @param res
+   * @param next
+   * @constructor
+   */
   Repository.RemoveACLtoCollection = function (req, res, next) {
 
-    console.log("RemoveACLtoCollection", req.body)
-    console.log("RemoveACLtoCollection", req.params.repo_name)
-    console.log("RemoveACLtoCollection", req.params.collection_name)
+    logger.debug("RemoveACLtoCollection", req.body)
+    logger.debug("RemoveACLtoCollection", req.params.repo_name)
+    logger.debug("RemoveACLtoCollection", req.params.collection_name)
 
     app.models.User.findOne({where: {"username": req.body.username}}, function (err, user) {
       if (!user) return res.status(400).send({message: 'Bad payload'})
@@ -1051,9 +845,9 @@ module.exports = function (Repository) {
         "colletion_name": req.params.collection_name
 
       }
-      console.log("payload", payload);
+      logger.debug("payload", payload);
       removePermissionsToUser(payload, 'Coll', function (permission) {
-        console.log("Removed Permission:", permission)
+        logger.debug("Removed Permission:", permission)
       })
     })
 
@@ -1152,7 +946,6 @@ module.exports = function (Repository) {
   Repository.getACLsByusername = function (req, res, next) {
 
     app.models.User.find({where: {"username": req.params.acls_for_user}}, function (err, access) {
-      console.log("USER:", access);
       //app.models.access.find({where: {"repositoryName": req.params.repo_name}},{include:'users'}, function (err, access) {
       if (err) {
         return res.setatus(500).send({error: err})
@@ -1205,44 +998,38 @@ module.exports = function (Repository) {
   }
 
 
-  /*--------- beforeRemote Hooks ------*/
+  /*---------------------------------------------- beforeRemote Hooks------------------------------------------------------*/
 
   Repository.beforeRemote('getRepository', function (context, user, final) {
     var res = context.res;
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getRepository][Status 401 Unauthorized]")
+        logger.debug("[getRepository][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to access this repository"})
       }
       if (allowed == 500) {
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-       return final()
+        return final()
       }
     })
   })
 
-  Repository.afterRemote('getRepository', function (context, data, final) {
 
-    var length = data.data.length;
-    console.log("length",length)
+  Repository.afterRemote('getRepository', function (context, data, final) {
+    var length = data.length;
     var ctx = loopback.getCurrentContext();
     var accessToken = ctx.get('accessToken');
-    console.log("AccessToken",accessToken)
 
     for (var i = 0; i < length; i++) {
-      console.log("[VALORI]",data.data[i])
-      if (data.data[i].collection_db) {
-        data.data[i].collection_db.password = "********"
+      if (data[i].collection_db) {
+        data[i].collection_db.password = "********"
       }
-      var path = data.data[i].path
-      data.data[i].path = '/v2/repos'+path+'?access_token='+accessToken.id;
+      var path = data[i].path
+      data[i].path = api_prefix + path;
     }
-    //return res.status(200).send(instance);
-    console.log("edited: ",data)
     return final()
-
   })
 
 
@@ -1251,7 +1038,7 @@ module.exports = function (Repository) {
     var res = context.res;
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[editRepository][Status 401 Unauthorized]")
+        logger.debug("[editRepository][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to edit this repository"})
       }
       if (allowed == 500) {
@@ -1263,31 +1050,39 @@ module.exports = function (Repository) {
     })
   })
 
-  Repository.afterRemote('deleteRepository',function(context,user,final){
+  /**
+   * DELETE REPOSITORY
+   */
+  Repository.afterRemote('deleteRepository', function (context, user, final) {
     var req = context.req;
     var res = context.res;
-    var camelize = require('underscore.string');
-    var ModelName = camelize(req.params.repo_name).trim().capitalize().value();
+
+   // remote the repository model from app.models[modelName]
     _loadModel.removeModel(req, res, function (cb) {
-      if(!cb) {
-        logger.error("[afterRemote-deleteRepository] ")
+      if (!cb) {
+        logger.error("[afterRemote-deleteRepository][callback false] ")
       }
-        return res.status(200).send({message: "The repository [" + req.params.repo_name + "] has been removed"})
+      return res.status(200).send({message: "The repository [" + req.params.repo_name + "] has been removed"})
     })
+
+
   })
 
-  Repository.afterRemote('deleteCollection',function(context,user,final){
+  /**
+   * DELETE COLLECTION
+   */
+  Repository.afterRemote('deleteCollection', function (context, user, final) {
     var req = context.req;
     var res = context.res;
-    console.log("------------AFTER DELETE")
 
-    _loadModel.removeModel(req, res, function (cb) {
-      if(!cb) {
-        logger.error("[afterRemote-deleteRepository] ")
-      }
-      return res.status(200).send({message: "The collection [" + req.params.collection_name + "] has been removed"})
+    _loadModel.buildCollectionModel(req, res, function (next) {
+      _loadModel.removeModel(req, res, function (cb) {
+        if (!cb) {
+          logger.error("[afterRemote-deleteRepository] ")
+        }
+        return res.status(200).send({message: "The collection [" + req.params.collection_name + "] has been removed"})
+      })
     })
-
   })
 
   Repository.beforeRemote('deleteRepository', function (context, user, final) {
@@ -1295,28 +1090,26 @@ module.exports = function (Repository) {
     var res = context.res;
     var req = context.req;
 
-    console.log("deleteRepository",req.body.force)
+    logger.debug("[Repository.beforeRemote][deleteRepository]", req.body.force)
 
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[deleteRepository][Status 401 Unauthorized]")
+        logger.debug("[deleteRepository][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to delete this repository"})
       }
       if (allowed == 500) {
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-        _loadModel.getRepository(req, res, function (next) {
+        _loadModel.buildRepositoryModel(req, res, function (next) {
           if (next) {
-            console.log("req.params.repo_name", req.params.repo_name)
             app.repositoryModel.findOne(function (err, value) {
-              if(err) res.status(500).send({error:err})
-              if(!value || (req.body && req.body.force) )
+              if (err) res.status(500).send({error: err})
+              if (!value || (req.body && req.body.force))
                 return final()
               else {
                 return res.status(403).send({message: "The repository still has collections"})
               }
-
             })
           } else res.status(404).send({message: "repository not found"})
         })
@@ -1335,19 +1128,19 @@ module.exports = function (Repository) {
     var accessToken = ctx.get('accessToken');
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[createCollection][Status 401 Unauthorized]")
+        logger.debug("[createCollection][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to access this collection"})
       }
       if (allowed == 500) {
-        console.log("[createCollection][Status 500]")
+        logger.debug("[createCollection][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
         // validate Body
         _loadModel.validatebody(req, res, function (cb) {
           if (cb) {
-            // getRepository Model
-            _loadModel.getRepository(req, res, function (next) {
+            // buildRepositoryModel Model
+            _loadModel.buildRepositoryModel(req, res, function (next) {
               if (next) {
                 // check for duplicate
                 app.repositoryModel.findOne({where: {"name": req.body.name}}, function (err, value) {
@@ -1372,20 +1165,20 @@ module.exports = function (Repository) {
         })
       }
     })
-
-
   })
+
   Repository.beforeRemote('getCollection', function (context, user, final) {
 
     var res = context.res;
 
+
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[getCollection][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to access this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[getCollection][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
@@ -1399,17 +1192,17 @@ module.exports = function (Repository) {
     var req = context.req;
 
     if (!req.body || !req.body.id) {
-      console.log("[getCollection][Status 401 Unauthorized]")
+      logger.debug("[editCollectionBody][Status 401 Unauthorized]")
       return res.status(400).send({"error": "id empty or not found"})
 
     }
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[editCollectionBody][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to edit this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[editCollectionBody][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
@@ -1422,25 +1215,22 @@ module.exports = function (Repository) {
     var res = context.res;
     var req = context.req;
 
-    console.log("BODY",req.body)
-
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[deleteCollection][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to remove this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[deleteCollection][Status 500]")
         res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
 
-        _loadModel.getCollection(req, res, function (next) {
+        _loadModel.buildCollectionModel(req, res, function (next) {
           app.next_module.findOne(function (err, item) {
             if (err) return res.sendStatus(500);
             if (!item || req.body && req.body.force) return final();
             else {
-              console.log("COLLECTION ITEMS", item)
               return res.status(403).send({message: "The collection still has items"})
             }
           })
@@ -1455,20 +1245,19 @@ module.exports = function (Repository) {
     var res = context.res;
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[getCollectionItem][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to access this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[getCollectionItem][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-        _loadModel.getCollection(req, res, function (next) {
+        _loadModel.buildCollectionModel(req, res, function (next) {
           app.next_module.findById(req.params.item_id, function (err, item) {
             if (err) return res.sendStatus(500);
             if (!item) return res.sendStatus(404);
             else {
-              console.log("ITEM", item)
               return res.status(200).send(item);
             }
           })
@@ -1482,20 +1271,19 @@ module.exports = function (Repository) {
     var res = context.res;
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[editCollectionItem][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to edit this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[editCollectionItem][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-        _loadModel.getCollection(req, res, function (next) {
+        _loadModel.buildCollectionModel(req, res, function (next) {
           app.next_module.findById(req.params.item_id, function (err, item) {
             if (err) return res.sendStatus(500);
             if (!item) return res.sendStatus(404);
             else {
-              console.log("ITEM", item)
               item.updateAttributes(req.body, function (err) {
                 if (err) return res.status(500).send({error: err})
                 else return res.status(200).send({message: "item updated"});
@@ -1513,24 +1301,23 @@ module.exports = function (Repository) {
     var res = context.res;
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[getCollection][Status 401 Unauthorized]")
+        logger.debug("[deleteCollectionItem][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to delete this collection"})
       }
       if (allowed == 500) {
-        console.log("[getCollection][Status 500]")
+        logger.debug("[deleteCollectionItem][Status 500]")
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-        _loadModel.getCollection(req, res, function (next) {
+        _loadModel.buildCollectionModel(req, res, function (next) {
           app.next_module.findById(req.params.item_id, function (err, item) {
             if (err) return res.sendStatus(500);
             if (!item) return res.sendStatus(404);
             else {
-              console.log("ITEM", item)
               app.models.Replica.find({where: {itemId: req.params.item_id}}, function (err, entry) {
                 if (err) return res.status(500).send({error: err})
                 if (entry && entry.length > 0) {
-                  console.log("REPLICHE PRESENTI", entry)
+                  logger.debug("[Repository.beforeRemote('deleteCollectionItem][The item still has replicas]", entry)
                   return res.status(403).send({message: "The item still has replicas", replicas: entry})
                 }
                 else {
@@ -1560,14 +1347,14 @@ module.exports = function (Repository) {
 
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
-        console.log("[populateCollection][Status 401 Unauthorized]")
+        logger.debug("[populateCollection][Status 401 Unauthorized]")
         return res.status(401).send({"error": "You are not allowed to access this collection"})
       }
       if (allowed == 500) {
         return res.status(500).send({"error": "Server Error"})
       }
       if (allowed == 200) {
-        _loadModel.getCollection(req, res, function (next) {
+        _loadModel.buildCollectionModel(req, res, function (next) {
           _loadModel.createPersistedModel(req, res, function (next) {
             app.persistedModel.create(req.body, function (err, instance) {
               if (err) {
@@ -1586,11 +1373,10 @@ module.exports = function (Repository) {
 
     var req = context.req;
     var res = context.res;
-    _loadModel.getRepository(req, res, function (next) {
+    _loadModel.buildRepositoryModel(req, res, function (next) {
       if (next) {
         _loadModel.validateRelationBody(req, res, function (next) {
           if (next) {
-            console.log("OK VALIDATE")
             final()
           } else return res.sendStatus(412)
         })
@@ -1601,7 +1387,7 @@ module.exports = function (Repository) {
 
     var req = context.req;
     var res = context.res;
-    _loadModel.getCollection(req, res, function (next) {
+    _loadModel.buildCollectionModel(req, res, function (next) {
       app.first_model = app.next_module;
       _modelRelation.buildRelation(req, res, function (relation) {
         return final()
@@ -1611,7 +1397,7 @@ module.exports = function (Repository) {
   Repository.beforeRemote('getReplicas', function (context, user, final) {
     var req = context.req;
     var res = context.res;
-    _loadModel.getCollection(req, res, function (next) {
+    _loadModel.buildCollectionModel(req, res, function (next) {
       return final()
     })
   })
@@ -1619,8 +1405,8 @@ module.exports = function (Repository) {
 
     var req = context.req;
     var res = context.res;
-    _loadModel.getCollection(req, res, function (next) {
-      console.log("app.next_module:", app.next_module.definition.name);
+    _loadModel.buildCollectionModel(req, res, function (next) {
+      logger.debug("app.next_module:", app.next_module.definition.name);
       return final()
     })
   })
@@ -1634,15 +1420,19 @@ module.exports = function (Repository) {
         context.result[i].collection_db.password = "********"
       }
       var path = context.result[i].path
-      context.result[i].path = '/v2/repos'+path+'?access_token='+accessToken.id
+      context.result[i].path = api_prefix + path;
+      context.result[i] = {
+        name : context.result[i].name,
+        path : context.result[i].path,
+        collection_db : context.result[i].collection_db
+      }
     }
     return final()
 
   })
 
 
-
-  /* ---------------------- remoteMethod ------------------------*/
+  /* ------------------------------------------------------ remoteMethod ---------------------------------------------*/
 
   Repository.remoteMethod('getRepository', {
     accepts: [
@@ -1650,8 +1440,7 @@ module.exports = function (Repository) {
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
     ],
     http: {path: '/:repo_name/', verb: 'get'},
-
-    returns: {arg: 'data', type: 'object'}
+    returns: {arg: 'data', type: 'object', root: true}
   });
 
   Repository.remoteMethod('editRepository', {
@@ -1761,7 +1550,7 @@ module.exports = function (Repository) {
   /* -------------- Relations ----------------------------------------*/
 
   Repository.remoteMethod('createRelation', {
-    http: {path: '/:repo_name/:collection_name/_relation', verb: 'post'},
+    http: {path: '/:repo_name/:collection_name/_relations', verb: 'post'},
     accepts: [
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -1897,10 +1686,9 @@ module.exports = function (Repository) {
 
   Repository.observe('before save', function (context, final) {
     if (context.currentInstance) return final()
-    console.log('Going to create Repository');
-    console.log("Body:", context.instance);
+    logger.debug('[Repository][before save]', context.instance);
     var req = {body: context.instance};
-    var res = context.result; // undefined
+    var res = context.result;
 
     _loadModel.buildpayload(req, res, function (next) {
       if (!next) {
@@ -1908,7 +1696,7 @@ module.exports = function (Repository) {
         return final(error);
       }
 
-      console.log("payload", app.bodyReadToWrite);
+      logger.debug("[Repository][before save][payload]", app.bodyReadToWrite);
       var payload = app.bodyReadToWrite;
       Repository.findOne({where: {"name": req.body.name}}, function (err, value) {
         if (err) {
@@ -1921,9 +1709,10 @@ module.exports = function (Repository) {
           return final(error);
         } else {
           context.instance.path = payload.path;
-          context.instance.location = payload.location;
-          context.instance.collection_db = payload.collection_db;
-          console.log("*-Body-*:", context.instance);
+          context.instance.tablename = payload.tablename;
+          context.instance.collection_db = payload.collection_db ? payload.collection_db : null
+          context.instance.default_storage = payload.default_storage ? payload.default_storage : null
+          logger.debug("[[Repository][before save]][context.instance edited]:", context.instance);
           return final()
         }
       })
@@ -1931,7 +1720,7 @@ module.exports = function (Repository) {
   })
 
   Repository.observe('after save', function (context, final) {
-    console.log('Going to POST SAVE Repository');
+    logger.debug('[Repository][after save]');
     if (context.isNewInstance == false) return final()
     var repositoryDB = app.dataSources.repoDB;
 
@@ -1944,7 +1733,7 @@ module.exports = function (Repository) {
         context.result = {
           data: "OK"
         };
-        console.log(context.result);
+        logger.debug(context.result);
         return final();
 
       } else {

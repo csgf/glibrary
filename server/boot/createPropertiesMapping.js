@@ -59,6 +59,9 @@ module.exports = function(app) {
     },
     {
       property:'getReplicaById'
+    },
+    {
+      property:'getRelation'
     }
   ];
   PropertiesMap['ItemW'] = [
@@ -78,21 +81,16 @@ module.exports = function(app) {
       property: 'deleteReplicaById'
     }
   ];
-
-  console.log("PropertiesMap['ItemW'] LENGHT",PropertiesMap['ItemR'].length)
+  console.log("---------------------------Properties Mapping--------------------------------------")
   app.PropertiesMap = PropertiesMap;
   console.log("Create: app.PropertiesMap",app.PropertiesMap)
   app.models.Role.find(function(err,roles){
 
     roles.forEach(function(role) {
-        console.log("Role",role.name)
+       // console.log("Role...",role.name)
       app.RoleMap[role.name] = { id: role.id }
-
-
     })
-
   })
-
-
+  console.log("------------------------------------------------------------------------------------")
 }
 

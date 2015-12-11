@@ -39,10 +39,6 @@
     "dataSource": "repoDB",
     "public": true
   },
-  "access": {
-    "dataSource": "repoDB",
-    "public": true
-  },
   "accessToken": {
     "dataSource": "repoDB",
     "public": true

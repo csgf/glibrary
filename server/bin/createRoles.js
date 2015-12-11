@@ -4,13 +4,20 @@
  * https://github.com/antoniodimariano/
  */
 
+
+/**
+ * It creates Roles to use with ACL system
+ *
+ */
+
+
 var path = require('path');
 var app = require(path.resolve(__dirname, '../server'));
 var async = require('async');
 var Role = app.models.Role;
 
 async.parallel([
-    /*
+
   function (callback) {
     Role.create({"name": "getRepository"}, function (err, entry) {
       if (err) throw err;
@@ -81,7 +88,7 @@ async.parallel([
       console.log("Role created: ", entry)
       callback()
     })
-  }/*,
+  },
   function (callback) {
     Role.create({"name": "getReplicas"}, function (err, entry) {
       if (err) throw err;
@@ -116,9 +123,16 @@ async.parallel([
       console.log("Role created: ", entry)
       callback()
     })
-  }*/
+  },
+  function (callback) {
 
+    Role.create({"name": "getRelation"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  }
 
 ], function (err) {
-    console.log('Role created')
+  console.log('Role created')
 });

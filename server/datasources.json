@@ -6,10 +6,18 @@
   "repoDB": {
     "host": "localhost",
     "port": "27017",
-    "database": "glibrary_test",
+    "database": "glibrary",
     "username": "",
     "password": "",
     "name": "repoDB",
     "connector": "mongodb"
+  },
+  "swift_storage": {
+
+    "keys" : {
+      "AUTH_xxxx": "yyyy",
+      "AUTH_zzzz": "wwww"
+    },
+    "expirationTimeInSeconds" : 30
   }
 }

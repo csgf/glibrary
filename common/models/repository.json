@@ -15,13 +15,17 @@
       "type": "string",
       "required": false
     },
-    "location": {
+    "tablename": {
       "type": "string",
       "required": false
     },
     "collection_db": {
       "type": "object",
       "required": false
+    },
+    "default_storage":{
+      "type":"object",
+      "required":false
     },
     "import": {
       "type": "string",

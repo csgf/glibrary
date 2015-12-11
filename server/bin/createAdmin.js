@@ -9,10 +9,15 @@
  * https://github.com/antoniodimariano/
  */
 
+/**
+ *
+ * It creates default admin user. He belongs to 'admin' Role
+ *
+ *
+ */
+
 var path = require('path');
 var app = require(path.resolve(__dirname, '../server'));
-
-
 var User = app.models.user;
 var Role = app.models.Role;
 var RoleMapping = app.models.RoleMapping;
