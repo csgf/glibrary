@@ -492,9 +492,11 @@ module.exports = function (Repository) {
     var pathParts = path.split('/', 5);
     //logger.debug(pathParts);
     if (pathParts.length != 5 || pathParts[0] || pathParts[1] != 'v1' || !pathParts[2] || !pathParts[3] || pathParts[4] == '/') {
-      res.json(400, {
-        error: "WARNING: " + path + " does not refer to a Swift Object (e.g. /v1/account/container/object)"
-      });
+      return {
+        error:400,
+        message:"WARNING: " + path + " does not refer to a Swift Object (e.g. /v1/account/container/object"
+      }
+
     }
     var account = pathParts[2];
     if (keys[account]) {
