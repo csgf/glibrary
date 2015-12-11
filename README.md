@@ -25,8 +25,15 @@ You can find the documentation of the APIs [here](https://github.com/csgf/glibra
 =======
 [![Build Status](https://travis-ci.org/antoniodimariano/gLibrary2.0.svg?branch=master)](https://travis-ci.org/antoniodimariano/gLibrary2.0)
 
+**Requirements**
+
+gLibrary 2 requires a **MongoDB** (> 3.x) server running. It's used to mantain repositories'configurations and also for metadata storage for local repositories.
+
+Being a server service, a tool that ensures it indefinetively runs or restarts automatically is recommended. We have successfully deployed gLibrary both with [forever](https://github.com/foreverjs/forever) and [pm2](https://github.com/Unitech/pm2). For testing purposes, [Nodemon](https://github.com/remy/nodemon) is a valid option.
+
 **Run the beta**
 
-* 1) install LoopBack framework npm install -g strongloop
-* 2) run npm install
-* 3) node .
+1) clone the repo
+2) `cd glibrary`
+3) run `npm install` to install all the needed dependencies
+4) `node server/server.js`
