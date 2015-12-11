@@ -37,4 +37,5 @@ Being a server service, a tool that ensures it indefinetively runs or restarts a
 2. `cd glibrary`
 3. Run `npm install` to install all the needed dependencies
 4. `cd server/bin`. Run the initialization script `sh init.sh` (Run only once!) 
+5. Edit `server/datasources.json` the OpenStack Swift Storage keys for the account/project to let Temporary URL work
 5. `node server/server.js`
