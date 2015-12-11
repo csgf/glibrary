@@ -20,28 +20,68 @@ module.exports = function(app) {
   RoleMap = {}
   app.RoleMap = RoleMap;
 
-
+/*
+  User.hasMany(RoleMapping, {foreignKey: 'principalId', as: 'mappers'});
+  RoleMapping.belongsTo(User, {foreignKey: 'principalId'});
+*/
   PropertiesMap['RepoR'] = {
     property: 'getRepository'
   };
   PropertiesMap['RepoW'] = {
     property: 'createCollection'
   };
-  PropertiesMap['CollR'] = {
-    property: 'getCollection',
+  PropertiesMap['CollR'] = [
+    {
+      property: 'getCollection',
+    },
+    {
+      property:' getCollectionSchema'
+    }
+  ];
+  PropertiesMap['CollW'] = [
+    {
+      property: 'populateCollection'
+    },
+    {
+      property: 'editCollectionBody'
+    },
+    {
+      property: 'deleteCollection'
+    }
 
-  };
-  PropertiesMap['CollW'] = {
-    property: 'populateCollection',
-  };
-  PropertiesMap['ItemR'] = {
-    property: 'getCollectionItem'
-  };
+  ];
+  PropertiesMap['ItemR'] = [
+    {
+      property: 'getCollectionItem'
+    },
+    {
+      property:'getReplicas'
+    },
+    {
+      property:'getReplicaById'
+    }
+  ];
+  PropertiesMap['ItemW'] = [
+    {
+      property:'deleteCollectionItem'
+    },
+    {
+      property :'editCollectionItem'
+    },
+    {
+      property: 'createReplica'
+    },
+    {
+      property: 'uploadReplicaById',
+    },
+    {
+      property: 'deleteReplicaById'
+    }
+  ];
 
-
+  console.log("PropertiesMap['ItemW'] LENGHT",PropertiesMap['ItemR'].length)
   app.PropertiesMap = PropertiesMap;
   console.log("Create: app.PropertiesMap",app.PropertiesMap)
-
   app.models.Role.find(function(err,roles){
 
     roles.forEach(function(role) {

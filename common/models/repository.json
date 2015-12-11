@@ -19,7 +19,7 @@
       "type": "string",
       "required": false
     },
-    "coll_db": {
+    "collection_db": {
       "type": "object",
       "required": false
     },

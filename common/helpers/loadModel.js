@@ -25,7 +25,7 @@ var validatereqbodyname = function (body, next) {
     var qry = body.name;
     var regx = /^[a-z\d]+[a-z\d_]*[a-z\d]$/;
 
-    if  ( regx.test(qry)) {
+    if (regx.test(qry)) {
       next(true);
     } else next(false);
   } else next(false)
@@ -55,24 +55,24 @@ var findDataFromModel = function (app, path, model, callback) {
       return callback(false);
     }
     else {
-      console.log("PATH",path)
+      console.log("PATH", path)
 
-      console.log("DATA_",data)
+      console.log("DATA_", data)
       return callback(data)
     }
   })
 }
 
 /**
- * Validates coll_db data in order to provide a datasource entity for collections
+ * Validates collection_db data in order to provide a datasource entity for collections
  *
  * @param data
  * @returns {boolean}
  */
 var validateCollDBData = function (data) {
-  var colldb = data.coll_db;
+  var colldb = data.collection_db;
   //&& colldb.connector && colldb.location
-  console.log("---------------DATA------------------:",colldb)
+  console.log("---------------DATA------------------:", colldb)
 
   if (colldb && colldb.host && colldb.port && colldb.database && colldb.type) {
     return true;
@@ -92,7 +92,7 @@ var findDatabaseCredentialsFromModel = function (data, callback) {
     return callback(false);
   }
   else {
-    var db = data.coll_db;
+    var db = data.collection_db;
 
     var datasource_setup = {
       "host": db.host,
@@ -301,7 +301,7 @@ var buildModelFromNoSQL = function (app, datasource, table, callback) {
 
 var getDataSource = function getDataSource(app, data) {
 
-  // devo verificare se coll_db contiene credentiali DB e costruisco il datasource
+  // devo verificare se collection_db contiene credentiali DB e costruisco il datasource
   //logger.debug("[getDataSource][data]",data);
   // if data are valid a datasource will be return
   findDatabaseCredentialsFromModel(data, function (datasource) {
@@ -315,7 +315,7 @@ var getDataSource = function getDataSource(app, data) {
     if (!datasource) {
       //  logger.debug("[getDataSource] datasource callback FALSE")
 
-      /* Todo: capire cosa fare nel caso in cui i dati di coll_db non passino la validazione*/
+      /* Todo: capire cosa fare nel caso in cui i dati di collection_db non passino la validazione*/
       // somethings went wrong. Let's use the system default mongodb
 
       app.CollectionDataSource = RepoDataSource[req.params.repo_name].datasource;
@@ -375,7 +375,6 @@ var checkCache = function (app, modelName, callaback) {
   // checks if the model required is ready
   if (app.models[ModelName]) {
     logger.debug("--[checkCache][found in cache] app.model[", ModelName + "]");
-
     if (modelName in RepoDataSource) {
       app.CollectionDataSource = RepoDataSource[modelName].datasource;
       logger.debug("--[checkCache][app.CollectionDataSource] =", RepoDataSource[modelName].datasource.settings.host)
@@ -408,13 +407,11 @@ var loadRepository = function (app, req, res, callback) {
    app.buildedModel = app.models[ModelName] or app.buildedModel = null
    */
   eventEmitter.emit('checkCache', app, req.params.repo_name);
-
-
   // logger.debug("CONTROLLO REPO_DATA",app.repo_data);
   // checks if Model is ready in the system's cache
   if (app.buildedModel) {
     // assigns the Model obj to callback.module that will be use in rest-api to run query on the Model required
-    console.log("----->app.buildedModel",app.buildedModel.definition.name)
+    console.log("----->app.buildedModel", app.buildedModel.definition.name)
     callback.module = app.buildedModel;
     // !-----!
     app.repositoryModel = app.buildedModel;
@@ -429,7 +426,7 @@ var loadRepository = function (app, req, res, callback) {
       if (repo_data) { // query result of the repo_name Model we have just loaded
 
         // we have found the path required. Checks if it has an external datasource
-        if (!repo_data.coll_db || repo_data.coll_db.host == '') {
+        if (!repo_data.collection_db || repo_data.collection_db.host == '') {
           // uses system default mongodb to store collection_model
           logger.debug("[loadRepository] Load system datasources");
           app.CollectionDataSource = repositoryDB;
@@ -462,7 +459,7 @@ var loadRepository = function (app, req, res, callback) {
 
         // usato nel getDataSource
         // salvo il app.CollectionDataSource specificato nel repository. potrebbe essere quello di sistema o uno custom
-        // getDataSource viene chiamato anche da getCollection : se la collection non presenta un campo coll_db, allora deve essere
+        // getDataSource viene chiamato anche da getCollection : se la collection non presenta un campo collection_db, allora deve essere
 
 
         // usato il datasource specificato nel repository. Capire se può essere recuperato dal modello del repository
@@ -497,9 +494,9 @@ var loadRepository = function (app, req, res, callback) {
 var setDB_type = function (app, coll_data) {
 //  console.log("SETDBTYPE:",coll_data);
 
-  if (coll_data.coll_db && coll_data.coll_db.type != '') {
+  if (coll_data.collection_db && coll_data.collection_db.type != '') {
 
-    var db_type = coll_data.coll_db.type;
+    var db_type = coll_data.collection_db.type;
   }
   else
     var db_type = 'mongodb';
@@ -516,13 +513,13 @@ var setDB_name = function (app, coll_data) {
 
 
 //  console.log("REPO",app.repo_data);
-  if (!app.repo_data.coll_db) {
+  if (!app.repo_data.collection_db) {
     var db_name = 'repository';
   }
-  if (app.repo_data.coll_db && app.repo_data.coll_db.database != '')
-    var db_name = app.repo_data.coll_db.database
-  if (coll_data.coll_db.database)
-    var db_name = coll_data.coll_db.database;
+  if (app.repo_data.collection_db && app.repo_data.collection_db.database != '')
+    var db_name = app.repo_data.collection_db.database
+  if (coll_data.collection_db.database)
+    var db_name = coll_data.collection_db.database;
   return db_name;
 }
 /**
@@ -579,20 +576,20 @@ var setReplicaRelation = function (app, model, next) {
  */
 var setupParameters = function (req, res, next) {
   validatereqbodyname(req.body, function (cb) {
-     if (!cb) {
-       if (!res)  next(false);
-       else
-       return res.status(400).send({error: "Invalid request"})
-     }
+    if (!cb) {
+      if (!res)  next(false);
+      else
+        return res.status(400).send({error: "Invalid request"})
+    }
 
     // POST su /v1/repos
     //var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim()).toLowerCase();
     var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
-    var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
+    var collection_db = (!req.body.collection_db ? null : req.body.collection_db);
 
-   // if (!req.params && !req.params.repo_name) {
-      var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
-   // }
+    // if (!req.params && !req.params.repo_name) {
+    var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
+    // }
     //POST su /v1/repo/:repo_name
     if (req.params && req.params.repo_name) {
       var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
@@ -605,7 +602,7 @@ var setupParameters = function (req, res, next) {
         "name": name,
         "path": path,
         "location": location,
-        "coll_db": coll_db,
+        "collection_db": collection_db,
         "import": import_flag,
         "schema": schema
       }
@@ -614,7 +611,7 @@ var setupParameters = function (req, res, next) {
         "name": name,
         "path": path,
         "location": location,
-        "coll_db": coll_db,
+        "collection_db": collection_db,
       }
     }
     logger.debug("[setupParameters][parameters]:", parameters);
@@ -656,7 +653,7 @@ module.exports = function (app) {
           logger.debug("------------end of getRepository---------------")
           return next(cb);
         } else {
-          console.log("QUIO------>>>",cb)
+          console.log("QUIO------>>>", cb)
           return next(false);
         }
       })
@@ -674,7 +671,7 @@ module.exports = function (app) {
         logger.debug("[getCollection][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
           " DB =", app.CollectionDataSource.settings.database);
 
-         return  next(true);
+        return next(true);
       }
 
       else {
@@ -687,7 +684,7 @@ module.exports = function (app) {
             findDataFromModel(app, requestURL, repoModel, function (coll_data) {
               if (coll_data) {
                 // we have the info about collection_name. Check if we have a custom datasource to build
-                if (!coll_data.coll_db || coll_data.coll_db == null) {
+                if (!coll_data.collection_db || coll_data.collection_db == null) {
                   //logger.debug("[getCollection][app.CollectionDataSource]=",RepoDataSource[req.params.repo_name].datasource.settings.host +
                   //" DB =",RepoDataSource[req.params.repo_name].datasource.settings.database);
 
@@ -706,7 +703,7 @@ module.exports = function (app) {
                   var db_name = setDB_name(app, coll_data);
                 }
 
-                if (coll_data.import == "true" || coll_data.import == true ) {
+                if (coll_data.import == "true" || coll_data.import == true) {
                   logger.debug("-------[getCollection][Import Data]----------");
                   var modelTable = coll_data.location;
                   var modelName = modelTable;
@@ -727,7 +724,7 @@ module.exports = function (app) {
                   app.CollectionDataSource, function (model) {
                     if (model) {
                       logger.debug("[getCollection][buildModelfromTable][OK]");
-                      if (coll_data.import == "true" || coll_data.import == true ) {
+                      if (coll_data.import == "true" || coll_data.import == true) {
                         var modelName = setModelName(app, req.params);
                         ModelTableMap[modelName] = {table: modelTable};
                         logger.stream.write("[getCollection]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
@@ -746,16 +743,16 @@ module.exports = function (app) {
                       //return next();
 
                     } else {
-                      return res.sendStatus(404);
+                      return res.status(500).send({error: 'error building model from table'});
                     }
 
                   })
               } else {
-                return res.sendStatus(404);
+                return res.status(404).send({message: 'collection not found'});
 
               }
             })
-          } else return res.sendStatus(404);
+          } else return res.status(404).send({message: 'the repository model does not exists.'});
         })
       }
     },
@@ -765,7 +762,7 @@ module.exports = function (app) {
       setupParameters(req, res, function (json_body) {
         next.body = json_body;
         app.bodyReadToWrite = json_body;
-        if (!next.body.coll_db) {
+        if (!next.body.collection_db) {
           logger.debug("[getDatasourceToWrite][Nothing to do]");
           return next(false);
         } else {
@@ -798,14 +795,14 @@ module.exports = function (app) {
           var collmodel = datasource.createModel(app.CollectionModelTable, schema.properties);
           app.persistedModel = collmodel;
           next.persistedModel = collmodel;
-           next()
+          next()
         })
 
       } else {
         logger.debug("[createPersistedModel][mongodb]");
-        app.persistedModel =  app.next_module ;
+        app.persistedModel = app.next_module;
         next.persistedModel = next.module;
-         next()
+        next()
       }
 
 
@@ -814,27 +811,40 @@ module.exports = function (app) {
     removeModel: function removeModel(req, res, next) {
 
 
-      eventEmitter.emit('checkCache', app, req.params.pathToDelete);
-      if (app.buildedModel) {
-        logger.debug("TROVATA CACHE pathToDelete");
-        app.buildedModel = null;
-        return next();
-      } else {
-        console.log("NON CANCELLATO MODELLO IN MEMORIA", req.params.pathToDelete);
-        app.buildedModel = null;
-        return next();
+      var camelize = require('underscore.string');
+
+      var modelName = 'TestingCollection1'
+      //var modelName =  req.params.collection_name ? req.params.repo_name+'+'+req.params.collection_name : req.params.repo_name;
+      if (modelName in ModelTableMap) {
+        logger.debug("-*-[deleteCollection][ModelName is in ModelTableMap]", ModelTableMap[modelName])
+        if (ModelTableMap[modelName].table != modelName) {
+          logger.debug("-*-[deleteCollection]ModelTableMap[modelName].table != modelName ")
+          modelName = ModelTableMap[modelName].table
+
+        }
+        app.models[modelName] = null;
+        next(true)
       }
+      else {
+      //  var modelName = req.params.repo_name;
+        var ModelName = camelize(req.params.repo_name).trim().capitalize().value();
+        app.models[ModelName] = null;
+        next(true)
+      }
+
+
+
 
     },
 
     buildpayload: function buildpayload(req, res, next) {
       setupParameters(req, res, function (json_body) {
         logger.debug("[buildpayload][saved body in next.body]");
-        console.log("json_body",json_body);
+        console.log("json_body", json_body);
         app.bodyReadToWrite = json_body;
         next.body = json_body;
-        console.log("!!!!!NEXT",json_body)
-        if(!json_body) return next(false)
+        console.log("!!!!!NEXT", json_body)
+        if (!json_body) return next(false)
         else next(true);
       })
 
@@ -842,7 +852,7 @@ module.exports = function (app) {
 
 
     validatebody: function validatebody(req, res, next) {
-      console.log("VALIDATE",req.body);
+      console.log("VALIDATE", req.body);
       validatereqbodyname(req.body, function (cb) {
         if (cb) return next(true)
         else return res.status(400).send({error: "Invalid request"})
@@ -861,7 +871,7 @@ module.exports = function (app) {
         "name": relation_name
 
       }
-      logger.debug("[validateRelationBody][relationbody]",relationbody);
+      logger.debug("[validateRelationBody][relationbody]", relationbody);
 
       next.relationbody = relationbody
       app.relationbody = relationbody
@@ -869,10 +879,10 @@ module.exports = function (app) {
     },
 
     checkduplicate: function checkduplicate(json, relationbody, next) {
-     console.log("JSON LENG",json.length);
+      console.log("JSON LENG", json.length);
       if (json.length == 0) return next();
       if (findrelatedCollection(json, 'relatedCollection', relationbody.relatedCollection)) {
-          return next(true)
+        return next(true)
       } else return next(false);
     }
   }
