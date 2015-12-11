@@ -36,4 +36,5 @@ Being a server service, a tool that ensures it indefinetively runs or restarts a
 1. Clone the repo
 2. `cd glibrary`
 3. Run `npm install` to install all the needed dependencies
-4. `node server/server.js`
+4. Run the initialization script `sh ./server/bin/init.sh` 
+5. `node server/server.js`
