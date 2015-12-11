@@ -173,7 +173,7 @@ repository has the following properties:
 |------------------------ |------------------------------------------------------------------------------------------ |   
 | name                    |  Repository name                                                                          |
 | path                    |  Direct endpoint of the given repository                                                  |
-| coll\_db (_TODO_: default\_collection\_db)   |  Default database where collection data should be stored. Can be overriden per collection |   
+| collection\_db    		|  Default database where collection data should be stored. Can be overriden per collection |   
 | host                    |  FQDN of the default collection DB                                                        |
 | port                    |  port number of the default collection DB                                                 |
 | username                |  username of the default collection DB                                                    |
@@ -199,10 +199,8 @@ Example:
 }
 ```
 
-Each repository can have a `coll_db` (_TODO_: `default_collection_db`) where collections
-data will be stored. If no `coll_db` (_TODO_: `default_collection_db`) is specified, the
-repository will use the local non-relational mongoDB that comes with gLibrary. Each repository's
-collection can override the `coll_db` (_TODO_: `default_collection_db`).
+Each repository can have a `collection_db` where collections data will be stored. If no `collection_db` is specified, the repository will use the local non-relational mongoDB that comes with gLibrary. Each repository's
+collection can override the `collection_db`.
 
 ### Create a new repository
 
@@ -210,8 +208,8 @@ collection can override the `coll_db` (_TODO_: `default_collection_db`).
 POST /v2/repos/ HTTP/1.1
 ```
 
-Create a new repository. A default `coll_db` (_TODO_: `default\_collection\_db`) can be specified. It
-will store all the collections in case no `coll\_db` (_TODO_: `collection_db`) parameter is
+Create a new repository. A default `collection_db`  can be specified. It
+will store all the collections in case no `collection\_db`  parameter is
 specified during collection creation. This property is optional. If
 missing it will use the local MongoDB server.
 
@@ -220,7 +218,7 @@ missing it will use the local MongoDB server.
   name                      | type    | description
   ------------------------- |-------- | -----------------------------------------------------------------------------------------------------
   name                      | string  | Name of the repository (will be the API path)
-  coll\_db (_TODO_: default\_collection\_db)   | object  | (Optional) Default database where collection data should be stored. <br>Can be overriden per collection
+  collection\_db 			 | object  | (Optional) Default database where collection data should be stored. <br>Can be overriden per collection
   host                      | string  | FQDN of the default collection DB
   port                      | number  | port number of the default collection DB
   username                  | string  | username of the default collection DB
@@ -242,7 +240,7 @@ Content-Type: application/json
 
 {
     "name": "infn",
-    "default_coll_db": {
+    "collection_db": {
         "host": "glibrary.ct.infn.it",
         "port": 5432,
         "username": "infn_admin",
@@ -327,7 +325,7 @@ If you want to create a collection that maps an existing db table, two additiona
 name		| description
 ----------|-----------------------------------------------------------
 import    | it should set to `true`
-location  | name of the database table of the database to be imported
+tablename | name of the database table of the database to be imported
 
 **Example** (creation of a new collection with data coming from an existing relational db):
 
@@ -338,8 +336,8 @@ Content-Type: application/json
 {
     "name": "old_articles",
     "import": "true",
-    "location": "pubs",
-    "coll_db": {
+    "tablename": "pubs",
+    "collection_db": {
 		"host": "somehost.ct.infn.it",
 		"port": 3306,
 		"username": "dbadmin",
@@ -672,6 +670,8 @@ GET /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection>
 
 Retrieve all the items from `related_collection` of the given `item_id`.
 
+
+## Contacts
 
 
 

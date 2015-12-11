@@ -1,6 +1,57 @@
 gLibrary 2.0
 ============
 
+Table of contents
+-----------------
+
+-  `Overview <#overview>`__
+-  `Authentication <#authentication>`__
+
+   -  `Login <#login>`__
+   -  `User creation <#user-creation>`__
+
+-  `Authorization <#authorization>`__
+
+   -  `ACLs <#ACLs>`__
+
+-  `Repositories <#repositories>`__
+
+   -  `List
+      repositories <#list-of-all-the-repositories-hosted-on-the-server>`__
+   -  `Create a repository <#create-a-new-repository>`__
+
+-  `Collections <#collections>`__
+
+   -  `Create a collection <#create-a-new-collection>`__
+   -  `Import a
+      collection <#import-data-from-an-existing-relational-database>`__
+   -  `List all the
+      collections <#list-all-the-collections-of-a-repository>`__
+   -  `Collection's schema <#retrieve-the-schema-of-a-collection>`__
+   -  `Delete a collection <#delete-a-collection>`__
+
+-  `Items <#items-previously-entries>`__
+
+   -  `Creation <#item-creation>`__
+   -  `Listing <#item-listing>`__
+   -  `Detail <#item-detail>`__
+   -  `Deletion <#item-deletion>`__
+   -  `Update <#item-update>`__
+
+-  `Replicas <#replicas>`__
+
+   -  `Creation <#replica-creation>`__
+   -  `List <#retrieve-all-the-replicas-of-the-given-item_id>`__
+   -  `Download <#download-a-given-replica>`__
+   -  `Upload <#upload-a-replica>`__
+   -  `Delete <#delete-a-replica>`__
+
+-  `Relations <#relations>`__
+
+   -  `Retrieve related items <#retrieve-related-items>`__
+
+-  `Contacts <#contacts>`__
+
 Overview
 --------
 
@@ -38,8 +89,8 @@ Cloud Storage (OpenStack Swift is supported).
 created, if foreign keys are properly assigned. Currently we support
 one-to-many relations.
 
-Testing endpoint
-~~~~~~~~~~~~~~~~
+Beta server endpoint
+~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -91,6 +142,83 @@ Alternatively you can use the ``email`` addess instead of the
 User creation
 ~~~~~~~~~~~~~
 
+New users are created issuing requests to the following endpoint:
+
+.. code:: http
+
+    POST /v2/repos/users HTTP/1.1
+
+The mandatory parameters are:
+
+-  **username**
+-  **email**
+-  **password**
+
+Please notice that the created user, has no access to any repository
+yet. The admin user need to assign the created user to any repository
+and/or collections, setting properly the ACLs.
+
+Authorization
+-------------
+
+Currently gLibrary allows to set separate permissions to repositories,
+collections and items per each user. The default permission set to a
+newly created user is *NO ACCESS* to anything. It's admin's
+responsability to set properly the ACLs per each user. Currenly an
+instance of gLibrary server has just one superadmin (the *admin* user),
+but in future releases you will have the option to define admins per
+repository.
+
+ACLs
+~~~~
+
+To set ACLs, the super admin can issue requests to two separate
+endpoints:
+
+.. code:: http
+
+    POST /v2/repos/<repo_name>/_acls http/1.1
+
+and/or
+
+.. code:: http
+
+    POST /v2/repos/<repo_name>/<collection_name>/_acls http/1.1
+
+The body of each requests has the following attributes:
+
++------------------------+------------------------------------------------------------------+
+| attribute              | description                                                      |
++========================+==================================================================+
+| *username*             | the username of the user to which we are adding permissions to   |
++------------------------+------------------------------------------------------------------+
+| *permissions*          | valid options are "R" and "RW"                                   |
++------------------------+------------------------------------------------------------------+
+| *items\_permissions*   | (for collections only) valid options are "R" and "RW"            |
++------------------------+------------------------------------------------------------------+
+
+*permissions* refers to repository or collection permission, according
+to where the request is issued:
+
+-  Repository:
+
+   -  "R" grants a user the capability of listing its content (ie. list
+      of collections)
+   -  "RW" grants a user the capability of creating (or importing) new
+      collections or deleting them
+
+-  Collection:
+
+   -  "R" grants a user the capabilities to list the collection's
+      content (list of items)
+   -  "RW" grants a user the capabilities of creating, updating,
+      deleting the collection's items
+
+*items\_permissions* is valid only for collections's ACL and refers to:
+
+-  "R" grants a user the capability to download items'replicas
+-  "RW" grants a user the capality to create, update and upload replicas
+
 Repositories
 ------------
 
@@ -116,27 +244,27 @@ List of all the repositories hosted on the server
 Returns a list of all the repositories managed by the given gLibrary
 server. Each repository has the following properties:
 
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| name                                         | description                                                                                |
-+==============================================+============================================================================================+
-| name                                         | Repository name                                                                            |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| path                                         | Direct endpoint of the given repository                                                    |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| coll\_db (*TODO*: default\_collection\_db)   | Default database where collection data should be stored. Can be overriden per collection   |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| host                                         | FQDN of the default collection DB                                                          |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| port                                         | port number of the default collection DB                                                   |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| username                                     | username of the default collection DB                                                      |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| password                                     | password of the default collection DB                                                      |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| database                                     | name of the database to use for the default collection DB                                  |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
-| type                                         | type of the default collection db (mysql, postgresql, mongodb)                             |
-+----------------------------------------------+--------------------------------------------------------------------------------------------+
++------------------+--------------------------------------------------------------------------------------------+
+| name             | description                                                                                |
++==================+============================================================================================+
+| name             | Repository name                                                                            |
++------------------+--------------------------------------------------------------------------------------------+
+| path             | Direct endpoint of the given repository                                                    |
++------------------+--------------------------------------------------------------------------------------------+
+| collection\_db   | Default database where collection data should be stored. Can be overriden per collection   |
++------------------+--------------------------------------------------------------------------------------------+
+| host             | FQDN of the default collection DB                                                          |
++------------------+--------------------------------------------------------------------------------------------+
+| port             | port number of the default collection DB                                                   |
++------------------+--------------------------------------------------------------------------------------------+
+| username         | username of the default collection DB                                                      |
++------------------+--------------------------------------------------------------------------------------------+
+| password         | password of the default collection DB                                                      |
++------------------+--------------------------------------------------------------------------------------------+
+| database         | name of the database to use for the default collection DB                                  |
++------------------+--------------------------------------------------------------------------------------------+
+| type             | type of the default collection db (mysql, postgresql, mongodb)                             |
++------------------+--------------------------------------------------------------------------------------------+
 
 Example:
 
@@ -155,12 +283,10 @@ Example:
         }
     }
 
-Each repository can have a ``coll_db`` (*TODO*:
-``default_collection_db``) where collections data will be stored. If no
-``coll_db`` (*TODO*: ``default_collection_db``) is specified, the
-repository will use the local non-relational mongoDB that comes with
-gLibrary. Each repository's collection can override the ``coll_db``
-(*TODO*: ``default_collection_db``).
+Each repository can have a ``collection_db`` where collections data will
+be stored. If no ``collection_db`` is specified, the repository will use
+the local non-relational mongoDB that comes with gLibrary. Each
+repository's collection can override the ``collection_db``.
 
 Create a new repository
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,39 +295,38 @@ Create a new repository
 
     POST /v2/repos/ HTTP/1.1
 
-Create a new repository. A default ``coll_db`` (*TODO*:
-``default\_collection\_db``) can be specified. It will store all the
-collections in case no ``coll\_db`` (*TODO*: ``collection_db``)
+Create a new repository. A default ``collection_db`` can be specified.
+It will store all the collections in case no ``collection\_db``
 parameter is specified during collection creation. This property is
 optional. If missing it will use the local MongoDB server.
 
 **Parameters**
 
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| name                                         | type     | description                                                                                           |
-+==============================================+==========+=======================================================================================================+
-| name                                         | string   | Name of the repository (will be the API path)                                                         |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| coll\_db (*TODO*: default\_collection\_db)   | object   | (Optional) Default database where collection data should be stored. Can be overriden per collection   |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| host                                         | string   | FQDN of the default collection DB                                                                     |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| port                                         | number   | port number of the default collection DB                                                              |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| username                                     | string   | username of the default collection DB                                                                 |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| password                                     | string   | password of the default collection DB                                                                 |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| database                                     | string   | name of the database to use for the default collection DB                                             |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| type                                         | string   | type of the default collection db (mysql, postgresql, mongodb)                                        |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| default\_storage                             | object   | (Optional) specifies the default storage for replicas                                                 |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| baseURL                                      | string   | it's full path of Swift Container or Grid SURL for replica uploads                                    |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
-| type                                         | string   | "swift" or "grid" storage                                                                             |
-+----------------------------------------------+----------+-------------------------------------------------------------------------------------------------------+
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| name               | type     | description                                                                                           |
++====================+==========+=======================================================================================================+
+| name               | string   | Name of the repository (will be the API path)                                                         |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| collection\_db     | object   | (Optional) Default database where collection data should be stored. Can be overriden per collection   |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| host               | string   | FQDN of the default collection DB                                                                     |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| port               | number   | port number of the default collection DB                                                              |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| username           | string   | username of the default collection DB                                                                 |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| password           | string   | password of the default collection DB                                                                 |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| database           | string   | name of the database to use for the default collection DB                                             |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| type               | string   | type of the default collection db (mysql, postgresql, mongodb)                                        |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| default\_storage   | object   | (Optional) specifies the default storage for replicas                                                 |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| baseURL            | string   | it's full path of Swift Container or Grid SURL for replica uploads                                    |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
+| type               | string   | "swift" or "grid" storage                                                                             |
++--------------------+----------+-------------------------------------------------------------------------------------------------------+
 
 Note: ``name`` is a lowercase string. Numbers and underscores are
 allowed. No oyjrt special characters are permitted
@@ -215,7 +340,7 @@ Example:
 
     {
         "name": "infn",
-        "default_coll_db": {
+        "collection_db": {
             "host": "glibrary.ct.infn.it",
             "port": 5432,
             "username": "infn_admin",
@@ -326,13 +451,13 @@ Import data from an existing relational database
 If you want to create a collection that maps an existing db table, two
 additional properties are available:
 
-+------------+-------------------------------------------------------------+
-| name       | description                                                 |
-+============+=============================================================+
-| import     | it should set to ``true``                                   |
-+------------+-------------------------------------------------------------+
-| location   | name of the database table of the database to be imported   |
-+------------+-------------------------------------------------------------+
++-------------+-------------------------------------------------------------+
+| name        | description                                                 |
++=============+=============================================================+
+| import      | it should set to ``true``                                   |
++-------------+-------------------------------------------------------------+
+| tablename   | name of the database table of the database to be imported   |
++-------------+-------------------------------------------------------------+
 
 **Example** (creation of a new collection with data coming from an
 existing relational db):
@@ -345,8 +470,8 @@ existing relational db):
     {
         "name": "old_articles",
         "import": "true",
-        "location": "pubs",
-        "coll_db": {
+        "tablename": "pubs",
+        "collection_db": {
             "host": "somehost.ct.infn.it",
             "port": 3306,
             "username": "dbadmin",
@@ -486,8 +611,8 @@ table.
         }
     }
 
-TODO: Delete a collection
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Delete a collection
+~~~~~~~~~~~~~~~~~~~
 
 .. code:: http
 
@@ -570,14 +695,24 @@ JSON object with the attributes mapping the schema of the given
 
     GET /v2/repos/infn/articles/22
 
-TODO: Item deletion
-~~~~~~~~~~~~~~~~~~~
+Item deletion
+~~~~~~~~~~~~~
 
 .. code:: http
 
     DELETE  /v2/repos/<repo_name>/<collection_name>/<item_id> HTTP/1.1
 
 Delete the given ``item_id`` of the the collection ``collection_name``.
+Delete will be successfull only if the given item has no replica. You
+can force the deletion of item with replicas setting:
+
+.. code:: json
+
+    {
+        "force": true
+    }
+
+in the request body.
 
 Item update
 ~~~~~~~~~~~
@@ -614,14 +749,15 @@ Additional info on the full query syntax can be found
 **Example**
 
 Replicas
-~~~~~~~~
+--------
 
 Each item can have one or more attachments, generally the same file
 stored in different locations, such as Cloud storage servers (Swift
 based) or Grid Storage Elements (DPM based). So we call them also
 replicas.
 
-**Replica creation**
+Replica creation
+~~~~~~~~~~~~~~~~
 
 .. code:: http
 
@@ -647,19 +783,22 @@ but no actual file will be uploaded from the client. Once the replica
 has been created you need to use the **Upload** API to transfer the
 actual file payload.
 
-**Retrieve all the replicas of the given ``item_id``**
+Retrieve all the replicas of the given ``item_id``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: http
 
     GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/ HTTP/1.1
 
-**Download a given replica**
+Download a given replica
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: http
 
     GET /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
 
-**Upload a replica**
+Upload a replica
+~~~~~~~~~~~~~~~~
 
 Upload the file payload to the destinaton storage. This requires two
 subsequent API request.
@@ -668,7 +807,7 @@ First, ask for the destination endpoint for the upload with:
 
 .. code:: http
 
-    PUT /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection_name> HTTP/1.1
+    PUT /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
 
 This will return a **temporaryURL** valid a few seconds (example):
 
@@ -688,13 +827,50 @@ using the PUT verb again (example):
 It will return a 201 status code, if the upload will complete
 successfully
 
+Delete a replica
+~~~~~~~~~~~~~~~~
+
+.. code:: http
+
+    DELETE /v2/repos/<repo_name>/<collection_name>/<item_id>/_replicas/<rep_id> HTTP/1.1
+
 **Example**
 
 Relations
-~~~~~~~~~
+---------
 
 One to many relations can be created between collections of the same
-repository, setting properly a foreign key.
+repository, properly setting a foreign key.
 
-Retrieve all the items from ``related_collection_name`` of the given
+To set the relation among two collections, issue the following request
+to the collection in the "one" side of the one-to-many relation:
+
+.. code:: http
+
+    POST /v2/repos/<repo_name>/<collection_name>/_relation HTTP/1.1
+
+The body of the request needs to provide two attributes:
+
++-----------------------+----------------------------------------------------------------------------------------+
+| name                  | description                                                                            |
++=======================+========================================================================================+
+| *relatedCollection*   | the "many" side of the one-to-many relation                                            |
++-----------------------+----------------------------------------------------------------------------------------+
+| *fk*                  | the *foreign key* of *relatedCollection* that match the *id* of <*collection\_name*>   |
++-----------------------+----------------------------------------------------------------------------------------+
+
+In practice, you should set the *fk* in such a way
+``collection_name.id`` == ``relatedCollection.fk``
+
+Retrieve related items
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: http
+
+    GET /v2/repos/<repo_name>/<collection_name>/<item_id>/<related_collection>
+
+Retrieve all the items from ``related_collection`` of the given
 ``item_id``.
+
+Contacts
+--------
