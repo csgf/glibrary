@@ -28,7 +28,10 @@ var repository = app.models['repository'];
 User.create([
   {username: 'admin', email: 'admin@ct.infn.it', password: 'opensesame2015'}
 ], function (err, users) {
-  if (err) throw err;
+  if (err) {
+    console.log("Error:",err);
+    process.exit(-1)
+  }
   console.log('Users created', users);
   User.findOne({where: {email: 'admin@ct.infn.it'}}, function (err, user) {
     if (err) throw err;
@@ -38,15 +41,26 @@ User.create([
         name: 'admin'
 
       }, function (err, role) {
-        if (err) throw err;
+        if (err) {
+          console.log("Error:",err);
+          process.exit(-1)
+
+        }
         console.log("Created role:", role);
         //make nathan admin
         role.principals.create({
           principalType: RoleMapping.USER,
-          principalId: user.id
+          principalId: user.id,
+          roleName:"admin",
+          username:"admin@ct.infn.it"
         }, function (err, principal) {
-          if (err) throw err;
+          if (err) {
+            console.log("Error:",err);
+            process.exit(-1)
+          }
           console.log("Added user: ", principal)
+          process.exit(0)
+
         })
       })
     }

@@ -70,7 +70,6 @@ module.exports = function (Repository) {
         var fields = {
           fields: {name: true, tablename: true, path: true}
         }
-        console.log("FILTER", req.query)
         if (req.query.filter) {
           var query_filters = JSON.parse((JSON.stringify(fields) + JSON.stringify(req.query.filter)).replace(/}{/g, ","));
         } else
@@ -1424,7 +1423,9 @@ module.exports = function (Repository) {
       context.result[i] = {
         name : context.result[i].name,
         path : context.result[i].path,
-        collection_db : context.result[i].collection_db
+        collection_db : context.result[i].collection_db,
+        default_storage : context.result[i].default_storage
+
       }
     }
     return final()

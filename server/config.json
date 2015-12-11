@@ -7,6 +7,9 @@
     "context": {
       "enableHttpContext": false
     },
+    "errorHandler": {
+      "disableStackTrace": true
+    },
     "rest": {
       "normalizeHttpPath": false,
       "xml": false

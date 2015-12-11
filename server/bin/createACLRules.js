@@ -280,6 +280,8 @@ async.parallel([
 
 
 ], function (err) {
-  console.log('ACL created');
+  console.log('ACLs created');
+  process.exit(0)
+
 
 });

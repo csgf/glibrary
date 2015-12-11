@@ -135,4 +135,6 @@ async.parallel([
 
 ], function (err) {
   console.log('Role created')
+  process.exit(0)
+
 });

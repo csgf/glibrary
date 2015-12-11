@@ -1,4 +1,4 @@
-!#/bin/bash
+#!/bin/bash
 echo "creating admin user"
 node createAdmin.js
 echo "creating default roles"

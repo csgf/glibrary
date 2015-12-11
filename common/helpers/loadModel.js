@@ -542,6 +542,7 @@ var setupParameters = function (req, res, next) {
     // POST su /v1/repos
     var tablename = (!req.body.tablename ? req.body.name.trim() : req.body.tablename.trim());
     var collection_db = (!req.body.collection_db ? null : req.body.collection_db);
+    var default_storage = (!req.body.default_storage ? null : req.body.default_storage);
 
     var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
     //POST su /v1/repo/:repo_name
@@ -557,6 +558,7 @@ var setupParameters = function (req, res, next) {
         "path": path,
         "tablename": tablename,
         "collection_db": collection_db,
+        "default_storage":default_storage,
         "import": import_flag,
         "schema": schema
       }
@@ -566,6 +568,7 @@ var setupParameters = function (req, res, next) {
         "path": path,
         "tablename": tablename,
         "collection_db": collection_db,
+        "default_storage":default_storage
       }
     }
     logger.debug("[setupParameters][parameters]:", parameters);
@@ -704,6 +707,8 @@ module.exports = function (app) {
     getDatasourceToWrite: function getDatasourceToWrite(req, res, next) {
       setupParameters(req, res, function (json_body) {
         next.body = json_body;
+
+
         app.bodyReadToWrite = json_body;
         if (!next.body.collection_db) {
           logger.debug("[getDatasourceToWrite][Nothing to do]");
@@ -788,6 +793,7 @@ module.exports = function (app) {
     buildpayload: function buildpayload(req, res, next) {
       setupParameters(req, res, function (json_body) {
         logger.debug("[buildpayload][saved body in next.body]");
+
         app.bodyReadToWrite = json_body;
         next.body = json_body;
         if (!json_body) return next(false)

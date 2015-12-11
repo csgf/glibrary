@@ -31,6 +31,7 @@ User.findOne({where: {email: 'admin@ct.infn.it'}}, function (err, user) {
         }, function (err, principal) {
           if (err) throw err;
           console.log("Added user: ", principal)
+          process.exit(0)
         })
       })
   }
