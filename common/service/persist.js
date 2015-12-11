@@ -58,19 +58,22 @@ exports.createTable = function createTable(datasource, data, callback) {
 
       try {
 
+        repoDB.createModel(modelName, schema_collection.properties, {"base": "PersistedModel", "idInjection": true});
         repoDB.autoupdate(modelName, function (err, result) {
           if (err) {
+            /**
+             * todo: if err then we have to delete the just created model
+             */
             logger.error("[autoupdate][error]",err)
-            callback(false);
+            return callback(false);
           };
 
           logger.debug("[persit][autoupdate on ", modelName + "]");
-          repoDB.createModel(modelName, schema_collection.properties, {"base": "PersistedModel", "idInjection": true});
-          callback(true);
+          return callback(true);
         })
       } catch(e) {
         logger.error("[autoupdate][catch-error]",e);
-        callback(false)
+        return callback(false)
       }
 
     }
