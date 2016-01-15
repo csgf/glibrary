@@ -13,7 +13,6 @@ var RepoDataSource = {};
 
 var logger = require("./logger");
 
-var RoleMapper = require('./rolemapping');
 
 
 var validatereqbodyname = function (body, next) {
