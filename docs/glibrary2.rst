@@ -146,7 +146,7 @@ New users are created issuing requests to the following endpoint:
 
 .. code:: http
 
-    POST /v2/repos/users HTTP/1.1
+    POST /v2/users HTTP/1.1
 
 The mandatory parameters are:
 
