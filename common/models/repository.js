@@ -662,7 +662,8 @@ module.exports = function (Repository) {
     } else {
       var options = {
         permission: label + permissions,
-        endpoints: source.access
+        endpoints: source.access,
+        userId: source.userId
       }
       processRoleforEachPermission(options, function (cb) {
         logger.debug("[setPermissionsToUser][3A] Callback from processRole", cb);
@@ -683,6 +684,8 @@ module.exports = function (Repository) {
     var permission = options.permission;
     var endpoints = options.endpoints;
     var userId = options.userId;
+
+    console.log("OPTONS:", options);
 
     logger.debug("**[processRoleforEachPermission][label + permissions]", app.PropertiesMap[permission])
 
@@ -707,7 +710,13 @@ module.exports = function (Repository) {
 
     } else {
       logger.debug("**[processRoleforEachPermission][Ruolo Singolo da Assegnare]");
-      roleName = app.PropertiesMap[permission]
+      roleName = app.PropertiesMap[permission];
+      console.log("ROLENAME:", roleName);
+      console.log("roleName.property:", roleName.property);
+      console.log("userId:", userId);
+      console.log("endpoints:", endpoints);
+
+
       _modelACL.addPrincipalIdToRole(roleName.property,
         RoleMapping.USER, userId, endpoints, function (cb) {
           logger.debug("**[processRoleforEachPermission][Callback [B] from addPrincipalIdToRole]", cb);
@@ -735,6 +744,7 @@ module.exports = function (Repository) {
             "repositoryName": req.params.repo_name
           }
         }
+        console.log("PAYLOAD: ", payload);
         setPermissionsToUser(payload, 'Repo', function (permission) {
           if (permission) {
             logger.debug("PERMISSION:", permission);
