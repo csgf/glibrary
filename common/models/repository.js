@@ -1695,12 +1695,16 @@ module.exports = function (Repository) {
 
     _loadModel.buildpayload(req, res, function (next) {
       if (!next) {
+        console.log("ERRORE ERRORE-------------------")
         error = sendError(400, 'Invalid request');
         return final(error);
       }
 
       logger.debug("[Repository][before save][payload]", app.bodyReadToWrite);
       var payload = app.bodyReadToWrite;
+
+      console.log("PAYLOAD:", payload);
+
       Repository.findOne({where: {"name": req.body.name}}, function (err, value) {
         if (err) {
           error = sendError(500, err);
@@ -1711,6 +1715,10 @@ module.exports = function (Repository) {
           error = sendError(409, msg)
           return final(error);
         } else {
+
+
+
+
           context.instance.path = payload.path;
           context.instance.tablename = payload.tablename;
           context.instance.collection_db = payload.collection_db ? payload.collection_db : null

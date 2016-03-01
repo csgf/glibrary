@@ -574,16 +574,18 @@ var setupParameters = function (req, res, next) {
     var location = (!req.body.location ? req.body.name.trim() : req.body.location.trim());
 
     var coll_db = (!req.body.coll_db ? null : req.body.coll_db);
-
-    if (!req.params.repo_name) {
+    if (!req.params) {
       var path = (!req.body.path ? '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
     }
     //POST su /v1/repo/:repo_name
-    if (req.params.repo_name) {
-      var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
-      var import_flag = (!req.body.import ? "false" : req.body.import);
-      var schema = (!req.body.schema ? null : req.body.schema);
+    if (req.params) {
+      if (req.params.repo_name) {
+        var path = (!req.body.path ? '/' + req.params.repo_name + '/' + req.body.name.trim() : req.body.path.trim()).toLowerCase();
+        var import_flag = (!req.body.import ? "false" : req.body.import);
+        var schema = (!req.body.schema ? null : req.body.schema);
+      }
     }
+
     var name = req.body.name.toLowerCase();
     if (import_flag) {
       parameters = {
@@ -810,14 +812,15 @@ module.exports = function (app) {
       setupParameters(req, res, function (json_body) {
         logger.debug("[buildpayload][saved body in next.body]");
         next.body = json_body;
-        next();
+        app.bodyReadToWrite = json_body;
+        next(true);
       })
 
     },
 
 
     validatebody: function validatebody(req, res, next) {
-      logger.debug("VALIDATE");
+      logger.debug("----------------VALIDATE-----------------");
       validatereqbodyname(req.body, function (cb) {
         if (cb) {
           logger.debug("[validatereqbodyname]",cb)
