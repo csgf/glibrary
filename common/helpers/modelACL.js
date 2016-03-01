@@ -62,7 +62,9 @@ module.exports = function (app) {
    * @param next
    */
   var addRoleMappingForRepositoryAndCollection = function (access, principalId, principalType, roleName, kindOfMapping, next) {
+  console.log("******** **** *** ROLENAME:", roleName);
 
+    console.log("****---> addRoleMappingForRepositoryAndCollection",access,principalId,principalType,roleName,kindOfMapping);
     var Role = app.models.Role;
     var RoleMapping = app.models.RoleMapping;
     app.models.Role.findOne({where: {'name': roleName}}, function (err, role) {
@@ -72,12 +74,12 @@ module.exports = function (app) {
       }
       if (role) {
 
-        // logger.debug("------------------------------------ ")
-        // logger.debug("[Role.id]:", role.id)
-        //  logger.debug("[Role.name]:", role.name)
-        // logger.debug("[principalType]:", principalType)
-        // logger.debug("[principalId]:", principalId)
-        // logger.debug("------------------------------------ ")
+         logger.debug("------------------------------------ ")
+         logger.debug("[Role.id]:", role.id)
+          logger.debug("[Role.name]:", role.name)
+         logger.debug("[principalType]:", principalType)
+         logger.debug("[principalId]:", principalId)
+         logger.debug("------------------------------------ ")
 
 
         RoleMapping.findOne({
@@ -228,6 +230,7 @@ module.exports = function (app) {
               ]
             }
             else {
+              console.log("APP:", app.RoleMap['getRepository']);
               roleId = app.RoleMap['getRepository'].id
               and = [
                 {"repositoryName.name": repository_name},
@@ -327,10 +330,11 @@ module.exports = function (app) {
        principalId = (principalId).toString() if you plan to use relation db
        */
 
+      console.log("PRINCIPAL ID:", principalId)
       principalId = (principalId).toString()
 
       if (access.repositoryName && access.collectionName) {
-
+        console.log("---QUI---");
         addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'collectionName', function (mapping) {
           logger.debug("--[1][Callback from addMapping For collectionName]", roleName)
           if (mapping)  return next(true);
@@ -338,6 +342,7 @@ module.exports = function (app) {
         })
       }
       if (access.repositoryName && !access.collectionName) {
+        console.log("-----DUE----",access,principalId,principalType,roleName);
         addRoleMappingForRepositoryAndCollection(access, principalId, principalType, roleName, 'repositoryName', function (mapping) {
           logger.debug("--[2][Callback from addMapping For repositoryName]", roleName)
           if (mapping) return next(true);
