@@ -66,7 +66,7 @@ module.exports = function (Repository) {
     _loadModel.buildRepositoryModel(req, res, function (model) {
       if (model) {
         logger.debug("[Repository.buildRepositoryModel]", app.repositoryModel.definition.name)
-
+        console.log("sksks");
         var fields = {
           fields: {name: true, tablename: true, path: true}
         }
@@ -385,6 +385,7 @@ module.exports = function (Repository) {
         var uri = replica.uri;
         logger.debug("[Repository.getReplicaById][URI]:", uri);
         var url = getTempURL(uri, 'GET');
+	logger.debug("[Repository.getReplicaById][URL]:", url);
         if (!url.error) {
           return res.redirect(url.url);
         } else return res.status(404).send({message: 'Account or Object not found'});
@@ -478,7 +479,7 @@ module.exports = function (Repository) {
 
     var storage_parts = url.parse(uri);
     var host = storage_parts.host;
-    var path = storage_parts.pathname;
+    var path = decodeURI(storage_parts.pathname);
     logger.debug("[getTempURL][host]", host);
     logger.debug("[getTempURL][path]", path);
     //logger.debug(req.params);
@@ -1355,7 +1356,6 @@ module.exports = function (Repository) {
 
     var req = context.req;
     var res = context.res;
-
     _modelACL.isAllowed(context, function (allowed) {
       if (allowed == 401) {
         logger.debug("[populateCollection][Status 401 Unauthorized]")
@@ -1366,6 +1366,7 @@ module.exports = function (Repository) {
       }
       if (allowed == 200) {
         _loadModel.buildCollectionModel(req, res, function (next) {
+          console.log("QUI QUI");
           _loadModel.createPersistedModel(req, res, function (next) {
             app.persistedModel.create(req.body, function (err, instance) {
               if (err) {

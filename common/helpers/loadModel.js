@@ -10,6 +10,8 @@ var events = require('events');
 var eventEmitter = new events.EventEmitter();
 var ModelTableMap = {};
 var RepoDataSource = {};
+var CollectionDataMap = {};
+
 var logger = require("./logger");
 
 
@@ -299,6 +301,7 @@ var getDataSource = function getDataSource(app, data) {
         " DB =", app.CollectionDataSource.settings.database);
     }
     if (!datasource) {
+      console.log("!!!!!!! SOMETHING WENT WRONG!!!!!!!!!!!!!!!!!!!!");
       // somethings went wrong. Let's use the system default mongodb
       app.CollectionDataSource = RepoDataSource[req.params.repo_name].datasource;
       logger.debug("[getDataSource][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
@@ -348,7 +351,7 @@ var checkCache = function (app, modelName, callaback) {
    */
 
   if (modelName in ModelTableMap) {
-    logger.debug("-*-[checkCache][ModelName is in ModelTableMap]", ModelTableMap[modelName])
+    logger.debug("-*-[checkCache][ModelName is in ModelTableMap]", ModelTableMap[modelName].table)
     if (ModelTableMap[modelName].table != modelName) {
       logger.debug("-*-[checkCache]ModelTableMap[modelName].table != modelName ")
       modelName = ModelTableMap[modelName].table
@@ -363,8 +366,22 @@ var checkCache = function (app, modelName, callaback) {
     logger.debug("--[checkCache][found in cache] app.model[", ModelName + "]");
 
     if (modelName in RepoDataSource) {
+      console.log("******************modelName ",modelName + " in RepoDataSource" + RepoDataSource[modelName]);
       app.CollectionDataSource = RepoDataSource[modelName].datasource;
       logger.debug("--[checkCache][app.CollectionDataSource] =", RepoDataSource[modelName].datasource.settings.host)
+    } else {
+    console.log("============= NON IN RepoDataSourc ");
+      if (CollectionDataMap) {
+      //  console.log("*****CollectionDataMap ",CollectionDataMap);
+      }
+      if (modelName in CollectionDataMap) {
+        console.log("COLLECTION DATASOURCE", CollectionDataMap[modelName].datasource.settings.host);
+        if (CollectionDataMap[modelName].datasource.settings.host != app.CollectionDataSource.settings.host) {
+          console.log("----------------AGGIORNO DATASOURCE-------------");
+          app.CollectionDataSource = CollectionDataMap[modelName].datasource;
+        }
+      }
+
     }
     app.buildedModel = app.models[ModelName]; //store the Model in app.buildedModel that will be check by buildRepositoryModel
     //app.ModelName = ModelName;
@@ -620,8 +637,13 @@ module.exports = function (app) {
       eventEmitter.emit('checkCache', app, modelName);
       if (app.buildedModel) {
         logger.debug("[buildCollectionModel][Model Loaded From Cache]=", app.buildedModel.definition.name);
+
         next.module = app.buildedModel;//here for compatibility reasons. We will remove it in the next release
         app.next_module = next.module;//we will use to work with collection model in repository.js
+        console.log("modelName", modelName);
+
+
+
         logger.debug("[buildCollectionModel][app.CollectionDataSource]=", app.CollectionDataSource.settings.host +
           " DB =", app.CollectionDataSource.settings.database);
         return next(true);
@@ -644,6 +666,7 @@ module.exports = function (app) {
 
                 } else {
                   eventEmitter.emit('getDataSource', app, coll_data);
+
                   var db_type = setDB_type(app, coll_data);
                   var db_name = setDB_name(app, coll_data);
                 }
@@ -663,6 +686,8 @@ module.exports = function (app) {
                 logger.debug("[buildCollectionModel][modelTable]", modelTable);
                 logger.debug("[buildCollectionModel][db_type]", db_type);
                 logger.debug("[buildCollectionModel][db_name]", modelName);
+                console.log("SCRIVO modelName------------>", modelName);
+                CollectionDataMap[modelName] = {table: modelTable, datasource:app.CollectionDataSource};
 
                 buildModelfromTable(app, db_type, db_name, modelTable, modelName, coll_data.path,
                   app.CollectionDataSource, function (model) {
@@ -670,11 +695,12 @@ module.exports = function (app) {
                       logger.debug("[buildCollectionModel][buildModelfromTable][OK]");
                       if (coll_data.import == "true" || coll_data.import == true) {
                         var modelName = setModelName(app, req.params);
-                        ModelTableMap[modelName] = {table: modelTable};
+                        ModelTableMap[modelName] = {table: modelTable, datasource:app.CollectionDataSource};
                         logger.stream.write("[buildCollectionModel]ModelTableMap[" + modelName + "]={table:" + modelTable + "}")
                         logger.debug("[buildCollectionModel]ModelTableMap[" + modelName + "]={table:" + modelTable + "}");
                       }
                       app.CollectionModelTable = modelTable;
+
                       logger.debug("[buildCollectionModel][app.CollectionModelTable]: ", app.CollectionModelTable)
                       next.module = model;//here for compatibility reasons. We will remove it in the next release
                       app.next_module = model;//we will use to work with collection model in repository.js
