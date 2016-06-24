@@ -64,6 +64,16 @@ var getCollectionItem_body = {
   "principalId": "getCollectionItem"
 }
 
+var getCollectionCount_body = {
+  "model": "repository",
+  "property": "getCollectionCount",
+  "accessType": "READ",
+  "permission": "ALLOW",
+  "principalType": "ROLE",
+  "principalId": "getCollectionCount"
+}
+
+
 var editCollectionBody_body = {
   "model": "repository",
   "property": "editCollection",
@@ -185,6 +195,15 @@ async.parallel([
 
     console.log("Creating getCollection");
     ACL.create(getCollection_body, function (err, entry) {
+      if (err) throw err;
+      console.log("ACL created:", entry)
+      callback()
+    })
+  },
+  function (callback) {
+
+    console.log("Creating getCollectionCount");
+    ACL.create(getCollectionCount_body, function (err, entry) {
       if (err) throw err;
       console.log("ACL created:", entry)
       callback()

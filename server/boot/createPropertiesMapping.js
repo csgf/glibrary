@@ -35,7 +35,10 @@ module.exports = function(app) {
       property: 'getCollection',
     },
     {
-      property:' getCollectionSchema'
+      property:'getCollectionSchema'
+    },
+    {
+      property: 'getCollectionCount'
     }
   ];
   PropertiesMap['CollW'] = [

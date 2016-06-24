@@ -41,6 +41,13 @@ async.parallel([
     })
   },
   function (callback) {
+    Role.create({"name": "getCollectionCount"}, function (err, entry) {
+      if (err) throw err;
+      console.log("Role created: ", entry)
+      callback()
+    })
+  },
+  function (callback) {
     Role.create({"name": "populateCollection"}, function (err, entry) {
       if (err) throw err;
       console.log("Role created: ", entry)
