@@ -22,6 +22,7 @@ module.exports = function (Repository) {
   var _loadModel = new loadModel(app);
   var _modelACL = new modelACL(app);
   var isStatic = true;
+  
 
 
   /*
@@ -509,6 +510,7 @@ module.exports = function (Repository) {
   var getTempURL = function (uri, method) {
     var url = require('url');
     var crypto = require('crypto');
+    var utf8 = require('utf8');
     var swift_storage = require('../../server/datasources.json')
     var keys = swift_storage.swift_storage.keys
     var expirationTimeInSeconds = swift_storage.swift_storage.expirationTimeInSeconds;
@@ -518,11 +520,13 @@ module.exports = function (Repository) {
     var path = decodeURI(storage_parts.pathname);
     logger.debug("[getTempURL][host]", host);
     logger.debug("[getTempURL][path]", path);
+    logger.debug("[getTempURL][expirationInSec]", expirationTimeInSeconds);
     //logger.debug(req.params);
     //logger.debug(req.method);
     //logger.debug(req.route);
 
     var expires = Math.floor(Date.now() / 1000) + expirationTimeInSeconds;
+    logger.debug("[getTempURL][expires At]", expires);
     if (path[0] != '/') {
       path = '/' + path;
     }
@@ -537,7 +541,7 @@ module.exports = function (Repository) {
     }
     var account = pathParts[2];
     if (keys[account]) {
-      var body = method + '\n' + expires + '\n' + path;
+      var body = utf8.encode(method + '\n' + expires + '\n' + path);
       var hash = crypto.createHmac('sha1', keys[account]).update(body).digest('hex');
       var tmp_uri = 'http://' + host + path + '?temp_url_sig=' + hash + '&temp_url_expires=' + expires;
       return {
