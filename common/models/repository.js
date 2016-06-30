@@ -167,9 +167,9 @@ module.exports = function (Repository) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
       if (app.next_module) {
       	if (req.query.include_count == "true") {
-      		console.log("calculating count number", req.query.filter.where);
+      		console.log("calculating count number", req.query.filter && req.query.filter.where);
       		//console.log("condition", req.query.filter.where);
-      		app.next_module.count(req.query.filter.where, function(err, count) {
+      		app.next_module.count(req.query.filter && req.query.filter.where, function(err, count) {
 				if (err) return res.status(500).send({"error": err});
         	  	app.next_module.find(req.query.filter, function (err, instance) {
           			if (err) return res.status(500).send({"error": err});
