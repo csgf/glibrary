@@ -23,6 +23,7 @@ module.exports = function (Repository) {
   var _modelACL = new modelACL(app);
   var isStatic = true;
   
+  
 
 
   /*
@@ -162,7 +163,20 @@ module.exports = function (Repository) {
 
   Repository.getCollection = function (req, res, next) {
 
-    logger.debug("[Repository.getCollection]", req.query.filter)
+    logger.debug("[Repository.getCollection]")
+    //console.log("url", req.url);
+    logger.debug("[query]", req.query)
+    logger.debug("[query filter]", req.query.filter);
+    if (typeof(req.query.filter) == "string") {
+    	//console.log("trying to parse the filter string");
+    	//console.log("decode", urlencode.decode(req.query.filter));
+    	//console.log("parse", urlencode.parse(req.query.filter));
+    	req.query.filter = JSON.parse(req.query.filter);
+    }
+    //console.log(req.query.filter, typeof(req.query.filter));
+    //console.log(req.query.filter.where, typeof(req.query.filter.where));
+    //console.log(req.query.filter.where.titel, typeof(req.query.filter.where.titel));
+    //console.log(req.query.filter.where.titel.like);
     _loadModel.buildCollectionModel(req, res, function (next) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
       if (app.next_module) {
@@ -424,7 +438,12 @@ module.exports = function (Repository) {
         var url = getTempURL(uri, 'GET');
 	logger.debug("[Repository.getReplicaById][URL]:", url);
         if (!url.error) {
-          return res.redirect(url.url);
+        	if (req.query.no_redirect) {
+        		res.json({success: true, url: url.url});
+        	} else {
+        		return res.redirect(url.url);	
+        	}
+          
         } else return res.status(404).send({message: 'Account or Object not found'});
       })
   }
