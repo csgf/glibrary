@@ -23,7 +23,6 @@ module.exports = function (Repository) {
   var _modelACL = new modelACL(app);
   var isStatic = true;
   
-  
 
 
   /*
@@ -163,20 +162,7 @@ module.exports = function (Repository) {
 
   Repository.getCollection = function (req, res, next) {
 
-    logger.debug("[Repository.getCollection]")
-    //console.log("url", req.url);
-    logger.debug("[query]", req.query)
-    logger.debug("[query filter]", req.query.filter);
-    if (typeof(req.query.filter) == "string") {
-    	//console.log("trying to parse the filter string");
-    	//console.log("decode", urlencode.decode(req.query.filter));
-    	//console.log("parse", urlencode.parse(req.query.filter));
-    	req.query.filter = JSON.parse(req.query.filter);
-    }
-    //console.log(req.query.filter, typeof(req.query.filter));
-    //console.log(req.query.filter.where, typeof(req.query.filter.where));
-    //console.log(req.query.filter.where.titel, typeof(req.query.filter.where.titel));
-    //console.log(req.query.filter.where.titel.like);
+    logger.debug("[Repository.getCollection]", req.query.filter)
     _loadModel.buildCollectionModel(req, res, function (next) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
       if (app.next_module) {
@@ -273,7 +259,12 @@ module.exports = function (Repository) {
    * @returns {*}
    */
   Repository.createCollection = function (req, res, next) {
-    return res.status(201).send({message: "The collection was successfully created "})
+  	if (next) {
+  		console.log("going to call the next");
+  	 	next(null, {message: "The collection was successfully created "});
+  	 } else {
+    	return res.status(201).send({message: "The collection was successfully created "})
+     }
   }
   /**
    *
@@ -867,7 +858,11 @@ module.exports = function (Repository) {
           logger.debug("[SetACLtoCollection][END ASYNC PARALLEL]", results[0], results[1])
           if (results[0] && results[1]) {
             logger.debug("ACLs created")
-            return res.status(200).send({message: "ACLs created"});
+            if (req.body.message) {
+            	return res.status(200).send({message: "Collection and ACLs created"});
+            } else {
+            	return res.status(200).send({message: "ACLs created"});
+            }
           }
           if (!results[0] && !results[1]) {
             logger.debug("ACLs are already exists")
@@ -1137,7 +1132,35 @@ module.exports = function (Repository) {
     })
 
 
-  })
+  });
+  
+  
+  /**
+   * CREATE Collection da sistemare
+   */
+  Repository.afterRemote('createCollection', function (context, createCollectionOutput, final) {
+    var req = context.req;
+    var res = context.res;
+    
+    console.log(createCollectionOutput.data);
+    
+	console.log(req.body);
+	// we need to set the ACL to the user that has just created the collection
+	req.params.collection_name = req.body.name;
+	console.log(req.params);
+	var ctx = loopback.getCurrentContext();
+    // Get the current access token
+    req.body.username = ctx.get('accessToken').username; 
+	req.body.permissions = "RW";
+	req.body.items_permissions = "RW";
+	req.body.message = createCollectionOutput.data.message;
+	console.log(req.body);
+	Repository.SetACLtoCollection(req, res, final);	
+
+    //final();
+
+  });
+  
 
   /**
    * DELETE COLLECTION
