@@ -302,7 +302,7 @@ curl -X POST \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies | json
 ```
 
-> Currently our ACL system doesn't inherit permissions. So our `/v2/repos/demo2016/movies` endopoint has no ACL and only the admin user can access. So the previous requests will fail. We are working to fix this ASAP. Meanwhile you need to explicitly set an ACL to the `movies`collection for full permission:
+(Should be FIXED!)> Currently our ACL system doesn't inherit permissions. So our `/v2/repos/demo2016/movies` endopoint has no ACL and only the admin user can access. So the previous requests will fail. We are working to fix this ASAP. Meanwhile you need to explicitly set an ACL to the `movies`collection for full permission:
 > 
 > ```curl -X POST \
 >   -H "Authorization: $ADMIN_TOKEN"
@@ -388,7 +388,7 @@ curl -X POST \
 
 #### Add an entry to fixed schema collection
 
-> Again, at the moment, you need to add ACL to the `actors` collection with:
+(Should be FIXED!)> Again, at the moment, you need to add ACL to the `actors` collection with:
 
 >```js
 curl -X POST \
@@ -460,7 +460,7 @@ Other than the settings we have already seen, two new properties are needed, as 
 * *import*: set to true
 * *tablename*: the db table from where data should come from
 
-> We need to add an ACL again this new table
+(Should be FIXED!)> We need to add an ACL again this new table
 > 
 > ```js
 > curl -X POST \
