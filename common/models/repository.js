@@ -162,7 +162,11 @@ module.exports = function (Repository) {
 
   Repository.getCollection = function (req, res, next) {
 
-    logger.debug("[Repository.getCollection]", req.query.filter)
+    logger.debug("[Repository.getCollection]");
+    console.log(req.query.filter);
+    if (typeof(req.query.filter) == "string") {		
+   	req.query.filter = JSON.parse(req.query.filter);		
+    }
     _loadModel.buildCollectionModel(req, res, function (next) {
       if (!next) return res.status(500).send({message: "getCollection Error"})
       if (app.next_module) {
