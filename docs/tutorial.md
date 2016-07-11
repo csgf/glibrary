@@ -1,6 +1,6 @@
 # gLibrary 2.0 tutorial
 
-In this tutorial, we are going to use gLibrary APIs to create a demo repository, collections, to populate those with new data, exposing data from existing databases, manage authentication and authorization.
+In this tutorial, we are going to use gLibrary APIs to create a demo repository, and collections, then populate those with new data, exposing data from existing databases, manage authentication and authorization.
 
 
 
@@ -31,14 +31,14 @@ If the user is created successfully you should get back the details of the user 
 }
 ```
 
-Now that we have a user, we need to sing in, using the [login](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#login) API, to retrieve a `session token`to be user in all the following requests:
+Now that we have a user, we need to sign in, using the [login](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#login) API, to retrieve a `session token`to be user in all the following requests:
 
 ```js
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
         "username": "demouser",
-        "password": "Demo1234" 
+        "password": "Demo1234"
       }' \
   http://glibrary.ct.infn.it:3500/v2/users/login
 ```
@@ -79,7 +79,7 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
         "username": "demouser",
-        "password": "Demo1234" 
+        "password": "Demo1234"
       }' \
   http://glibrary.ct.infn.it:3500/v2/users/login | python -m json.tool
 ```
@@ -93,7 +93,7 @@ To list the repositories hosted on the server, we can use the `/v2/repos` endpoi
 
 ```
 curl -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/ 
+  http://glibrary.ct.infn.it:3500/v2/repos/
 ```
 
 Unfortunately you will get an error:
@@ -173,13 +173,13 @@ The results will look like this:
 }
 ```
 
-Our new repository *resourse* and all its APIs will be available at 
+Our new repository *resourse* and all its APIs will be available at
 
 ```
 http://glibrary.ct.infn.it:3500/v2/repos/demo2016
 ```
 
-We haven't set a `default_storage` for the replicas, nor a default `collection_db` for all the collections of our repository. If we start creating collections, by default, all new collections will be created into the default *MongoDB* database that uses gLibrary for its configuration. 
+We haven't set a `default_storage` for the replicas, nor a default `collection_db` for all the collections of our repository. If we start creating collections, by default, all new collections will be created into the default *MongoDB* database that uses gLibrary for its configuration.
 Even if you don't set the defaults here, you will be able to customize the `collection_db`per each of the repository's collections. We will do that in the next steps.
 
 ## (glibrary server admin) Set Up an ACL for a repository
@@ -212,7 +212,7 @@ your user should be now ready to work on its repository by himself/herself.
 
 Now that we have an user account `demouser` and we got assigned a brand new repository `demo2016` it's time to play with it. Probably the first operation that we would like to do is to list it's content, i.e. collections belonging to the repository. By the way, we have just created the repository, so we should get back an empty response. But this is the occasion if the authorization system (ACLs) are set up correctly for our account/repository:
 
-```js 
+```js
 curl -H "Authorization: $TOKEN" \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
@@ -292,8 +292,8 @@ curl -X POST \
   		"title": "Anger Management",
   		"year": 2013,
   		"cast": [
-  			 "Jack Nicholson", 
-  			 "Adam Sandler", 
+  			 "Jack Nicholson",
+  			 "Adam Sandler",
   			 "Marisa Tomei"
   		],
   		"genre": "comedy",
@@ -303,7 +303,7 @@ curl -X POST \
 ```
 
 (Should be FIXED!)> Currently our ACL system doesn't inherit permissions. So our `/v2/repos/demo2016/movies` endopoint has no ACL and only the admin user can access. So the previous requests will fail. We are working to fix this ASAP. Meanwhile you need to explicitly set an ACL to the `movies`collection for full permission:
-> 
+>
 > ```curl -X POST \
 >   -H "Authorization: $ADMIN_TOKEN"
 >   -H "Content-type: application/json"
@@ -413,7 +413,7 @@ curl -X POST \
 	  				"Mr. Deeds",
 	  				"Spanglish",
 	  				"Anger Management"
-  				]     
+  				]
   			}' \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors | json
 ```
@@ -434,7 +434,7 @@ The third option is to create a collection with data coming from an already exis
 
 For this exercise, we are going to use a sample database from [MySQL tutorial](http://www.mysqltutorial.org/mysql-sample-database.aspx). It's a database of a retailer of scale models of classic cars.
 
-Let's create a collection that give access to the `products` table. 
+Let's create a collection that give access to the `products` table.
 
 ```js
 curl -X POST \
@@ -461,7 +461,7 @@ Other than the settings we have already seen, two new properties are needed, as 
 * *tablename*: the db table from where data should come from
 
 (Should be FIXED!)> We need to add an ACL again this new table
-> 
+>
 > ```js
 > curl -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
@@ -471,17 +471,17 @@ Other than the settings we have already seen, two new properties are needed, as 
           "permissions": "RW",
           "items_permissions": "RW"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/_acls 
+  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/_acls
 ```
 Now we can access the items from the `products` collection:
 
-```js 
+```js
 curl -H "Authorization: $TOKEN" \
  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products | json
 ```
 If you need to get access for a specific item, just use the primary key (in this case the `productcode` of an item):
 
-```js 
+```js
 curl -H "Authorization: $TOKEN" \
  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S72_3212 | json
 ```
@@ -493,21 +493,21 @@ It follows some examples:
 
 * Retrieve the first 3 items from a collection:
 
-```js 
+```js
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=3' | json
 ```
 
 * Retrieve the 11th item of the collection:
 
-```js 
+```js
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=1&filter[skip]=10' | json
 ```
 
 * Order items by `quantityinstock`:
 
-```js 
+```js
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[order]=quantityinstock%20ASC' | json
 ```
@@ -515,36 +515,36 @@ curl -g -H "Authorization: $TOKEN" \
 * Items that satisfy a given condition
 
 	- Price is greater than 90 dollars
-	
-	```js 
+
+	```js
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][gt]=90' | json
 	```
 
 	- Price is between 50 and 60 dollars
-	
-	```js 
+
+	```js
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][between][0]=50&filter[where][buyPrice][between][1]=60' | json
 	```
-	
+
 	- Price is greated than 50 and there is more than 8000 items in stock:
 
-	```js 
+	```js
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][and][0][buyPrice][gt]=50&filter[where][and][1][quantityinstock][gt]=8000' | json
 	```
-	
+
 	- Vendor is *Min Lin Diecast*
-	
-	```js 
+
+	```js
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productVendor]=Min%20Lin%20Diecast' | json
 	```
-	
+
 	- is a *Mercedes*
-	
-	```js 
+
+	```js
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productName][like]=%Mercedes%&include_count=true' | json
 	```
@@ -569,7 +569,7 @@ curl -X POST \
   		 "type": "swift",
   		 "filename": "mercedes.jpg"
   	  }' \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas | json 
+ http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas | json
 ```
 
 In this example the user knows where the file should be uploaded. Generally the admin should set up the `default_storage` properties so that user should just fill the `filename`
@@ -617,18 +617,8 @@ curl -H "Authorization: $TOKEN" \
 This will return another temporary URL:
 
 ```
-Moved Temporarily. Redirecting to 
+Moved Temporarily. Redirecting to
 http://cloud.recas.ba.infn.it:8080/v1/AUTH_b99dd86274a44e0e996944b72dd2d846/glibrary/demo2016/mercedes.jpg?temp_url_sig=2659ccad78560a8c5b12f06872f5b63d17a2c2f0&temp_url_expires=1467646825
 ```
 
 from where you can download the actual JPG file.
-
-
-
-
-
-
-
-
- 
-  
