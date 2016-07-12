@@ -33,7 +33,7 @@ If the user is created successfully you should get back the details of the user 
 
 Now that we have a user, we need to sign in, using the [login](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#login) API, to retrieve a `session token`to be user in all the following requests:
 
-```js
+```json
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -74,7 +74,7 @@ and we will pass to curl the following header:
 If you want to have the JSON results from the APIs in a pretty format, you can pipe your curl requests with `python -m json.tool`, if you have python installed in your system.
 Eg:
 
-```js
+```json
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,7 +98,7 @@ curl -H "Authorization: $TOKEN" \
 
 Unfortunately you will get an error:
 
-```js
+```json
 {
   "error": {
     "name": "Error",
@@ -112,7 +112,7 @@ Unfortunately you will get an error:
 
 because the default ACL on the `/v2/repos` endpoint in the default configuration, allows only the admin users to list it's content. If you have a admin token, you should get something like that:
 
-```js
+```json
 [
   {
     "name": "gridcore",
@@ -150,7 +150,7 @@ If you want to use our server located at `glibrary.ct.infn.it`, you generally ne
 So let's suppose you send an email to `sg-license@ct.infn.it` with the request to create a `demo2016` repository for your project. Here the necessary steps the glibrary server admin have to do. This instructions are also valid in the case you are installing your own instance of gLibrary on your server.
 As documented [here](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#create-a-new-repository), there are several options to create a new repository. The simplest one is to just pass in the name of the repository:
 
-```js
+```curl
 curl  -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
