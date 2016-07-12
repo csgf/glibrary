@@ -150,7 +150,7 @@ If you want to use our server located at `glibrary.ct.infn.it`, you generally ne
 So let's suppose you send an email to `sg-license@ct.infn.it` with the request to create a `demo2016` repository for your project. Here the necessary steps the glibrary server admin have to do. This instructions are also valid in the case you are installing your own instance of gLibrary on your server.
 As documented [here](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#create-a-new-repository), there are several options to create a new repository. The simplest one is to just pass in the name of the repository:
 
-```curl
+```http
 curl  -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
