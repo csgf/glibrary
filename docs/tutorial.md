@@ -10,7 +10,7 @@ Before we can use any API we need to be authenticated. gLibrary provides API to 
 
 Following the [docs](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#user-creation), we need to issue the following call:
 
-```js
+```json
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
