@@ -10,7 +10,7 @@ Before we can use any API we need to be authenticated. gLibrary provides API to 
 
 Following the [docs](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#user-creation), we need to issue the following call:
 
-```http
+```json
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
@@ -162,7 +162,7 @@ curl  -X POST \
 
 The results will look like this:
 
-```js
+```json
 {
 	"name": "demo2016",
 	"path": "/demo2016",
@@ -188,7 +188,7 @@ We have now a repository but our `demouser ` user won't be able to use it. The A
 
 Following the [documentation](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#acls) the admin need to the `demouser` user to the `demo2016` repository:
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
@@ -201,7 +201,7 @@ curl -X POST \
 
 If you receive something like this:
 
-```js
+```json
 {
   "message": "ACL has been added"
 }
@@ -212,7 +212,7 @@ your user should be now ready to work on its repository by himself/herself.
 
 Now that we have an user account `demouser` and we got assigned a brand new repository `demo2016` it's time to play with it. Probably the first operation that we would like to do is to list it's content, i.e. collections belonging to the repository. By the way, we have just created the repository, so we should get back an empty response. But this is the occasion if the authorization system (ACLs) are set up correctly for our account/repository:
 
-```js
+```json
 curl -H "Authorization: $TOKEN" \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
@@ -239,7 +239,7 @@ The easier option, if you don't have already existing data is to create a schema
 
 According the [documentation](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#create-a-new-collection) we need to issue the following request:
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
@@ -259,7 +259,7 @@ it's a good sign :)
 
 if you now issue a list request to the `demo2016` repository:
 
-```js
+```json
 curl  -H "Authorization: $TOKEN" \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
@@ -284,7 +284,7 @@ It's time to create our first record, or in the gLibrary lingo, our first **item
 
 Let's create a new item with a POST request:
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $TOKEN" \
   -H "Content-type: application/json" \
@@ -336,14 +336,14 @@ Here the result:
 
 You can retrieve the **item** using the assigned `id`:
 
-```js
+```json
 curl -H "Authorization: $TOKEN" \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
 ```
 
 #### Delete an item
 
-```js
+```json
 curl -X DELETE \
   -H "Authorization: $TOKEN" \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
@@ -351,7 +351,7 @@ curl -X DELETE \
 
 #### Edit an item
 
-```js
+```json
 curl -X PUT \
   -H "Authorization: $TOKEN" \
   -H "Content-type: application/json" \
@@ -363,7 +363,7 @@ curl -X PUT \
 
 ### Create a collection with a fixed schema on a remote database
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $TOKEN" \
   -H "Content-type: application/json" \
@@ -390,7 +390,7 @@ curl -X POST \
 
 (Should be FIXED!)> Again, at the moment, you need to add ACL to the `actors` collection with:
 
->```js
+>```json
 curl -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
   -H "Content-type: application/json" \
@@ -402,7 +402,7 @@ curl -X POST \
   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors/_acls
 ```
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $TOKEN" \
   -H "Content-type: application/json" \
@@ -421,7 +421,7 @@ curl -X POST \
 
 #### Delete a collection
 
-```js
+```json
 curl -X DELETE \
  -H "Authorization: $TOKEN" \
  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors2
@@ -436,7 +436,7 @@ For this exercise, we are going to use a sample database from [MySQL tutorial](h
 
 Let's create a collection that give access to the `products` table.
 
-```js
+```json
 curl -X POST \
   -H "Authorization: $TOKEN" \
   -H "Content-type: application/json" \
@@ -462,7 +462,7 @@ Other than the settings we have already seen, two new properties are needed, as 
 
 (Should be FIXED!)> We need to add an ACL again this new table
 >
-> ```js
+> ```json
 > curl -X POST \
   -H "Authorization: $ADMIN_TOKEN" \
   -H "Content-type: application/json" \
@@ -475,13 +475,13 @@ Other than the settings we have already seen, two new properties are needed, as 
 ```
 Now we can access the items from the `products` collection:
 
-```js
+```json
 curl -H "Authorization: $TOKEN" \
  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products | json
 ```
 If you need to get access for a specific item, just use the primary key (in this case the `productcode` of an item):
 
-```js
+```json
 curl -H "Authorization: $TOKEN" \
  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S72_3212 | json
 ```
@@ -493,21 +493,21 @@ It follows some examples:
 
 * Retrieve the first 3 items from a collection:
 
-```js
+```json
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=3' | json
 ```
 
 * Retrieve the 11th item of the collection:
 
-```js
+```json
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=1&filter[skip]=10' | json
 ```
 
 * Order items by `quantityinstock`:
 
-```js
+```json
 curl -g -H "Authorization: $TOKEN" \
  'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[order]=quantityinstock%20ASC' | json
 ```
@@ -516,14 +516,14 @@ curl -g -H "Authorization: $TOKEN" \
 
 	- Price is greater than 90 dollars
 
-	```js
+	```json
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][gt]=90' | json
 	```
 
 	- Price is between 50 and 60 dollars
 
-	```js
+	```json
 	curl -g -H "Authorization: $TOKEN" \
 	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][between][0]=50&filter[where][buyPrice][between][1]=60' | json
 	```
