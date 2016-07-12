@@ -14,9 +14,9 @@ Following the [docs](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
-		 "username": "demouser",
-		 "password": "Demo1234",
-		 "email": "demouser@ct.infn.it"
+  	 "username": "demouser",
+  	 "password": "Demo1234",
+  	 "email": "demouser@ct.infn.it"
 	  }' \
   http://glibrary.ct.infn.it:3500/v2/users
 ```
