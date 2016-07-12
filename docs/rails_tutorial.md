@@ -1,8 +1,18 @@
-# gLibrary 2.0 tutorial
+# gLibrary 2.0 tutorial using Ruby on Rails
 
-In this tutorial, we are going to use gLibrary APIs to create a demo repository, and collections, then populate those with new data, exposing data from existing databases, manage authentication and authorization.
+In this tutorial, we are going to use gLibrary APIs via the Ruby on Rails [HTTParty](http://johnnunemaker.com/httparty/) gem, to create a demo repository, collections, to populate those with new data, exposing data from existing databases, manage authentication and authorization. This tutorial follows the same steps as the [command line](tutorial.md) in this repository.
 
 
+## Prerequisites
+
+You should have the `HTTParty` gem in your local installation as well as `pp`. Add  :
+
+```
+gem 'pp'
+gem 'httparty'
+```
+
+to your `Gemfile`
 
 ## User creation and login
 
@@ -10,81 +20,46 @@ Before we can use any API we need to be authenticated. gLibrary provides API to 
 
 Following the [docs](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#user-creation), we need to issue the following call:
 
-```js
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-		 "username": "demouser",
-		 "password": "Demo1234",
-		 "email": "demouser@ct.infn.it"
-	  }' \
-  http://glibrary.ct.infn.it:3500/v2/users
-```
+<!-- TODO -->
 
-If the user is created successfully you should get back the details of the user and its `id`:
+If the user is created successfully you should get back the details of the user and its `id`. Use `pp response` to show a pretty-print of the returned object :
 
-```json
-{
-	"username": "demouser",
-	"email": "demouser@ct.infn.it",
-	"id": "577a1da1a9f1344a0406802e"
-}
-```
+<! TODO -->
+
 
 Now that we have a user, we need to sign in, using the [login](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#login) API, to retrieve a `session token`to be user in all the following requests:
 
-```js
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-        "username": "demouser",
-        "password": "Demo1234"
-      }' \
-  http://glibrary.ct.infn.it:3500/v2/users/login
+```ruby
+require 'httparty'
+login_url = 'http://glibrary.ct.infn.it:3500/v2/users/login'
+body = {:username => "demouser", :password => "Demo1234"}
+header = "Content-Type: application/json"
+response = HTTParty.post(login_url, :body => body, :header => header)
 ```
 
-The results will contain the token in the `id` field:
+Using `pp` we can see the details of the user's sessions, in particular the **token**, specified here as `ID`
 
 ```json
-{
-    "created": "2016-07-04T08:40:03.905Z",
-    "email": "demouser@ct.infn.it",
-    "id": "EhHOLKgFR7xjwTIHszJ8fnJMz1CWsks5h5q3QK0Y9nBjKkfPzCdElAYziaSROJsP",
-    "ttl": 1209600,
-    "userId": "577a1da1a9f1344a0406802e",
-    "username": "demouser"
-}
+{"username"=>"demouser",
+ "email"=>"demouser@ct.infn.it",
+ "id"=>"OZG17E8nuCZNqTYV05BUgWazufDZwgB0JXe5hUhAmkXpPoKgCFXPDNXseBQgSPv1",
+ "ttl"=>1209600,
+ "created"=>"2016-07-11T17:26:36.380Z",
+ "userId"=>"577a1da1a9f1344a0406802e"}
 ```
 
-All the following requests should pass the retrieved token, in the `Authorization` header. For the purpose of the tutorial, we will save the token in a environment variable:
+All subsequent requests should pass the retrieved token (id), in the `Authorization` header. For the purpose of the tutorial, we will save the token in a variable:
 
-```
-export TOKEN=EhHOLKgFR7xjwTIHszJ8fnJMz1CWsks5h5q3QK0Y9nBjKkfPzCdElAYziaSROJsP
+
+```ruby
+id = response.parsed_response['id']
 ```
 
 and we will pass to curl the following header:
 
-```json
--H "Authorization: $TOKEN"
+```ruby
+header = {"Content-Type: application/json",Authorization => id}
 ```
-
-
-### (Tip) Pretty printing JSON output from curl
-
-If you want to have the JSON results from the APIs in a pretty format, you can pipe your curl requests with `python -m json.tool`, if you have python installed in your system.
-Eg:
-
-```js
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-        "username": "demouser",
-        "password": "Demo1234"
-      }' \
-  http://glibrary.ct.infn.it:3500/v2/users/login | python -m json.tool
-```
-
-In alternative, you can use `jsontool` (it's a node package that you can install with `npm install -g jsontool`). If you want even a better output, you can install `pygments` if you want a colourized output (`pygments` is Python package that you can install with `pip install pygments` or `easy_install pygments`)
 
 
 ## List the available repositories
