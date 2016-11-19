@@ -18,7 +18,7 @@ curl -X POST \
   	 "password": "Demo1234",
   	 "email": "demouser@ct.infn.it"
 	  }' \
-  http://glibrary.ct.infn.it:3500/v2/users
+  https://glibrary.ct.infn.it:3500/v2/users
 ```
 
 If the user is created successfully you should get back the details of the user and its `id`:
@@ -40,7 +40,7 @@ curl -X POST \
         "username": "demouser",
         "password": "Demo1234"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/users/login
+  https://glibrary.ct.infn.it:3500/v2/users/login
 ```
 
 The results will contain the token in the `id` field:
@@ -81,7 +81,7 @@ curl -X POST \
         "username": "demouser",
         "password": "Demo1234"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/users/login | python -m json.tool
+  https://glibrary.ct.infn.it:3500/v2/users/login | python -m json.tool
 ```
 
 In alternative, you can use `jsontool` (it's a node package that you can install with `npm install -g jsontool`). If you want even a better output, you can install `pygments` if you want a colourized output (`pygments` is Python package that you can install with `pip install pygments` or `easy_install pygments`)
@@ -93,7 +93,7 @@ To list the repositories hosted on the server, we can use the `/v2/repos` endpoi
 
 ```
 curl -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/
+  https://glibrary.ct.infn.it:3500/v2/repos/
 ```
 
 Unfortunately you will get an error:
@@ -157,7 +157,7 @@ curl  -X POST \
   -d '{
   		  "name": "demo2016"
   	  }' \
-  http://glibrary.ct.infn.it:3500/v2/repos
+  https://glibrary.ct.infn.it:3500/v2/repos
 ```
 
 The results will look like this:
@@ -176,7 +176,7 @@ The results will look like this:
 Our new repository *resourse* and all its APIs will be available at
 
 ```
-http://glibrary.ct.infn.it:3500/v2/repos/demo2016
+https://glibrary.ct.infn.it:3500/v2/repos/demo2016
 ```
 
 We haven't set a `default_storage` for the replicas, nor a default `collection_db` for all the collections of our repository. If we start creating collections, by default, all new collections will be created into the default *MongoDB* database that uses gLibrary for its configuration.
@@ -196,7 +196,7 @@ curl -X POST \
           "username": "demouser",
           "permissions": "RW"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/_acls | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/_acls | json
 ```
 
 If you receive something like this:
@@ -214,7 +214,7 @@ Now that we have an user account `demouser` and we got assigned a brand new repo
 
 ```json
 curl -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
 
 As expected the request will return:
@@ -246,7 +246,7 @@ curl -X POST \
   -d '{
         "name": "movies"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016
 ```
 
 if we get back:
@@ -261,7 +261,7 @@ if you now issue a list request to the `demo2016` repository:
 
 ```json
 curl  -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
 
 gLibrary returns:
@@ -299,7 +299,7 @@ curl -X POST \
   		"genre": "comedy",
   		"release_date": "2013-06-13"
   	  }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies | json
 ```
 
 (Should be FIXED!)> Currently our ACL system doesn't inherit permissions. So our `/v2/repos/demo2016/movies` endopoint has no ACL and only the admin user can access. So the previous requests will fail. We are working to fix this ASAP. Meanwhile you need to explicitly set an ACL to the `movies`collection for full permission:
@@ -312,7 +312,7 @@ curl -X POST \
 > 			"permissions": "RW",
 > 			"items_permissions": "RW"
 > 		}'
->   http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/_acls
+>   https://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/_acls
 > ```
 
 Here the result:
@@ -338,7 +338,7 @@ You can retrieve the **item** using the assigned `id`:
 
 ```json
 curl -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
 ```
 
 #### Delete an item
@@ -346,7 +346,7 @@ curl -H "Authorization: $TOKEN" \
 ```json
 curl -X DELETE \
   -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
 ```
 
 #### Edit an item
@@ -358,7 +358,7 @@ curl -X PUT \
   -d '{
   		"country": "USA"
   	  }' \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
+ https://glibrary.ct.infn.it:3500/v2/repos/demo2016/movies/577a3dbea9f1344a04068048 | json
 ```
 
 ### Create a collection with a fixed schema on a remote database
@@ -383,7 +383,7 @@ curl -X POST \
   			"port": 3306
   		}
      }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
 
 #### Add an entry to fixed schema collection
@@ -399,7 +399,7 @@ curl -X POST \
           "permissions": "RW",
           "items_permissions": "RW"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors/_acls
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors/_acls
 ```
 
 ```json
@@ -415,7 +415,7 @@ curl -X POST \
 	  				"Anger Management"
   				]
   			}' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors | json
 ```
 
 
@@ -424,7 +424,7 @@ curl -X POST \
 ```json
 curl -X DELETE \
  -H "Authorization: $TOKEN" \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors2
+ https://glibrary.ct.infn.it:3500/v2/repos/demo2016/actors2
 ```
 
 
@@ -453,7 +453,7 @@ curl -X POST \
             "port": 3306
         }
      }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/
 ```
 Other than the settings we have already seen, two new properties are needed, as documented [here](http://csgf.readthedocs.io/en/latest/glibrary/docs/glibrary2.html#import-data-from-an-existing-relational-database):
 
@@ -471,19 +471,19 @@ Other than the settings we have already seen, two new properties are needed, as 
           "permissions": "RW",
           "items_permissions": "RW"
       }' \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/_acls
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/_acls
 ```
 Now we can access the items from the `products` collection:
 
 ```json
 curl -H "Authorization: $TOKEN" \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products | json
+ https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products | json
 ```
 If you need to get access for a specific item, just use the primary key (in this case the `productcode` of an item):
 
 ```json
 curl -H "Authorization: $TOKEN" \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S72_3212 | json
+ https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S72_3212 | json
 ```
 
 ## Making queries
@@ -495,21 +495,21 @@ It follows some examples:
 
 ```json
 curl -g -H "Authorization: $TOKEN" \
- 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=3' | json
+ 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=3' | json
 ```
 
 * Retrieve the 11th item of the collection:
 
 ```json
 curl -g -H "Authorization: $TOKEN" \
- 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=1&filter[skip]=10' | json
+ 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[limit]=1&filter[skip]=10' | json
 ```
 
 * Order items by `quantityinstock`:
 
 ```json
 curl -g -H "Authorization: $TOKEN" \
- 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[order]=quantityinstock%20ASC' | json
+ 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[order]=quantityinstock%20ASC' | json
 ```
 
 * Items that satisfy a given condition
@@ -518,35 +518,35 @@ curl -g -H "Authorization: $TOKEN" \
 
 	```json
 	curl -g -H "Authorization: $TOKEN" \
-	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][gt]=90' | json
+	 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][gt]=90' | json
 	```
 
 	- Price is between 50 and 60 dollars
 
 	```json
 	curl -g -H "Authorization: $TOKEN" \
-	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][between][0]=50&filter[where][buyPrice][between][1]=60' | json
+	 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][buyPrice][between][0]=50&filter[where][buyPrice][between][1]=60' | json
 	```
 
 	- Price is greated than 50 and there is more than 8000 items in stock:
 
 	```js
 	curl -g -H "Authorization: $TOKEN" \
-	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][and][0][buyPrice][gt]=50&filter[where][and][1][quantityinstock][gt]=8000' | json
+	 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][and][0][buyPrice][gt]=50&filter[where][and][1][quantityinstock][gt]=8000' | json
 	```
 
 	- Vendor is *Min Lin Diecast*
 
 	```js
 	curl -g -H "Authorization: $TOKEN" \
-	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productVendor]=Min%20Lin%20Diecast' | json
+	 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productVendor]=Min%20Lin%20Diecast' | json
 	```
 
 	- is a *Mercedes*
 
 	```js
 	curl -g -H "Authorization: $TOKEN" \
-	 'http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productName][like]=%Mercedes%&include_count=true' | json
+	 'https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products?filter[where][productName][like]=%Mercedes%&include_count=true' | json
 	```
 
 ## Replicas
@@ -569,7 +569,7 @@ curl -X POST \
   		 "type": "swift",
   		 "filename": "mercedes.jpg"
   	  }' \
- http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas | json
+ https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas | json
 ```
 
 In this example the user knows where the file should be uploaded. Generally the admin should set up the `default_storage` properties so that user should just fill the `filename`
@@ -595,7 +595,7 @@ This should return:
 ```js
 curl -X PUT \
   -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas/577a7f6776666c1d167bd392  | json
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas/577a7f6776666c1d167bd392  | json
 ```
 
 3) The user has now 30 seconds to complete the upload to the return URL:
@@ -611,7 +611,7 @@ curl -X PUT -T mercedes.jpg \
 
 ```js
 curl -H "Authorization: $TOKEN" \
-  http://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas/577a7f6776666c1d167bd392&no_redirect=true
+  https://glibrary.ct.infn.it:3500/v2/repos/demo2016/products/S18_1367/_replicas/577a7f6776666c1d167bd392&no_redirect=true
 ```
 
 This will return another temporary URL:
